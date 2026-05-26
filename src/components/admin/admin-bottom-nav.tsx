@@ -9,6 +9,7 @@ export function AdminBottomNav() {
 
   const isHome = pathname === "/admin"
   const isAlunos = pathname.startsWith("/admin/alunos")
+  const isIA = pathname.startsWith("/admin/ia")
 
   return (
     <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 absolute bottom-0 left-0 right-0 z-30 pb-safe">
@@ -43,12 +44,20 @@ export function AdminBottomNav() {
           </span>
         </Link>
 
-        <button className="flex-1 flex flex-col items-center justify-center gap-1 h-full active:bg-zinc-900 rounded-xl transition-colors">
-          <BrainCircuit size={20} className="text-zinc-500" />
-          <span className="text-[8px] uppercase font-bold tracking-wider text-zinc-500">
+        <Link
+          href="/admin/ia"
+          className="flex-1 flex flex-col items-center justify-center gap-1 h-full active:bg-zinc-900 rounded-xl transition-colors"
+        >
+          <BrainCircuit
+            size={20}
+            className={isIA ? "text-red-600" : "text-zinc-500"}
+          />
+          <span
+            className={`text-[8px] uppercase font-bold tracking-wider ${isIA ? "text-red-600" : "text-zinc-500"}`}
+          >
             IA Maker
           </span>
-        </button>
+        </Link>
       </div>
     </nav>
   )

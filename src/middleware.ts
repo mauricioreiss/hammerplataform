@@ -32,15 +32,37 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const isAdminRoute = pathname.startsWith("/admin");
   const isAlunoRoute = pathname.startsWith("/aluno");
+  const isLoginRoute = pathname === "/login";
 
-  // A01: Not authenticated → redirect to landing
+  // Logged-in user on /login → redirect to dashboard
+  if (user && isLoginRoute) {
+    const { data: profile } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const role = profile?.role;
+    const url = request.nextUrl.clone();
+
+    if (role === "admin") {
+      url.pathname = "/admin";
+      return NextResponse.redirect(url);
+    }
+    if (role === "student") {
+      url.pathname = "/aluno";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Not authenticated on protected route → redirect to /login
   if (!user && (isAdminRoute || isAlunoRoute)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
-  // A01: Role-based access control
+  // Role-based access control
   if (user && (isAdminRoute || isAlunoRoute)) {
     const { data: profile } = await supabase
       .from("users")
@@ -50,24 +72,21 @@ export async function middleware(request: NextRequest) {
 
     const role = profile?.role;
 
-    // No profile found → deny access
     if (!role) {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = "/login";
       return NextResponse.redirect(url);
     }
 
-    // Admin routes require admin role
     if (isAdminRoute && role !== "admin") {
       const url = request.nextUrl.clone();
-      url.pathname = role === "student" ? "/aluno" : "/";
+      url.pathname = role === "student" ? "/aluno" : "/login";
       return NextResponse.redirect(url);
     }
 
-    // Student routes require student role
     if (isAlunoRoute && role !== "student") {
       const url = request.nextUrl.clone();
-      url.pathname = role === "admin" ? "/admin" : "/";
+      url.pathname = role === "admin" ? "/admin" : "/login";
       return NextResponse.redirect(url);
     }
   }
@@ -76,5 +95,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/aluno/:path*"],
+  matcher: ["/admin/:path*", "/aluno/:path*", "/login"],
 };

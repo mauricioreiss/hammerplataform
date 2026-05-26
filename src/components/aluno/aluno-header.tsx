@@ -1,4 +1,5 @@
-import { Bell } from "lucide-react"
+import { Bell, LogOut } from "lucide-react"
+import { logout } from "@/app/auth/actions"
 
 type AlunoHeaderProps = {
   initials: string
@@ -23,6 +24,14 @@ export function AlunoHeader({ initials, hasNotification }: AlunoHeaderProps) {
         <div className="w-8 h-8 rounded-full bg-zinc-800 overflow-hidden border border-zinc-700 flex items-center justify-center">
           <span className="text-white font-bold text-xs">{initials}</span>
         </div>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="text-zinc-500 hover:text-red-500 transition-colors"
+          >
+            <LogOut size={18} />
+          </button>
+        </form>
       </div>
     </header>
   )

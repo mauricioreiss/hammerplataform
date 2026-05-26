@@ -1,4 +1,5 @@
-import { Bell } from "lucide-react"
+import { Bell, LogOut } from "lucide-react"
+import { logout } from "@/app/auth/actions"
 
 export function AdminHeader() {
   return (
@@ -24,6 +25,14 @@ export function AdminHeader() {
             alt="Avatar"
           />
         </div>
+        <form action={logout}>
+          <button
+            type="submit"
+            className="text-zinc-500 hover:text-red-500 transition-colors"
+          >
+            <LogOut size={18} />
+          </button>
+        </form>
       </div>
     </header>
   )

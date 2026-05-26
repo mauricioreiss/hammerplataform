@@ -1,0 +1,47 @@
+"use server"
+
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+
+export type LoginResult =
+  | { success: true; role: "admin" | "student" }
+  | { success: false; error: string }
+
+export async function login(
+  email: string,
+  password: string,
+): Promise<LoginResult> {
+  if (!email || !password) {
+    return { success: false, error: "E-mail e senha obrigatórios." }
+  }
+
+  const supabase = await createClient()
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error || !data.user) {
+    return { success: false, error: "E-mail ou senha incorretos." }
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", data.user.id)
+    .single()
+
+  if (!profile?.role) {
+    await supabase.auth.signOut()
+    return { success: false, error: "Conta sem permissão de acesso." }
+  }
+
+  return { success: true, role: profile.role as "admin" | "student" }
+}
+
+export async function logout(): Promise<void> {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect("/login")
+}
