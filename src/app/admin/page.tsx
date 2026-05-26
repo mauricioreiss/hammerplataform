@@ -5,7 +5,7 @@ import { kpis, studentsQueue } from "@/lib/mock-data"
 
 export default function AdminPage() {
   return (
-    <div className="p-4 space-y-6 animate-in fade-in pb-24">
+    <div className="p-4 md:p-6 space-y-6 animate-in fade-in pb-24">
       <KpiCard mrr={kpis.mrr} active={kpis.active} newToday={kpis.new} />
 
       <div>

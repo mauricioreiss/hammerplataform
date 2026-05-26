@@ -8,8 +8,8 @@ export default function AlunoLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-0 sm:p-4 selection:bg-red-600 selection:text-white">
-      <div className="w-full h-dvh sm:h-[850px] max-w-[400px] bg-zinc-950 sm:rounded-[2rem] sm:border-8 border-zinc-900 relative overflow-hidden flex flex-col shadow-2xl">
+    <div className="min-h-screen bg-black selection:bg-red-600 selection:text-white">
+      <div className="max-w-4xl mx-auto flex flex-col min-h-screen bg-zinc-950">
         <AlunoHeader
           initials={currentUser.initials}
           hasNotification={currentUser.status === "vencendo"}

@@ -13,7 +13,7 @@ export function AdminBottomNav() {
   const isIA = pathname.startsWith("/admin/ia")
 
   return (
-    <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 absolute bottom-0 left-0 right-0 z-30 pb-safe">
+    <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 sticky bottom-0 left-0 right-0 z-30 pb-safe md:hidden">
       <div className="flex justify-around items-center h-16 px-2">
         <Link
           href="/admin"

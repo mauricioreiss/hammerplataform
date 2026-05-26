@@ -5,7 +5,7 @@ export default function EvolucaoPage() {
   const av = studentAvaliacao
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-in fade-in duration-300">
+    <div className="p-4 md:p-6 space-y-6 pb-24 animate-in fade-in duration-300">
       <div className="text-center mb-6 pt-2">
         <h2 className="text-3xl font-black italic text-red-600 uppercase tracking-tighter">
           Seus Resultados

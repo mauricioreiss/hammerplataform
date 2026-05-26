@@ -25,7 +25,7 @@ export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
   return (
     <div className="flex flex-col h-full animate-in slide-in-from-right duration-300">
       {/* Profile header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 px-4 pt-4 pb-4">
+      <div className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-8 pt-4 pb-4">
         <Link
           href="/admin/alunos"
           className="text-zinc-400 active:text-white mb-4 flex items-center gap-2 text-xs font-bold uppercase"
@@ -87,7 +87,7 @@ export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-y-auto bg-black p-4 pb-24">
+      <div className="flex-1 overflow-y-auto bg-black p-4 md:p-6 pb-24">
         {/* Avaliacoes list */}
         {activeTab === "avaliacoes" && !showComparativo && (
           <div className="space-y-4 animate-in fade-in">

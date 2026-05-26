@@ -8,7 +8,7 @@ export default function AlunosPage() {
   const students = getAllStudents()
 
   return (
-    <div className="p-4 space-y-4 animate-in fade-in pb-24">
+    <div className="p-4 md:p-6 space-y-4 animate-in fade-in pb-24">
       <div className="relative mb-6">
         <Search
           className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"

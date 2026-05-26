@@ -77,7 +77,7 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
   return (
     <div className="flex flex-col h-full animate-in slide-in-from-right duration-300">
       {/* Header */}
-      <div className="bg-zinc-900 border-b border-zinc-800 px-4 pt-4 pb-4">
+      <div className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-8 pt-4 pb-4">
         <Link
           href="/admin/exercicios"
           className="text-zinc-400 active:text-white mb-4 flex items-center gap-2 text-xs font-bold uppercase"
@@ -93,7 +93,7 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto bg-black p-4 pb-24 space-y-4">
+      <div className="flex-1 overflow-y-auto bg-black p-4 md:p-6 pb-24 space-y-4">
         {/* Illustration preview */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
           <div className="aspect-square bg-zinc-950 relative flex items-center justify-center">

@@ -7,7 +7,7 @@ export default async function ExerciciosPage() {
   const exercises = await getExercises()
 
   return (
-    <div className="p-4 space-y-6 animate-in fade-in pb-24">
+    <div className="p-4 md:p-6 space-y-6 animate-in fade-in pb-24">
       <div className="flex items-center gap-2 mb-2">
         <Dumbbell size={20} className="text-red-600" />
         <h2 className="text-lg font-black italic text-white uppercase tracking-tight">
@@ -30,7 +30,7 @@ export default async function ExerciciosPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {exercises.map((exercise) => (
           <Link
             key={exercise.id}

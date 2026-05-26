@@ -31,7 +31,7 @@ export function WorkoutSession({ workout }: WorkoutSessionProps) {
   }
 
   return (
-    <div className="p-4 space-y-4 pb-24 animate-in fade-in duration-300">
+    <div className="p-4 md:p-6 space-y-4 pb-24 animate-in fade-in duration-300">
       {/* Workout header */}
       <div className="text-center mb-6 pt-2">
         <h1 className="text-4xl font-black italic text-red-600 uppercase tracking-tighter leading-none">

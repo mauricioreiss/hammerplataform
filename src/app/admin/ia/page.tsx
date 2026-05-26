@@ -6,7 +6,7 @@ export default async function IAMakerPage() {
   const anamneses = await getAnamneses()
 
   return (
-    <div className="p-4 space-y-6 animate-in fade-in pb-24">
+    <div className="p-4 md:p-6 space-y-6 animate-in fade-in pb-24">
       <div className="flex items-center gap-2 mb-2">
         <BrainCircuit size={20} className="text-red-600" />
         <h2 className="text-lg font-black italic text-white uppercase tracking-tight">

@@ -6,7 +6,7 @@ import { WorkoutDayCard } from "@/components/aluno/workout-day-card"
 
 export default function AlunoPage() {
   return (
-    <div className="p-4 space-y-6 pb-24 animate-in fade-in duration-300">
+    <div className="p-4 md:p-6 space-y-6 pb-24 animate-in fade-in duration-300">
       {/* Greeting */}
       <div>
         <p className="text-zinc-400 text-sm font-bold uppercase tracking-widest">
