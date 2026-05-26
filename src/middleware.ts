@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
@@ -34,9 +35,16 @@ export async function middleware(request: NextRequest) {
   const isAlunoRoute = pathname.startsWith("/aluno");
   const isLoginRoute = pathname === "/login";
 
+  // Admin client bypasses RLS for users table queries
+  const admin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+
   // Logged-in user on /login → redirect to dashboard
   if (user && isLoginRoute) {
-    const { data: profile } = await supabase
+    const { data: profile } = await admin
       .from("users")
       .select("role")
       .eq("id", user.id)
@@ -64,7 +72,7 @@ export async function middleware(request: NextRequest) {
 
   // Role-based access control
   if (user && (isAdminRoute || isAlunoRoute)) {
-    const { data: profile } = await supabase
+    const { data: profile } = await admin
       .from("users")
       .select("role")
       .eq("id", user.id)

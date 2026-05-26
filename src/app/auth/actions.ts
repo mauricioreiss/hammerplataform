@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/admin"
 
 export type LoginResult =
   | { success: true; role: "admin" | "student" }
@@ -26,7 +27,9 @@ export async function login(
     return { success: false, error: "E-mail ou senha incorretos." }
   }
 
-  const { data: profile } = await supabase
+  // Use admin client to bypass RLS on users table
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from("users")
     .select("role")
     .eq("id", data.user.id)
