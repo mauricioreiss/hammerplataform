@@ -2,13 +2,14 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, BrainCircuit } from "lucide-react"
+import { Home, Users, BrainCircuit, Dumbbell } from "lucide-react"
 
 export function AdminBottomNav() {
   const pathname = usePathname()
 
   const isHome = pathname === "/admin"
   const isAlunos = pathname.startsWith("/admin/alunos")
+  const isExercicios = pathname.startsWith("/admin/exercicios")
   const isIA = pathname.startsWith("/admin/ia")
 
   return (
@@ -41,6 +42,21 @@ export function AdminBottomNav() {
             className={`text-[8px] uppercase font-bold tracking-wider ${isAlunos ? "text-red-600" : "text-zinc-500"}`}
           >
             Alunos
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/exercicios"
+          className="flex-1 flex flex-col items-center justify-center gap-1 h-full active:bg-zinc-900 rounded-xl transition-colors"
+        >
+          <Dumbbell
+            size={20}
+            className={isExercicios ? "text-red-600" : "text-zinc-500"}
+          />
+          <span
+            className={`text-[8px] uppercase font-bold tracking-wider ${isExercicios ? "text-red-600" : "text-zinc-500"}`}
+          >
+            Exercicios
           </span>
         </Link>
 

@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
-  PlayCircle,
   Clock,
+  ImageOff,
 } from "lucide-react"
 import type { Exercise } from "@/lib/mock-data"
 
@@ -73,19 +74,28 @@ export function ExerciseItem({
         className={`transition-all duration-300 overflow-hidden ${isExpanded ? "max-h-[800px] opacity-100 border-t border-zinc-800/50" : "max-h-0 opacity-0"}`}
       >
         <div className="p-4 space-y-4">
-          {/* Video thumbnail */}
-          <div className="relative aspect-video bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={exercise.videoUrl}
-              alt="Execução"
-              className="w-full h-full object-cover opacity-50"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-red-600/90 text-white p-2 rounded-full">
-                <PlayCircle size={24} />
-              </div>
-            </div>
+          {/* Exercise illustration */}
+          <div className="relative aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 flex items-center justify-center">
+            {exercise.illustrationUrl ? (
+              <Image
+                src={exercise.illustrationUrl}
+                alt={exercise.name}
+                fill
+                className="object-contain p-2"
+                sizes="(max-width: 768px) 90vw, 400px"
+              />
+            ) : exercise.videoUrl ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={exercise.videoUrl}
+                  alt={exercise.name}
+                  className="w-full h-full object-cover opacity-40"
+                />
+              </>
+            ) : (
+              <ImageOff size={32} className="text-zinc-700" />
+            )}
           </div>
 
           {/* Tip */}

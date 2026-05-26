@@ -106,6 +106,7 @@ export type Exercise = {
   rest: string
   note: string
   videoUrl: string
+  illustrationUrl?: string
 }
 
 export type WorkoutDay = {

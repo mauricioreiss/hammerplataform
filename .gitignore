@@ -39,6 +39,11 @@ yarn-error.log*
 # claude code
 .claude/
 
+# exercise images (local bulk import folder)
+data/images-treino/*
+!data/images-treino/.gitkeep
+data/exercise-mapping.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
