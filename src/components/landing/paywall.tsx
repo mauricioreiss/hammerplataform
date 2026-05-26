@@ -8,7 +8,7 @@ const BLURRED_WORKOUTS = [
   { name: "Treino C - Full Body", count: 4 },
 ]
 
-const PIX_KEY = "19993939064"
+const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY ?? ""
 
 export function Paywall() {
   return (

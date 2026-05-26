@@ -138,7 +138,7 @@ export const currentUser: UserProfile = {
   status: "vencendo",
   expireDate: "30/05/2026",
   daysLeft: 4,
-  pixKey: "19993939064",
+  pixKey: process.env.NEXT_PUBLIC_PIX_KEY ?? "",
   value: "150,00",
 }
 
