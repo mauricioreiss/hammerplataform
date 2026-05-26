@@ -6,7 +6,7 @@ type LandingHeroProps = {
 
 export function LandingHero({ onStart }: LandingHeroProps) {
   return (
-    <div className="relative h-[85vh] flex flex-col items-center justify-center text-center px-4 overflow-hidden border-b border-zinc-800">
+    <div className="relative h-[85vh] flex flex-col items-center justify-center text-center px-4 md:px-8 overflow-hidden border-b border-zinc-800">
       <div
         className="absolute inset-0 bg-cover bg-center opacity-30 grayscale mix-blend-overlay"
         style={{

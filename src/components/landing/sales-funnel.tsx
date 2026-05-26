@@ -24,7 +24,7 @@ export function SalesFunnel() {
 
   return (
     <div className="bg-black min-h-screen selection:bg-red-600 selection:text-white">
-      <div className="max-w-md mx-auto bg-zinc-950 min-h-screen shadow-2xl relative overflow-x-hidden">
+      <div className="w-full bg-zinc-950 min-h-screen relative overflow-x-hidden">
         {stage === "landing" && (
           <div className="animate-in fade-in duration-500 bg-zinc-950 min-h-screen">
             <LandingHero onStart={() => setStage("form")} />

@@ -62,7 +62,7 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 pt-8 md:pt-16 pb-24 animate-in slide-in-from-right duration-300">
+    <div className="min-h-screen bg-zinc-950 p-4 md:px-8 pt-8 md:pt-16 pb-24 animate-in slide-in-from-right duration-300">
       <div className="max-w-xl mx-auto">
         {/* Progress header */}
         <div className="flex items-center justify-between mb-8">

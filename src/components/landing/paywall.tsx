@@ -12,8 +12,8 @@ const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY ?? ""
 
 export function Paywall() {
   return (
-    <div className="min-h-screen bg-zinc-950 p-4 pt-10 pb-24 animate-in slide-in-from-bottom duration-500">
-      <div className="max-w-md mx-auto">
+    <div className="min-h-screen bg-zinc-950 p-4 md:px-8 pt-10 pb-24 animate-in slide-in-from-bottom duration-500">
+      <div className="max-w-lg mx-auto">
         {/* Success header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/10 text-green-500 rounded-full mb-4 border border-green-500/20">
