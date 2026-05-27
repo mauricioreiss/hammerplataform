@@ -194,22 +194,47 @@ export async function createAluno(data: {
     await requireAuth("admin")
     const admin = createAdminClient()
 
+    let userId: string
+
     const { data: authUser, error: authError } = await admin.auth.admin.createUser({
       email: data.email,
       password: data.password,
       email_confirm: true,
     })
 
-    if (authError || !authUser.user) {
-      const msg = authError?.message ?? "Falha ao criar conta."
-      const translated = msg.includes("already been registered")
-        ? "Este e-mail já está cadastrado."
-        : msg
-      return { success: false, error: translated }
+    if (authError) {
+      // Auth user already exists - check if profile is missing
+      if (authError.message.includes("already been registered")) {
+        const { data: usersRes } = await admin.auth.admin.listUsers()
+        const existing = usersRes?.users?.find((u) => u.email === data.email)
+        if (!existing) {
+          return { success: false, error: "Este e-mail já está cadastrado." }
+        }
+
+        // Check if profile already exists in users table
+        const { data: profile } = await admin
+          .from("users")
+          .select("id")
+          .eq("id", existing.id)
+          .maybeSingle()
+
+        if (profile) {
+          return { success: false, error: "Este aluno já está cadastrado." }
+        }
+
+        // Auth exists but profile is missing - recover
+        userId = existing.id
+      } else {
+        return { success: false, error: authError.message }
+      }
+    } else if (!authUser.user) {
+      return { success: false, error: "Falha ao criar conta." }
+    } else {
+      userId = authUser.user.id
     }
 
     const { error: insertError } = await admin.from("users").insert({
-      id: authUser.user.id,
+      id: userId,
       full_name: data.name,
       email: data.email,
       role: "student",
