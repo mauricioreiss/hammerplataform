@@ -408,6 +408,191 @@ export async function getTreinosPorAluno(userId: string): Promise<Workout[]> {
   }
 }
 
+// --- Workout Builder (Admin) ---
+
+export async function getLibraryExercises(): Promise<Exercise[]> {
+  try {
+    await requireAuth("admin")
+    const admin = createAdminClient()
+
+    const { data, error } = await admin
+      .from("exercises")
+      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url")
+      .is("workout_id", null)
+      .order("name", { ascending: true })
+
+    if (error || !data) return []
+    return data as Exercise[]
+  } catch {
+    return []
+  }
+}
+
+export async function getTreinosComExercicios(userId: string): Promise<Workout[]> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return []
+
+    const admin = createAdminClient()
+    const { data: workouts, error } = await admin
+      .from("workouts")
+      .select("id, user_id, title, is_ai_draft, status, created_at")
+      .eq("user_id", parsed.data)
+      .order("created_at", { ascending: false })
+
+    if (error || !workouts || workouts.length === 0) return []
+
+    const workoutIds = workouts.map((w) => w.id)
+    const { data: exercises } = await admin
+      .from("exercises")
+      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url")
+      .in("workout_id", workoutIds)
+
+    const byWorkout = new Map<string, Exercise[]>()
+    for (const ex of (exercises ?? []) as Exercise[]) {
+      const list = byWorkout.get(ex.workout_id!) ?? []
+      list.push(ex)
+      byWorkout.set(ex.workout_id!, list)
+    }
+
+    return workouts.map((w) => ({
+      ...w,
+      exercises: byWorkout.get(w.id) ?? [],
+    })) as Workout[]
+  } catch {
+    return []
+  }
+}
+
+export async function createWorkoutWithExercises(
+  userId: string,
+  title: string,
+  exercises: Array<{
+    name: string
+    muscleGroup: string
+    sets: string
+    reps: string
+    rest: string
+    note?: string
+    illustrationUrl?: string
+  }>,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+    if (!title.trim()) return { success: false, error: "Titulo obrigatorio." }
+    if (exercises.length === 0) return { success: false, error: "Adicione pelo menos um exercicio." }
+
+    const admin = createAdminClient()
+
+    const { data: workout, error: wErr } = await admin
+      .from("workouts")
+      .insert({
+        user_id: parsed.data,
+        title: title.trim(),
+        is_ai_draft: false,
+        status: "draft",
+      })
+      .select("id")
+      .single()
+
+    if (wErr || !workout) return { success: false, error: wErr?.message ?? "Falha ao criar ficha." }
+
+    const rows = exercises.map((ex) => ({
+      workout_id: workout.id,
+      name: ex.name,
+      muscle_group: ex.muscleGroup,
+      sets: ex.sets,
+      reps: ex.reps,
+      rest: ex.rest,
+      note: ex.note || null,
+      illustration_url: ex.illustrationUrl || null,
+    }))
+
+    const { error: exErr } = await admin.from("exercises").insert(rows)
+
+    if (exErr) return { success: false, error: `Ficha criada, mas erro nos exercicios: ${exErr.message}` }
+
+    revalidatePath(`/admin/alunos/${parsed.data}`)
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function removeExerciseFromWorkout(
+  exerciseId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(exerciseId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from("exercises")
+      .delete()
+      .eq("id", parsed.data)
+      .not("workout_id", "is", null)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function updateWorkoutStatus(
+  workoutId: string,
+  status: "draft" | "approved",
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from("workouts")
+      .update({ status })
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function deleteWorkout(
+  workoutId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    // Delete exercises first (cascade should handle, but being explicit)
+    await admin.from("exercises").delete().eq("workout_id", parsed.data)
+    const { error } = await admin.from("workouts").delete().eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
 // --- Exercise Logs ---
 
 export async function getExerciseLogs(workoutId: string): Promise<string[]> {

@@ -2,17 +2,20 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, BrainCircuit } from "lucide-react"
-import type { UserProfile, Evaluation } from "@/lib/types"
+import { ArrowLeft, Plus, Activity } from "lucide-react"
+import type { UserProfile, Evaluation, Workout, Exercise } from "@/lib/types"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
+import { WorkoutBuilder } from "./workout-builder"
 
 type StudentProfileProps = {
   student: UserProfile
   avaliacoes: Evaluation[]
+  workouts: Workout[]
+  libraryExercises: Exercise[]
 }
 
-export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
+export function StudentProfile({ student, avaliacoes, workouts, libraryExercises }: StudentProfileProps) {
   const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">(
     "avaliacoes",
   )
@@ -146,15 +149,13 @@ export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
           <ComparativoView before={before} after={after} />
         )}
 
-        {/* Treinos placeholder */}
+        {/* Treinos */}
         {activeTab === "treinos" && (
-          <div className="text-center text-zinc-500 pt-10">
-            <BrainCircuit size={48} className="mx-auto mb-4 opacity-50" />
-            <p className="uppercase font-bold text-sm text-white">
-              Treinos do Aluno
-            </p>
-            <p className="text-xs mt-2">Acesso ao construtor de IA.</p>
-          </div>
+          <WorkoutBuilder
+            studentId={student.id}
+            workouts={workouts}
+            libraryExercises={libraryExercises}
+          />
         )}
       </div>
     </div>

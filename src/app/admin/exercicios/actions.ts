@@ -16,7 +16,6 @@ export type ExerciseRow = {
   rest: string | null
   note: string | null
   illustration_url: string | null
-  created_at: string
 }
 
 // --- Validation ---
@@ -61,7 +60,8 @@ export async function getExercises(): Promise<ExerciseRow[]> {
 
     const { data, error } = await supabase
       .from("exercises")
-      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url, created_at")
+      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url")
+      .is("workout_id", null)
       .order("name", { ascending: true })
 
     if (error || !data) return []
@@ -85,7 +85,7 @@ export async function getExerciseById(
 
     const { data, error } = await supabase
       .from("exercises")
-      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url, created_at")
+      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url")
       .eq("id", parsed.data)
       .single()
 

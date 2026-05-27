@@ -1,5 +1,10 @@
 import { notFound } from "next/navigation"
-import { getAlunoById, getAvaliacoes } from "@/app/actions"
+import {
+  getAlunoById,
+  getAvaliacoes,
+  getTreinosComExercicios,
+  getLibraryExercises,
+} from "@/app/actions"
 import { StudentProfile } from "@/components/admin/student-profile"
 
 export default async function StudentPage({
@@ -12,7 +17,18 @@ export default async function StudentPage({
 
   if (!student) notFound()
 
-  const avaliacoes = await getAvaliacoes(student.id)
+  const [avaliacoes, workouts, libraryExercises] = await Promise.all([
+    getAvaliacoes(student.id),
+    getTreinosComExercicios(student.id),
+    getLibraryExercises(),
+  ])
 
-  return <StudentProfile student={student} avaliacoes={avaliacoes} />
+  return (
+    <StudentProfile
+      student={student}
+      avaliacoes={avaliacoes}
+      workouts={workouts}
+      libraryExercises={libraryExercises}
+    />
+  )
 }
