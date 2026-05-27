@@ -22,7 +22,7 @@ export default async function AlunoLayout({
 
   return (
     <div className="min-h-screen bg-black selection:bg-red-600 selection:text-white">
-      <div className="max-w-4xl mx-auto flex flex-col min-h-screen bg-zinc-950">
+      <div className="w-full md:max-w-md mx-auto flex flex-col min-h-screen bg-zinc-950">
         <AlunoHeader
           initials={initials}
           hasNotification={hasAlert}

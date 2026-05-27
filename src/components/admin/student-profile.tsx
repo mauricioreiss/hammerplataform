@@ -7,6 +7,7 @@ import type { UserProfile, Evaluation, Workout, Exercise } from "@/lib/types"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
+import { AddAvaliacaoModal } from "./add-avaliacao-modal"
 
 type StudentProfileProps = {
   student: UserProfile
@@ -16,10 +17,9 @@ type StudentProfileProps = {
 }
 
 export function StudentProfile({ student, avaliacoes, workouts, libraryExercises }: StudentProfileProps) {
-  const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">(
-    "avaliacoes",
-  )
+  const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">("avaliacoes")
   const [showComparativo, setShowComparativo] = useState(false)
+  const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false)
 
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
@@ -78,67 +78,56 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
       {/* Tabs */}
       <div className="flex border-b border-zinc-800 bg-zinc-950 px-4">
         <button
-          onClick={() => {
-            setActiveTab("treinos")
-            setShowComparativo(false)
-          }}
+          onClick={() => { setActiveTab("treinos"); setShowComparativo(false) }}
           className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${
-            activeTab === "treinos"
-              ? "border-red-600 text-red-500"
-              : "border-transparent text-zinc-500"
+            activeTab === "treinos" ? "border-red-600 text-red-500" : "border-transparent text-zinc-500"
           }`}
         >
           Fichas de Treino
         </button>
         <button
-          onClick={() => {
-            setActiveTab("avaliacoes")
-            setShowComparativo(false)
-          }}
+          onClick={() => { setActiveTab("avaliacoes"); setShowComparativo(false) }}
           className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest border-b-2 transition-colors ${
-            activeTab === "avaliacoes"
-              ? "border-red-600 text-red-500"
-              : "border-transparent text-zinc-500"
+            activeTab === "avaliacoes" ? "border-red-600 text-red-500" : "border-transparent text-zinc-500"
           }`}
         >
-          Avaliações Físicas
+          Avaliacoes Fisicas
         </button>
       </div>
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto bg-black p-4 md:p-6 pb-24">
-        {/* Avaliacoes list */}
+        {/* Avaliacoes */}
         {activeTab === "avaliacoes" && !showComparativo && (
           <div className="space-y-4 animate-in fade-in">
             <div className="grid grid-cols-2 gap-3 mb-6">
-              <button className="bg-zinc-900 border border-zinc-800 text-white font-bold py-3 rounded-xl text-xs uppercase flex items-center justify-center gap-2 active:bg-zinc-800 transition-colors">
-                <Plus size={16} /> Nova Avaliação
+              <button
+                onClick={() => setShowAvaliacaoModal(true)}
+                className="bg-zinc-900 border border-zinc-800 text-white font-bold py-3 rounded-xl text-xs uppercase flex items-center justify-center gap-2 active:bg-zinc-800 transition-colors"
+              >
+                <Plus size={16} /> Nova Avaliacao
               </button>
               {hasEnoughForComparativo && (
                 <button
                   onClick={() => setShowComparativo(true)}
                   className="bg-red-600 border border-red-500 text-white font-black py-3 rounded-xl text-xs uppercase flex items-center justify-center gap-2 active:scale-95 transition-transform shadow-[0_0_15px_rgba(220,38,38,0.3)]"
                 >
-                  <Activity size={16} /> Gerar Comparativo
+                  <Activity size={16} /> Comparativo
                 </button>
               )}
             </div>
 
             <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-              Histórico
+              Historico
             </h3>
 
             {avaliacoes.map((av, index) => (
-              <AvaliacaoCard
-                key={av.id}
-                avaliacao={av}
-                isLatest={index === 0}
-              />
+              <AvaliacaoCard key={av.id} avaliacao={av} isLatest={index === 0} />
             ))}
 
             {avaliacoes.length === 0 && (
               <div className="text-center text-zinc-500 pt-10">
-                <p className="text-xs">Nenhuma avaliação registrada.</p>
+                <p className="text-xs">Nenhuma avaliacao registrada.</p>
               </div>
             )}
           </div>
@@ -158,6 +147,14 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
           />
         )}
       </div>
+
+      {/* Avaliacao Modal */}
+      {showAvaliacaoModal && (
+        <AddAvaliacaoModal
+          studentId={student.id}
+          onClose={() => setShowAvaliacaoModal(false)}
+        />
+      )}
     </div>
   )
 }

@@ -16,7 +16,9 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-h-screen">
         <AdminHeader />
         <main className="flex-1 overflow-y-auto bg-black relative">
-          {children}
+          <div className="w-full max-w-7xl mx-auto">
+            {children}
+          </div>
         </main>
         {/* Bottom nav only on mobile */}
         <AdminBottomNav />

@@ -302,6 +302,7 @@ export async function saveAvaliacao(evalData: {
   bodyFat?: number
   leanMass?: number
   waist?: number
+  photoUrl?: string
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")
@@ -314,6 +315,7 @@ export async function saveAvaliacao(evalData: {
       body_fat: evalData.bodyFat,
       lean_mass: evalData.leanMass,
       waist: evalData.waist,
+      photo_url: evalData.photoUrl || null,
     })
 
     if (error) return { success: false, error: error.message }
@@ -322,6 +324,60 @@ export async function saveAvaliacao(evalData: {
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function uploadAvaliacaoPhoto(
+  userId: string,
+  formData: FormData,
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    await requireAuth("admin")
+
+    const file = formData.get("file") as File | null
+    if (!file || file.size === 0) return { success: false, error: "Nenhum arquivo." }
+
+    const allowed = ["image/png", "image/jpeg", "image/webp"]
+    if (!allowed.includes(file.type)) return { success: false, error: "Formato invalido. Use PNG, JPG ou WEBP." }
+    if (file.size > 5 * 1024 * 1024) return { success: false, error: "Maximo 5MB." }
+
+    const admin = createAdminClient()
+    const ext = file.name.split(".").pop() ?? "jpg"
+    const path = `avaliacoes/${userId}/${Date.now()}.${ext}`
+    const buf = await file.arrayBuffer()
+
+    const { error: upErr } = await admin.storage
+      .from("avaliacoes")
+      .upload(path, buf, { contentType: file.type, upsert: false })
+
+    if (upErr) return { success: false, error: upErr.message }
+
+    const { data: urlData } = admin.storage.from("avaliacoes").getPublicUrl(path)
+    return { success: true, url: urlData.publicUrl }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function getAnamneseByUserId(userId: string) {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return null
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from("anamnesis")
+      .select("*")
+      .eq("user_id", parsed.data)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error || !data) return null
+    return data
+  } catch {
+    return null
   }
 }
 
@@ -522,6 +578,69 @@ export async function createWorkoutWithExercises(
   }
 }
 
+export async function updateWorkoutTitle(
+  workoutId: string,
+  title: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+    if (!title.trim()) return { success: false, error: "Titulo obrigatorio." }
+
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from("workouts")
+      .update({ title: title.trim() })
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function addExerciseToWorkout(
+  workoutId: string,
+  data: {
+    name: string
+    muscleGroup: string
+    sets: string
+    reps: string
+    rest: string
+    note?: string
+    illustrationUrl?: string
+  },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+    const { error } = await admin.from("exercises").insert({
+      workout_id: parsed.data,
+      name: data.name,
+      muscle_group: data.muscleGroup,
+      sets: data.sets,
+      reps: data.reps,
+      rest: data.rest,
+      note: data.note || null,
+      illustration_url: data.illustrationUrl || null,
+    })
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
 export async function removeExerciseFromWorkout(
   exerciseId: string,
 ): Promise<{ success: boolean; error?: string }> {
@@ -686,17 +805,43 @@ export async function seedDefaultExercises(): Promise<{ success: boolean; error?
     await requireAuth("admin")
     const admin = createAdminClient()
 
+    const img = (name: string) =>
+      `https://placehold.co/600x400/09090b/ef4444?text=${encodeURIComponent(name)}`
+
     const defaults = [
-      { name: "Supino Reto", muscle_group: "Peito" },
-      { name: "Supino Inclinado", muscle_group: "Peito" },
-      { name: "Agachamento Livre", muscle_group: "Pernas" },
-      { name: "Leg Press 45", muscle_group: "Pernas" },
-      { name: "Puxada Frontal", muscle_group: "Costas" },
-      { name: "Remada Curvada", muscle_group: "Costas" },
-      { name: "Desenvolvimento Militar", muscle_group: "Ombros" },
-      { name: "Rosca Direta", muscle_group: "Biceps" },
-      { name: "Triceps Corda", muscle_group: "Triceps" },
-      { name: "Levantamento Terra", muscle_group: "Posterior" },
+      { name: "Supino Reto", muscle_group: "Peito", illustration_url: img("Supino Reto") },
+      { name: "Supino Inclinado", muscle_group: "Peito", illustration_url: img("Supino Inclinado") },
+      { name: "Supino Declinado", muscle_group: "Peito", illustration_url: img("Supino Declinado") },
+      { name: "Crucifixo com Halteres", muscle_group: "Peito", illustration_url: img("Crucifixo") },
+      { name: "Crossover", muscle_group: "Peito", illustration_url: img("Crossover") },
+      { name: "Puxada Frontal", muscle_group: "Costas", illustration_url: img("Puxada Frontal") },
+      { name: "Remada Curvada", muscle_group: "Costas", illustration_url: img("Remada Curvada") },
+      { name: "Remada Unilateral", muscle_group: "Costas", illustration_url: img("Remada Unilateral") },
+      { name: "Puxada Supinada", muscle_group: "Costas", illustration_url: img("Puxada Supinada") },
+      { name: "Remada Cavaleiro", muscle_group: "Costas", illustration_url: img("Remada Cavaleiro") },
+      { name: "Desenvolvimento Militar", muscle_group: "Ombros", illustration_url: img("Desenvolvimento") },
+      { name: "Elevacao Lateral", muscle_group: "Ombros", illustration_url: img("Elevacao Lateral") },
+      { name: "Elevacao Frontal", muscle_group: "Ombros", illustration_url: img("Elevacao Frontal") },
+      { name: "Crucifixo Inverso", muscle_group: "Ombros", illustration_url: img("Crucifixo Inverso") },
+      { name: "Rosca Direta", muscle_group: "Biceps", illustration_url: img("Rosca Direta") },
+      { name: "Rosca Alternada", muscle_group: "Biceps", illustration_url: img("Rosca Alternada") },
+      { name: "Rosca Martelo", muscle_group: "Biceps", illustration_url: img("Rosca Martelo") },
+      { name: "Triceps Corda", muscle_group: "Triceps", illustration_url: img("Triceps Corda") },
+      { name: "Triceps Testa", muscle_group: "Triceps", illustration_url: img("Triceps Testa") },
+      { name: "Triceps Mergulho", muscle_group: "Triceps", illustration_url: img("Triceps Mergulho") },
+      { name: "Agachamento Livre", muscle_group: "Pernas", illustration_url: img("Agachamento") },
+      { name: "Leg Press 45", muscle_group: "Pernas", illustration_url: img("Leg Press 45") },
+      { name: "Cadeira Extensora", muscle_group: "Pernas", illustration_url: img("Extensora") },
+      { name: "Cadeira Flexora", muscle_group: "Pernas", illustration_url: img("Flexora") },
+      { name: "Hack Squat", muscle_group: "Pernas", illustration_url: img("Hack Squat") },
+      { name: "Afundo", muscle_group: "Pernas", illustration_url: img("Afundo") },
+      { name: "Levantamento Terra", muscle_group: "Posterior", illustration_url: img("Levantamento Terra") },
+      { name: "Stiff", muscle_group: "Posterior", illustration_url: img("Stiff") },
+      { name: "Mesa Flexora", muscle_group: "Posterior", illustration_url: img("Mesa Flexora") },
+      { name: "Hip Thrust", muscle_group: "Gluteos", illustration_url: img("Hip Thrust") },
+      { name: "Elevacao Pelvica", muscle_group: "Gluteos", illustration_url: img("Elevacao Pelvica") },
+      { name: "Abdominal Crunch", muscle_group: "Abdomen", illustration_url: img("Crunch") },
+      { name: "Prancha Isometrica", muscle_group: "Abdomen", illustration_url: img("Prancha") },
     ]
 
     const { error } = await admin.from("exercises").insert(defaults)

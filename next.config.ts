@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
         hostname: "wger.de",
         pathname: "/media/exercise-images/**",
       },
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
     ],
   },
   async headers() {

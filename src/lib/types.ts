@@ -15,6 +15,7 @@ export type Exercise = {
   workout_id: string | null
   name: string
   muscle_group: string | null
+  description: string | null
   sets: string | null
   reps: string | null
   rest: string | null
