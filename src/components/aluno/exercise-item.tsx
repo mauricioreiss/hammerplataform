@@ -9,7 +9,7 @@ import {
   Clock,
   ImageOff,
 } from "lucide-react"
-import type { Exercise } from "@/lib/mock-data"
+import type { Exercise } from "@/lib/types"
 
 type ExerciseItemProps = {
   exercise: Exercise
@@ -58,9 +58,9 @@ export function ExerciseItem({
               {exercise.name}
             </h3>
             <p className="text-zinc-500 font-bold text-[10px] mt-0.5 uppercase tracking-wider">
-              <span className="text-red-500">{exercise.sets}</span> SÉRIES
+              <span className="text-red-500">{exercise.sets ?? "—"}</span> SÉRIES
               <span className="mx-1">&bull;</span>
-              <span className="text-red-500">{exercise.reps}</span> REPS
+              <span className="text-red-500">{exercise.reps ?? "—"}</span> REPS
             </p>
           </div>
           <div className="text-zinc-500 shrink-0">
@@ -76,35 +76,28 @@ export function ExerciseItem({
         <div className="p-4 space-y-4">
           {/* Exercise illustration */}
           <div className="relative aspect-square bg-zinc-900 rounded-xl overflow-hidden border border-zinc-800 flex items-center justify-center">
-            {exercise.illustrationUrl ? (
+            {exercise.illustration_url ? (
               <Image
-                src={exercise.illustrationUrl}
+                src={exercise.illustration_url}
                 alt={exercise.name}
                 fill
                 className="object-contain p-2"
                 sizes="(max-width: 768px) 90vw, 400px"
               />
-            ) : exercise.videoUrl ? (
-              <>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={exercise.videoUrl}
-                  alt={exercise.name}
-                  className="w-full h-full object-cover opacity-40"
-                />
-              </>
             ) : (
               <ImageOff size={32} className="text-zinc-700" />
             )}
           </div>
 
           {/* Tip */}
-          <div className="bg-zinc-950 border border-zinc-800 p-3 rounded-lg">
-            <p className="text-[10px] text-zinc-400 font-medium leading-relaxed uppercase">
-              <strong className="text-red-500 block mb-1">Atenção:</strong>
-              {exercise.note}
-            </p>
-          </div>
+          {exercise.note && (
+            <div className="bg-zinc-950 border border-zinc-800 p-3 rounded-lg">
+              <p className="text-[10px] text-zinc-400 font-medium leading-relaxed uppercase">
+                <strong className="text-red-500 block mb-1">Atenção:</strong>
+                {exercise.note}
+              </p>
+            </div>
+          )}
 
           {/* Weight + rest */}
           <div className="flex gap-3">
@@ -125,7 +118,7 @@ export function ExerciseItem({
                 Descanso
               </label>
               <div className="flex items-center gap-1 text-zinc-300 font-black text-lg mt-4 pb-1">
-                <Clock size={14} className="text-zinc-500" /> {exercise.rest}
+                <Clock size={14} className="text-zinc-500" /> {exercise.rest ?? "60s"}
               </div>
             </div>
           </div>

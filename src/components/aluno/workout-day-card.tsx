@@ -1,9 +1,9 @@
 import Link from "next/link"
-import { Clock, Zap } from "lucide-react"
-import type { WorkoutDay } from "@/lib/mock-data"
+import { Zap } from "lucide-react"
+import type { Workout } from "@/lib/types"
 
 type WorkoutDayCardProps = {
-  workout: WorkoutDay
+  workout: Workout
 }
 
 export function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
@@ -18,13 +18,15 @@ export function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
           <p className="text-red-600 font-black italic text-2xl uppercase tracking-tighter leading-none">
             {workout.title}
           </p>
-          <p className="text-white font-bold text-sm mt-1 uppercase">
-            {workout.subtitle}
+          <p className="text-zinc-500 text-[10px] font-bold uppercase mt-1">
+            {workout.exercises?.length ?? 0} exercícios
           </p>
         </div>
-        <span className="bg-zinc-950 text-zinc-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-800 flex items-center gap-1">
-          <Clock size={10} /> {workout.duration}
-        </span>
+        {workout.status && (
+          <span className="bg-zinc-950 text-zinc-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-800 uppercase">
+            {workout.status}
+          </span>
+        )}
       </div>
       <div className="w-full bg-red-600 text-white font-black italic uppercase py-3 rounded-xl flex items-center justify-center gap-2">
         <Zap size={18} /> Iniciar Treino

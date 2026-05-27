@@ -2,14 +2,28 @@
 
 import { useState } from "react"
 import { CreditCard, QrCode, Copy } from "lucide-react"
-import type { UserProfile } from "@/lib/mock-data"
+import type { UserProfile } from "@/lib/types"
 
 type PaymentManagerProps = {
   user: UserProfile
 }
 
+const pixKey = process.env.NEXT_PUBLIC_PIX_KEY ?? ""
+
 export function PaymentManager({ user }: PaymentManagerProps) {
   const [step, setStep] = useState<"status" | "pix">("status")
+
+  const isAlert = user.plan_status === "vencendo" || user.plan_status === "atrasado"
+  const statusLabel = user.plan_status === "atrasado" ? "Atrasado" : user.plan_status === "vencendo" ? "Vencendo" : "Ativo"
+  const statusColor = user.plan_status === "atrasado"
+    ? "bg-red-500/20 text-red-500 border-red-500/30"
+    : user.plan_status === "vencendo"
+      ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
+      : "bg-green-500/20 text-green-500 border-green-500/30"
+
+  const expireLabel = user.expire_date
+    ? new Date(user.expire_date).toLocaleDateString("pt-BR")
+    : "—"
 
   if (step === "pix") {
     return (
@@ -30,10 +44,10 @@ export function PaymentManager({ user }: PaymentManagerProps) {
 
             <div className="bg-zinc-950 border border-zinc-800 p-3 rounded-lg flex justify-between items-center mb-4">
               <span className="text-zinc-500 text-xs font-mono">
-                {user.pixKey}
+                {pixKey}
               </span>
               <button
-                onClick={() => navigator.clipboard.writeText(user.pixKey)}
+                onClick={() => navigator.clipboard.writeText(pixKey)}
                 className="text-red-500 font-bold text-[10px] uppercase flex items-center gap-1"
               >
                 <Copy size={12} /> Copiar
@@ -75,34 +89,26 @@ export function PaymentManager({ user }: PaymentManagerProps) {
               <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
                 Plano Atual
               </p>
-              <p className="text-white font-bold">{user.plan}</p>
+              <p className="text-white font-bold">{user.plan_name ?? "Mensal"}</p>
             </div>
-            {user.status === "vencendo" ? (
-              <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] font-black uppercase">
-                Vencendo
-              </span>
-            ) : (
-              <span className="bg-green-500/20 text-green-500 border border-green-500/30 px-2 py-1 rounded text-[10px] font-black uppercase">
-                Ativo
-              </span>
-            )}
+            <span className={`${statusColor} border px-2 py-1 rounded text-[10px] font-black uppercase`}>
+              {statusLabel}
+            </span>
           </div>
 
           <div className="space-y-1 text-center">
             <p className="text-zinc-500 text-[10px] uppercase font-bold">
               Valor
             </p>
-            <p className="text-3xl font-black text-white">R$ {user.value}</p>
+            <p className="text-3xl font-black text-white">
+              R$ {(user.plan_value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </p>
             <p className="text-zinc-400 text-xs mt-2">
               Vencimento:{" "}
               <strong
-                className={
-                  user.status === "vencendo"
-                    ? "text-yellow-500"
-                    : "text-white"
-                }
+                className={isAlert ? "text-yellow-500" : "text-white"}
               >
-                {user.expireDate}
+                {expireLabel}
               </strong>
             </p>
           </div>

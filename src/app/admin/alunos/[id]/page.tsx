@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation"
-import { getStudentById, getAvaliacoesByStudentId } from "@/lib/mock-data"
+import { getAlunoById, getAvaliacoes } from "@/app/actions"
 import { StudentProfile } from "@/components/admin/student-profile"
 
 export default async function StudentPage({
@@ -8,11 +8,11 @@ export default async function StudentPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const student = getStudentById(Number(id))
+  const student = await getAlunoById(id)
 
   if (!student) notFound()
 
-  const avaliacoes = getAvaliacoesByStudentId(student.id)
+  const avaliacoes = await getAvaliacoes(student.id)
 
   return <StudentProfile student={student} avaliacoes={avaliacoes} />
 }

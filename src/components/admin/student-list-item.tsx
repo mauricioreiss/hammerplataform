@@ -1,9 +1,9 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
-import type { Student } from "@/lib/mock-data"
+import type { UserProfile } from "@/lib/types"
 
 type StudentListItemProps = {
-  student: Student
+  student: UserProfile
 }
 
 export function StudentListItem({ student }: StudentListItemProps) {
@@ -16,14 +16,14 @@ export function StudentListItem({ student }: StudentListItemProps) {
         <div className="w-12 h-12 rounded-full bg-zinc-800 overflow-hidden shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`}
-            alt={student.name}
+            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.full_name}`}
+            alt={student.full_name}
           />
         </div>
         <div>
-          <p className="font-bold text-white text-sm">{student.name}</p>
+          <p className="font-bold text-white text-sm">{student.full_name}</p>
           <p className="text-[10px] text-zinc-500 font-bold uppercase">
-            {student.objective} &bull; {student.plan}
+            {student.objective} &bull; {student.plan_name ?? "Mensal"}
           </p>
         </div>
       </div>

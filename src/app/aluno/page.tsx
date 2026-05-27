@@ -1,10 +1,19 @@
 import Link from "next/link"
 import { Scale, ChevronDown } from "lucide-react"
-import { currentUser, todayWorkout } from "@/lib/mock-data"
+import { getCurrentUser, getWorkoutsDoAluno } from "@/app/actions"
 import { PaymentAlert } from "@/components/aluno/payment-alert"
 import { WorkoutDayCard } from "@/components/aluno/workout-day-card"
 
-export default function AlunoPage() {
+export default async function AlunoPage() {
+  const [user, workouts] = await Promise.all([
+    getCurrentUser(),
+    getWorkoutsDoAluno(),
+  ])
+
+  const firstName = user?.full_name.split(" ")[0] ?? "Aluno"
+  const hasAlert = user?.plan_status === "vencendo" || user?.plan_status === "atrasado"
+  const latestWorkout = workouts[0] ?? null
+
   return (
     <div className="p-4 md:p-6 space-y-6 pb-24 animate-in fade-in duration-300">
       {/* Greeting */}
@@ -13,21 +22,26 @@ export default function AlunoPage() {
           Bom dia,
         </p>
         <h2 className="text-3xl font-black text-white uppercase">
-          {currentUser.name}
+          {firstName}
         </h2>
       </div>
 
       {/* Payment alert */}
-      {currentUser.status === "vencendo" && (
-        <PaymentAlert daysLeft={currentUser.daysLeft} />
-      )}
+      {hasAlert && <PaymentAlert />}
 
       {/* Today's workout */}
       <div>
         <h3 className="text-zinc-500 font-bold uppercase text-xs mb-3 tracking-wider">
           Treino de Hoje
         </h3>
-        <WorkoutDayCard workout={todayWorkout} />
+        {latestWorkout ? (
+          <WorkoutDayCard workout={latestWorkout} />
+        ) : (
+          <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-center">
+            <p className="text-zinc-500 text-sm">Nenhum treino disponível.</p>
+            <p className="text-zinc-600 text-xs mt-1">Aguarde o treinador montar sua ficha.</p>
+          </div>
+        )}
       </div>
 
       {/* Evolution link */}

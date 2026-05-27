@@ -1,33 +1,44 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useTransition } from "react"
 import { CheckCircle2 } from "lucide-react"
-import type { WorkoutDay } from "@/lib/mock-data"
+import type { Workout } from "@/lib/types"
+import { toggleExerciseLog } from "@/app/actions"
 import { ExerciseItem } from "./exercise-item"
 
 type WorkoutSessionProps = {
-  workout: WorkoutDay
+  workout: Workout
+  initialCompletedIds: string[]
 }
 
-export function WorkoutSession({ workout }: WorkoutSessionProps) {
-  const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [completedIds, setCompletedIds] = useState<number[]>([])
+export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionProps) {
+  const exercises = workout.exercises ?? []
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [completedIds, setCompletedIds] = useState<string[]>(initialCompletedIds)
+  const [, startTransition] = useTransition()
 
   const progress = useMemo(
-    () => (completedIds.length / workout.exercises.length) * 100,
-    [completedIds.length, workout.exercises.length],
+    () => exercises.length > 0 ? (completedIds.length / exercises.length) * 100 : 0,
+    [completedIds.length, exercises.length],
   )
 
-  function toggleComplete(id: number) {
-    if (completedIds.includes(id)) {
-      setCompletedIds(completedIds.filter((item) => item !== id))
+  function toggleComplete(exerciseId: string) {
+    const isCompleted = completedIds.includes(exerciseId)
+
+    if (isCompleted) {
+      setCompletedIds(completedIds.filter((id) => id !== exerciseId))
     } else {
-      setCompletedIds([...completedIds, id])
-      const nextExercise = workout.exercises.find(
-        (e) => e.id > id && !completedIds.includes(e.id),
+      setCompletedIds([...completedIds, exerciseId])
+      const currentIndex = exercises.findIndex((e) => e.id === exerciseId)
+      const nextExercise = exercises.find(
+        (e, i) => i > currentIndex && !completedIds.includes(e.id),
       )
       setExpandedId(nextExercise?.id ?? null)
     }
+
+    startTransition(() => {
+      toggleExerciseLog(exerciseId, workout.id)
+    })
   }
 
   return (
@@ -37,9 +48,6 @@ export function WorkoutSession({ workout }: WorkoutSessionProps) {
         <h1 className="text-4xl font-black italic text-red-600 uppercase tracking-tighter leading-none">
           {workout.title}
         </h1>
-        <h2 className="text-sm font-bold uppercase mt-1 tracking-widest text-zinc-400">
-          {workout.subtitle}
-        </h2>
 
         {/* Progress bar */}
         <div className="mt-6 bg-zinc-900 p-3 rounded-xl border border-zinc-800">
@@ -58,7 +66,7 @@ export function WorkoutSession({ workout }: WorkoutSessionProps) {
 
       {/* Exercise list */}
       <div className="space-y-3">
-        {workout.exercises.map((exercise) => (
+        {exercises.map((exercise) => (
           <ExerciseItem
             key={exercise.id}
             exercise={exercise}

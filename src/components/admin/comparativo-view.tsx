@@ -1,38 +1,21 @@
 import {
   ChevronRight,
-  Camera,
   Scale,
   TrendingDown,
   TrendingUp,
   Share2,
 } from "lucide-react"
-import type { Avaliacao } from "@/lib/mock-data"
+import type { Evaluation } from "@/lib/types"
 
 type ComparativoViewProps = {
-  before: Avaliacao
-  after: Avaliacao
+  before: Evaluation
+  after: Evaluation
 }
 
-const MONTHS = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
-]
-
 function formatMonth(dateStr: string): string {
-  const parts = dateStr.split("/")
-  const monthIndex = parseInt(parts[1], 10) - 1
-  const year = parts[2].slice(2)
-  return `${MONTHS[monthIndex]}/${year}`
+  const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+  const d = new Date(dateStr)
+  return `${MONTHS[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`
 }
 
 type MetricRowProps = {
@@ -88,11 +71,10 @@ function MetricRow({
 }
 
 export function ComparativoView({ before, after }: ComparativoViewProps) {
-  const pesoDiff = parseFloat(before.peso) - parseFloat(after.peso)
-  const bfDiff = parseFloat(before.bf) - parseFloat(after.bf)
-  const magraDiff =
-    parseFloat(after.massaMagra) - parseFloat(before.massaMagra)
-  const cinturaDiff = parseFloat(before.cintura) - parseFloat(after.cintura)
+  const pesoDiff = (before.weight ?? 0) - (after.weight ?? 0)
+  const bfDiff = (before.body_fat ?? 0) - (after.body_fat ?? 0)
+  const magraDiff = (after.lean_mass ?? 0) - (before.lean_mass ?? 0)
+  const cinturaDiff = (before.waist ?? 0) - (after.waist ?? 0)
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-300">
@@ -103,7 +85,7 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
             Avaliação 1
           </span>
           <p className="text-white font-bold text-sm">
-            {formatMonth(before.data)}
+            {formatMonth(before.date)}
           </p>
         </div>
         <div className="text-zinc-600">
@@ -114,41 +96,47 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
             Avaliação 2 (Atual)
           </span>
           <p className="text-white font-bold text-sm">
-            {formatMonth(after.data)}
+            {formatMonth(after.date)}
           </p>
         </div>
       </div>
 
       {/* Photo comparison */}
-      <div>
-        <h3 className="text-white font-black italic uppercase text-lg mb-3 flex items-center gap-2">
-          <Camera size={18} className="text-zinc-500" /> Físico
-        </h3>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-zinc-800">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={before.fotoFrente}
-              alt="Antes"
-              className="w-full h-full object-cover grayscale"
-            />
-            <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold text-white uppercase backdrop-blur">
-              Antes
-            </div>
-          </div>
-          <div className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={after.fotoFrente}
-              alt="Depois"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-2 right-2 bg-red-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase shadow-lg">
-              Atual
-            </div>
+      {(before.photo_url || after.photo_url) && (
+        <div>
+          <h3 className="text-white font-black italic uppercase text-lg mb-3 flex items-center gap-2">
+            Físico
+          </h3>
+          <div className="grid grid-cols-2 gap-2">
+            {before.photo_url && (
+              <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-zinc-800">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={before.photo_url}
+                  alt="Antes"
+                  className="w-full h-full object-cover grayscale"
+                />
+                <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold text-white uppercase backdrop-blur">
+                  Antes
+                </div>
+              </div>
+            )}
+            {after.photo_url && (
+              <div className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.2)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={after.photo_url}
+                  alt="Depois"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute bottom-2 right-2 bg-red-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase shadow-lg">
+                  Atual
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* Body metrics comparison */}
       <div>
@@ -158,8 +146,8 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
           <MetricRow
             label="Peso Total"
-            oldValue={`${before.peso} kg`}
-            newValue={`${after.peso} kg`}
+            oldValue={`${before.weight ?? "—"} kg`}
+            newValue={`${after.weight ?? "—"} kg`}
             diff={`${pesoDiff.toFixed(1)} kg`}
             improved={pesoDiff > 0}
             direction="down"
@@ -167,8 +155,8 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
           />
           <MetricRow
             label="% Gordura"
-            oldValue={`${before.bf} %`}
-            newValue={`${after.bf} %`}
+            oldValue={`${before.body_fat ?? "—"} %`}
+            newValue={`${after.body_fat ?? "—"} %`}
             diff={`${bfDiff.toFixed(1)} %`}
             improved={bfDiff > 0}
             direction="down"
@@ -176,8 +164,8 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
           />
           <MetricRow
             label="M. Magra"
-            oldValue={`${before.massaMagra} kg`}
-            newValue={`${after.massaMagra} kg`}
+            oldValue={`${before.lean_mass ?? "—"} kg`}
+            newValue={`${after.lean_mass ?? "—"} kg`}
             diff={`${magraDiff.toFixed(1)} kg`}
             improved={magraDiff > 0}
             direction="up"
@@ -185,8 +173,8 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
           />
           <MetricRow
             label="Cintura"
-            oldValue={`${before.cintura} cm`}
-            newValue={`${after.cintura} cm`}
+            oldValue={`${before.waist ?? "—"} cm`}
+            newValue={`${after.waist ?? "—"} cm`}
             diff={`${cinturaDiff.toFixed(0)} cm`}
             improved={cinturaDiff > 0}
             direction="down"

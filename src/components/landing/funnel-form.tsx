@@ -9,7 +9,9 @@ import {
   AlertTriangle,
   FileSignature,
   BrainCircuit,
+  Loader2,
 } from "lucide-react"
+import { saveAnamnese } from "@/app/actions"
 
 type FunnelFormProps = {
   onBack: () => void
@@ -33,6 +35,8 @@ const SELECT_CLASS = INPUT_CLASS + " text-zinc-400"
 
 export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
   const [step, setStep] = useState(1)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     nome: "",
     idade: "",
@@ -59,6 +63,33 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
       ...prev,
       parq: { ...prev.parq, [index]: value },
     }))
+  }
+
+  async function handleComplete() {
+    setSaving(true)
+    setError("")
+
+    const parqData: Record<string, boolean> = {}
+    for (const [key, val] of Object.entries(formData.parq)) {
+      parqData[`q${key}`] = val
+    }
+
+    const result = await saveAnamnese({
+      weight: formData.peso ? Number(formData.peso) : undefined,
+      height: formData.altura ? Number(formData.altura) : undefined,
+      injuries: formData.lesoes || undefined,
+      days_per_week: formData.diasTreino ? Number(formData.diasTreino) : undefined,
+      par_q_data: parqData,
+    })
+
+    setSaving(false)
+
+    if (!result.success) {
+      setError(result.error ?? "Erro ao salvar anamnese.")
+      return
+    }
+
+    onComplete(formData.objetivo)
   }
 
   return (
@@ -303,6 +334,10 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
                   </div>
                 </div>
               </div>
+
+              {error && (
+                <p className="text-red-500 text-xs font-bold">{error}</p>
+              )}
             </div>
           )}
 
@@ -310,20 +345,26 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
           <button
             onClick={
               step === TOTAL_STEPS
-                ? () => onComplete(formData.objetivo)
+                ? handleComplete
                 : () => setStep((s) => s + 1)
             }
-            disabled={step === TOTAL_STEPS && !formData.termo}
+            disabled={(step === TOTAL_STEPS && !formData.termo) || saving}
             className={`w-full mt-8 font-black italic uppercase py-5 rounded-xl flex items-center justify-center gap-2 transition-all ${
-              step === TOTAL_STEPS && !formData.termo
+              (step === TOTAL_STEPS && !formData.termo) || saving
                 ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                 : "bg-red-600 hover:bg-red-700 text-white active:scale-95 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
             }`}
           >
             {step === TOTAL_STEPS ? (
-              <>
-                Gerar Avaliação <BrainCircuit size={20} />
-              </>
+              saving ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" /> Salvando...
+                </>
+              ) : (
+                <>
+                  Gerar Avaliação <BrainCircuit size={20} />
+                </>
+              )
             ) : (
               <>
                 Próximo Passo <ChevronRight size={20} />

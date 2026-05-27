@@ -1,9 +1,9 @@
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
-import type { Student } from "@/lib/mock-data"
+import type { UserProfile } from "@/lib/types"
 
 type TrainingQueueItemProps = {
-  student: Student
+  student: UserProfile
 }
 
 export function TrainingQueueItem({ student }: TrainingQueueItemProps) {
@@ -17,12 +17,12 @@ export function TrainingQueueItem({ student }: TrainingQueueItemProps) {
         <div className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden shrink-0 border border-zinc-700">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`}
-            alt={student.name}
+            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.full_name}`}
+            alt={student.full_name}
           />
         </div>
         <div>
-          <p className="font-bold text-white leading-tight">{student.name}</p>
+          <p className="font-bold text-white leading-tight">{student.full_name}</p>
           <span className="text-[9px] uppercase font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-1.5 py-0.5 rounded mt-1 inline-block">
             Aguardando IA
           </span>

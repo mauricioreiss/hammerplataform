@@ -3,13 +3,13 @@
 import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Plus, Activity, BrainCircuit } from "lucide-react"
-import type { Student, Avaliacao } from "@/lib/mock-data"
+import type { UserProfile, Evaluation } from "@/lib/types"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 
 type StudentProfileProps = {
-  student: Student
-  avaliacoes: Avaliacao[]
+  student: UserProfile
+  avaliacoes: Evaluation[]
 }
 
 export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
@@ -21,6 +21,22 @@ export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
   const after = avaliacoes[0]
+
+  const statusLabel =
+    student.plan_status === "atrasado" ? "Atrasado" :
+    student.plan_status === "vencendo" ? "Vencendo" : "Plano Ativo"
+
+  const statusColor =
+    student.plan_status === "atrasado"
+      ? "bg-red-500/20 text-red-500 border-red-500/30"
+      : student.plan_status === "vencendo"
+        ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
+        : "bg-green-500/20 text-green-500 border-green-500/30"
+
+  const since = new Date(student.created_at).toLocaleDateString("pt-BR", {
+    month: "short",
+    year: "2-digit",
+  })
 
   return (
     <div className="flex flex-col h-full animate-in slide-in-from-right duration-300">
@@ -36,20 +52,20 @@ export function StudentProfile({ student, avaliacoes }: StudentProfileProps) {
           <div className="w-16 h-16 rounded-full bg-zinc-800 overflow-hidden border-2 border-red-600">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.name}`}
-              alt={student.name}
+              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.full_name}`}
+              alt={student.full_name}
             />
           </div>
           <div>
             <h2 className="text-xl font-black text-white uppercase">
-              {student.name}
+              {student.full_name}
             </h2>
             <div className="flex gap-2 mt-1">
-              <span className="text-[9px] bg-green-500/20 text-green-500 px-2 py-0.5 rounded font-bold uppercase border border-green-500/30">
-                Plano Ativo
+              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border ${statusColor}`}>
+                {statusLabel}
               </span>
               <span className="text-[9px] text-zinc-400 font-bold uppercase pt-0.5">
-                Desde Jan/26
+                Desde {since}
               </span>
             </div>
           </div>

@@ -1,11 +1,7 @@
 import Link from "next/link"
 import { AlertTriangle } from "lucide-react"
 
-type PaymentAlertProps = {
-  daysLeft: number
-}
-
-export function PaymentAlert({ daysLeft }: PaymentAlertProps) {
+export function PaymentAlert() {
   return (
     <Link
       href="/aluno/assinatura"
@@ -17,7 +13,7 @@ export function PaymentAlert({ daysLeft }: PaymentAlertProps) {
         </div>
         <div>
           <p className="text-white font-bold text-sm">
-            Seu plano vence em {daysLeft} dias
+            Seu plano precisa de atenção
           </p>
           <p className="text-red-400 text-xs">
             Toque aqui para renovar via PIX.
