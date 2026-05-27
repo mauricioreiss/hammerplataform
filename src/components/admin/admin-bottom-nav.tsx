@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, Users, BrainCircuit, Dumbbell } from "lucide-react"
+import { Home, Users, Dumbbell, BrainCircuit } from "lucide-react"
 
 export function AdminBottomNav() {
   const pathname = usePathname()
@@ -26,7 +26,7 @@ export function AdminBottomNav() {
           <span
             className={`text-[8px] uppercase font-bold tracking-wider ${isHome ? "text-red-600" : "text-zinc-500"}`}
           >
-            Início
+            Inicio
           </span>
         </Link>
 

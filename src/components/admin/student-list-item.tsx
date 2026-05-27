@@ -7,18 +7,30 @@ type StudentListItemProps = {
 }
 
 export function StudentListItem({ student }: StudentListItemProps) {
+  const initials = student.full_name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
   return (
     <Link
       href={`/admin/alunos/${student.id}`}
       className="bg-zinc-900 border border-zinc-800 p-3 rounded-xl flex items-center justify-between active:bg-zinc-800 transition-colors block"
     >
       <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-full bg-zinc-800 overflow-hidden shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.full_name}`}
-            alt={student.full_name}
-          />
+        <div className="w-12 h-12 rounded-full bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center border border-zinc-700">
+          {student.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={student.avatar_url}
+              alt={student.full_name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="text-white font-bold text-sm">{initials}</span>
+          )}
         </div>
         <div>
           <p className="font-bold text-white text-sm">{student.full_name}</p>

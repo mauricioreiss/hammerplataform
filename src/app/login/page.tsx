@@ -31,9 +31,12 @@ export default function LoginPage() {
     <div className="min-h-screen bg-black flex items-center justify-center p-4 selection:bg-red-600 selection:text-white">
       <div className="w-full max-w-[400px]">
         <div className="flex items-center justify-center mb-10">
-          <span className="font-black italic text-6xl text-white tracking-tighter">
-            F<span className="-ml-2 text-zinc-300">H</span>
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logo.jpeg"
+            alt="Felipe Hammer"
+            className="h-20 object-contain"
+          />
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl">

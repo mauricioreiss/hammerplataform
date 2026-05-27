@@ -8,6 +8,7 @@ export type UserProfile = {
   plan_value: number | null
   expire_date: string | null
   avatar_url: string | null
+  pix_key: string | null
   created_at: string
 }
 
@@ -28,6 +29,7 @@ export type Workout = {
   id: string
   user_id: string
   title: string
+  icon: string | null
   is_ai_draft: boolean
   status: string | null
   created_at: string

@@ -48,6 +48,11 @@ async function requireAuth(requiredRole?: string) {
   return user
 }
 
+export async function getAuthEmail(): Promise<string> {
+  const user = await getAuthUser()
+  return user?.email ?? ""
+}
+
 // --- User Queries ---
 
 export async function getCurrentUser(): Promise<UserProfile | null> {
@@ -58,12 +63,12 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, pix_key, created_at")
       .eq("id", user.id)
       .single()
 
     if (error || !data) return null
-    return { ...data, avatar_url: null } as UserProfile
+    return data as UserProfile
   } catch {
     return null
   }
@@ -76,12 +81,12 @@ export async function getAlunos(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .eq("role", "student")
       .order("created_at", { ascending: false })
 
     if (error || !data) return []
-    return data.map((u) => ({ ...u, avatar_url: null })) as UserProfile[]
+    return data.map((u) => ({ ...u, pix_key: null })) as UserProfile[]
   } catch {
     return []
   }
@@ -96,12 +101,12 @@ export async function getAlunoById(id: string): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .eq("id", parsed.data)
       .single()
 
     if (error || !data) return null
-    return { ...data, avatar_url: null } as UserProfile
+    return { ...data, pix_key: null } as UserProfile
   } catch {
     return null
   }
@@ -135,11 +140,11 @@ export async function getAlunosAguardando(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .in("id", waitingIds)
 
     if (error || !data) return []
-    return data.map((u) => ({ ...u, avatar_url: null })) as UserProfile[]
+    return data.map((u) => ({ ...u, pix_key: null })) as UserProfile[]
   } catch {
     return []
   }
@@ -393,7 +398,7 @@ export async function getWorkoutsDoAluno(): Promise<Workout[]> {
     // Only show published workouts to students
     const { data: workouts, error } = await admin
       .from("workouts")
-      .select("id, user_id, title, is_ai_draft, status, created_at")
+      .select("id, user_id, title, icon, is_ai_draft, status, created_at")
       .eq("user_id", user.id)
       .in("status", ["published", "approved"])
       .order("created_at", { ascending: false })
@@ -435,7 +440,7 @@ export async function getWorkoutComExercicios(workoutId: string): Promise<Workou
 
     const { data: workout, error } = await admin
       .from("workouts")
-      .select("id, user_id, title, is_ai_draft, status, created_at")
+      .select("id, user_id, title, icon, is_ai_draft, status, created_at")
       .eq("id", parsed.data)
       .single()
 
@@ -474,7 +479,7 @@ export async function getTreinosPorAluno(userId: string): Promise<Workout[]> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("workouts")
-      .select("id, user_id, title, is_ai_draft, status, created_at")
+      .select("id, user_id, title, icon, is_ai_draft, status, created_at")
       .eq("user_id", parsed.data)
       .order("created_at", { ascending: false })
 
@@ -514,7 +519,7 @@ export async function getTreinosComExercicios(userId: string): Promise<Workout[]
     const admin = createAdminClient()
     const { data: workouts, error } = await admin
       .from("workouts")
-      .select("id, user_id, title, is_ai_draft, status, created_at")
+      .select("id, user_id, title, icon, is_ai_draft, status, created_at")
       .eq("user_id", parsed.data)
       .order("created_at", { ascending: false })
 
@@ -554,6 +559,7 @@ export async function createWorkoutWithExercises(
     note?: string
     illustrationUrl?: string
   }>,
+  icon?: string,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")
@@ -569,6 +575,7 @@ export async function createWorkoutWithExercises(
       .insert({
         user_id: parsed.data,
         title: title.trim(),
+        icon: icon?.trim() || null,
         is_ai_draft: false,
         status: "draft",
       })
@@ -899,6 +906,113 @@ export async function updateAvatarUrl(
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Admin Profile ---
+
+export async function updateAdminProfile(data: {
+  fullName: string
+  avatarUrl?: string
+  pixKey?: string
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await requireAuth("admin")
+    const admin = createAdminClient()
+
+    const updates: Record<string, unknown> = {}
+    if (data.fullName.trim()) updates.full_name = data.fullName.trim()
+    if (data.avatarUrl !== undefined) updates.avatar_url = data.avatarUrl || null
+    if (data.pixKey !== undefined) updates.pix_key = data.pixKey || null
+
+    const { error } = await admin
+      .from("users")
+      .update(updates)
+      .eq("id", user.id)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Reset Password ---
+
+export async function resetStudentPassword(
+  userId: string,
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+    if (!newPassword || newPassword.length < 6) return { success: false, error: "Senha deve ter no minimo 6 caracteres." }
+
+    const admin = createAdminClient()
+    const { error } = await admin.auth.admin.updateUserById(parsed.data, {
+      password: newPassword,
+    })
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Student Quick Status ---
+
+export async function getStudentQuickStatus(
+  userId: string,
+): Promise<{ lastEvalDate: string | null; completedExercises: number }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return { lastEvalDate: null, completedExercises: 0 }
+
+    const admin = createAdminClient()
+
+    const [evalResult, logsResult] = await Promise.all([
+      admin
+        .from("evaluations")
+        .select("date")
+        .eq("user_id", parsed.data)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      admin
+        .from("exercise_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", parsed.data),
+    ])
+
+    return {
+      lastEvalDate: evalResult.data?.date ?? null,
+      completedExercises: logsResult.count ?? 0,
+    }
+  } catch {
+    return { lastEvalDate: null, completedExercises: 0 }
+  }
+}
+
+// --- Admin PIX Key (for student payment page) ---
+
+export async function getAdminPixKey(): Promise<string> {
+  try {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from("users")
+      .select("pix_key")
+      .eq("role", "admin")
+      .limit(1)
+      .maybeSingle()
+
+    return data?.pix_key ?? process.env.NEXT_PUBLIC_PIX_KEY ?? ""
+  } catch {
+    return process.env.NEXT_PUBLIC_PIX_KEY ?? ""
   }
 }
 

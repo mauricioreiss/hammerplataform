@@ -16,6 +16,7 @@ export function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
       <div className="flex justify-between items-start mb-4">
         <div>
           <p className="text-red-600 font-black italic text-2xl uppercase tracking-tighter leading-none">
+            {workout.icon && <span className="mr-1 not-italic">{workout.icon}</span>}
             {workout.title}
           </p>
           <p className="text-zinc-500 text-[10px] font-bold uppercase mt-1">

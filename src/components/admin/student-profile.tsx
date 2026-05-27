@@ -2,24 +2,31 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise } from "@/lib/types"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
 import { AddAvaliacaoModal } from "./add-avaliacao-modal"
+import { ResetPasswordModal } from "./reset-password-modal"
 
 type StudentProfileProps = {
   student: UserProfile
   avaliacoes: Evaluation[]
   workouts: Workout[]
   libraryExercises: Exercise[]
+  quickStatus: {
+    lastEvalDate: string | null
+    completedExercises: number
+  }
 }
 
-export function StudentProfile({ student, avaliacoes, workouts, libraryExercises }: StudentProfileProps) {
+export function StudentProfile({ student, avaliacoes, workouts, libraryExercises, quickStatus }: StudentProfileProps) {
   const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">("avaliacoes")
   const [showComparativo, setShowComparativo] = useState(false)
   const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false)
+  const [showActionsMenu, setShowActionsMenu] = useState(false)
+  const [showResetPassword, setShowResetPassword] = useState(false)
 
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
@@ -41,6 +48,13 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
     year: "2-digit",
   })
 
+  const initials = student.full_name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase()
+
   return (
     <div className="flex flex-col h-full animate-in slide-in-from-right duration-300">
       {/* Profile header */}
@@ -51,25 +65,89 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
         >
           <ArrowLeft size={16} /> Voltar
         </Link>
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-zinc-800 overflow-hidden border-2 border-red-600">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${student.full_name}`}
-              alt={student.full_name}
-            />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-zinc-800 overflow-hidden border-2 border-red-600 flex items-center justify-center">
+              {student.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={student.avatar_url}
+                  alt={student.full_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-white font-bold text-lg">{initials}</span>
+              )}
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white uppercase">
+                {student.full_name}
+              </h2>
+              <div className="flex gap-2 mt-1">
+                <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border ${statusColor}`}>
+                  {statusLabel}
+                </span>
+                <span className="text-[9px] text-zinc-400 font-bold uppercase pt-0.5">
+                  Desde {since}
+                </span>
+              </div>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-black text-white uppercase">
-              {student.full_name}
-            </h2>
-            <div className="flex gap-2 mt-1">
-              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border ${statusColor}`}>
-                {statusLabel}
-              </span>
-              <span className="text-[9px] text-zinc-400 font-bold uppercase pt-0.5">
-                Desde {since}
-              </span>
+
+          {/* Actions dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowActionsMenu(!showActionsMenu)}
+              className="text-zinc-500 hover:text-white p-2 rounded-lg hover:bg-zinc-800 transition-colors"
+            >
+              <MoreVertical size={20} />
+            </button>
+            {showActionsMenu && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowActionsMenu(false)}
+                />
+                <div className="absolute right-0 top-10 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <button
+                    onClick={() => {
+                      setShowResetPassword(true)
+                      setShowActionsMenu(false)
+                    }}
+                    className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                  >
+                    <Key size={14} /> Resetar Senha
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Status */}
+      <div className="bg-zinc-950 border-b border-zinc-800 px-4 md:px-8 py-3">
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+              <Calendar size={14} className="text-zinc-400" />
+            </div>
+            <div>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase">Ultima Avaliacao</p>
+              <p className="text-white text-xs font-bold">
+                {quickStatus.lastEvalDate
+                  ? new Date(quickStatus.lastEvalDate).toLocaleDateString("pt-BR")
+                  : "Nenhuma"}
+              </p>
+            </div>
+          </div>
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
+              <CheckCircle2 size={14} className="text-green-500" />
+            </div>
+            <div>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase">Exercicios Feitos</p>
+              <p className="text-white text-xs font-bold">{quickStatus.completedExercises}</p>
             </div>
           </div>
         </div>
@@ -153,6 +231,15 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
         <AddAvaliacaoModal
           studentId={student.id}
           onClose={() => setShowAvaliacaoModal(false)}
+        />
+      )}
+
+      {/* Reset Password Modal */}
+      {showResetPassword && (
+        <ResetPasswordModal
+          studentId={student.id}
+          studentName={student.full_name}
+          onClose={() => setShowResetPassword(false)}
         />
       )}
     </div>

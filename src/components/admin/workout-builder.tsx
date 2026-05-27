@@ -155,6 +155,7 @@ function WorkoutCreatorModal({
 }) {
   const router = useRouter()
   const [title, setTitle] = useState("")
+  const [icon, setIcon] = useState("")
   const [exercises, setExercises] = useState<ExerciseDraft[]>([makeEmptyExercise(1)])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -199,6 +200,7 @@ function WorkoutCreatorModal({
         sets: ex.sets || "3", reps: ex.reps || "12", rest: ex.rest || "60s",
         note: ex.note || undefined, illustrationUrl: ex.illustrationUrl || undefined,
       })),
+      icon.trim() || undefined,
     )
 
     if (!result.success) { setError(result.error ?? "Erro ao salvar ficha."); setLoading(false); return }
@@ -218,10 +220,17 @@ function WorkoutCreatorModal({
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5">
-        <div>
-          <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">Titulo da Ficha</label>
-          <input type="text" placeholder="Ex: Treino A - Peito e Triceps" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">Titulo da Ficha</label>
+            <input type="text" placeholder="Ex: Treino A - Peito e Triceps" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+          </div>
+          <div className="w-20">
+            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">Icone</label>
+            <input type="text" placeholder="🔥" value={icon} onChange={(e) => setIcon(e.target.value)} maxLength={4}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm text-white text-center placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+          </div>
         </div>
 
         <div>
@@ -394,7 +403,10 @@ function WorkoutCard({ workout, libraryExercises, expanded, onToggle }: {
         <div className="flex items-center gap-3 min-w-0">
           <FileText size={18} className={isPublished ? "text-green-500" : "text-yellow-500"} />
           <div className="min-w-0">
-            <p className="text-white text-sm font-bold truncate">{workout.title}</p>
+            <p className="text-white text-sm font-bold truncate">
+              {workout.icon && <span className="mr-1">{workout.icon}</span>}
+              {workout.title}
+            </p>
             <div className="flex items-center gap-2 mt-0.5">
               <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isPublished ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
                 {isPublished ? "Publicado" : "Rascunho"}

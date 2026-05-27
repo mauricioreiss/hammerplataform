@@ -6,11 +6,10 @@ import type { UserProfile } from "@/lib/types"
 
 type PaymentManagerProps = {
   user: UserProfile
+  pixKey: string
 }
 
-const pixKey = process.env.NEXT_PUBLIC_PIX_KEY ?? ""
-
-export function PaymentManager({ user }: PaymentManagerProps) {
+export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
   const [step, setStep] = useState<"status" | "pix">("status")
 
   const isAlert = user.plan_status === "vencendo" || user.plan_status === "atrasado"
