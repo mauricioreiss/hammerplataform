@@ -27,7 +27,7 @@ export function PaymentManager({ user }: PaymentManagerProps) {
 
   if (step === "pix") {
     return (
-      <div className="p-4 md:p-6 space-y-6 pb-24 animate-in fade-in duration-300">
+      <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
         <div className="space-y-4 animate-in slide-in-from-right duration-300">
           <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl text-center">
             <h3 className="text-white font-bold uppercase mb-2">
@@ -72,7 +72,7 @@ export function PaymentManager({ user }: PaymentManagerProps) {
   }
 
   return (
-    <div className="p-4 space-y-6 pb-24 animate-in fade-in duration-300">
+    <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
       <div className="text-center mb-8 pt-2">
         <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-3 border border-zinc-800">
           <CreditCard size={24} className="text-zinc-400" />

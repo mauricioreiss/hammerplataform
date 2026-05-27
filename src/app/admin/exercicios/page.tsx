@@ -52,6 +52,7 @@ export default async function ExerciciosPage() {
                   src={exercise.illustration_url}
                   alt={exercise.name}
                   fill
+                  unoptimized
                   className="object-contain p-2"
                   sizes="(max-width: 768px) 50vw, 25vw"
                 />

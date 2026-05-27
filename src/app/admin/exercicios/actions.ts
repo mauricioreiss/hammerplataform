@@ -125,8 +125,8 @@ export async function uploadIllustration(
       return { success: false, error: "Formato invalido. Use PNG, JPG, GIF ou WEBP." }
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      return { success: false, error: "Arquivo muito grande. Maximo 5MB." }
+    if (file.size > 10 * 1024 * 1024) {
+      return { success: false, error: "Arquivo muito grande. Maximo 10MB." }
     }
 
     const supabase = createAdminClient()

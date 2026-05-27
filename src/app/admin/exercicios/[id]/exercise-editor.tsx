@@ -102,6 +102,7 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
                 src={illustrationUrl}
                 alt={exercise.name}
                 fill
+                unoptimized
                 className="object-contain p-4"
                 sizes="(max-width: 768px) 100vw, 50vw"
               />
