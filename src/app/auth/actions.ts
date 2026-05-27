@@ -36,8 +36,12 @@ export async function login(
       .single()
 
     if (profileError || !profile?.role) {
+      const dbUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()
       await supabase.auth.signOut()
-      return { success: false, error: "Conta sem permissão de acesso." }
+      return {
+        success: false,
+        error: `Debug: url=${dbUrl.slice(-30)} | uid=${data.user.id.slice(0, 8)} | profile=${JSON.stringify(profile)} | err=${profileError?.message ?? "none"}`,
+      }
     }
 
     return { success: true, role: profile.role as "admin" | "student" }
