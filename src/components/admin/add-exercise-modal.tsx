@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Plus, X, Loader2 } from "lucide-react"
 import { createExercise } from "@/app/actions"
 
 export function AddExerciseModal() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -30,6 +32,7 @@ export function AddExerciseModal() {
     setForm({ name: "", muscleGroup: "", illustrationUrl: "" })
     setOpen(false)
     setLoading(false)
+    router.refresh()
   }
 
   if (!open) {

@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Plus, X, Loader2 } from "lucide-react"
 import { createAluno } from "@/app/actions"
 
 export function AddStudentForm() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -26,6 +28,7 @@ export function AddStudentForm() {
     setForm({ name: "", email: "", password: "", objective: "" })
     setOpen(false)
     setLoading(false)
+    router.refresh()
   }
 
   if (!open) {

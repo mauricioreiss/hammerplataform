@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Database, Loader2 } from "lucide-react"
 import { seedDefaultExercises } from "@/app/actions"
 
 export function SeedExercisesButton() {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
@@ -19,6 +21,7 @@ export function SeedExercisesButton() {
     }
 
     setLoading(false)
+    router.refresh()
   }
 
   return (
