@@ -1,7 +1,6 @@
 export type UserProfile = {
   id: string
   full_name: string
-  email: string
   role: "admin" | "student"
   objective: string | null
   plan_status: string | null

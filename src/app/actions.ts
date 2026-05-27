@@ -58,7 +58,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, email, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .eq("id", user.id)
       .single()
 
@@ -76,7 +76,7 @@ export async function getAlunos(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, email, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .eq("role", "student")
       .order("created_at", { ascending: false })
 
@@ -96,7 +96,7 @@ export async function getAlunoById(id: string): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, email, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .eq("id", parsed.data)
       .single()
 
@@ -135,7 +135,7 @@ export async function getAlunosAguardando(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, email, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .in("id", waitingIds)
 
     if (error || !data) return []
@@ -236,7 +236,6 @@ export async function createAluno(data: {
     const { error: insertError } = await admin.from("users").insert({
       id: userId,
       full_name: data.name,
-      email: data.email,
       role: "student",
       objective: data.objective,
       plan_status: "ativo",
