@@ -29,15 +29,16 @@ export async function login(
 
   // Use admin client to bypass RLS on users table
   const admin = createAdminClient()
-  const { data: profile } = await admin
+  const { data: profile, error: profileError } = await admin
     .from("users")
     .select("role")
     .eq("id", data.user.id)
     .single()
 
   if (!profile?.role) {
+    const debugInfo = `uid=${data.user.id} | profile=${JSON.stringify(profile)} | err=${profileError?.message ?? "none"}`
     await supabase.auth.signOut()
-    return { success: false, error: "Conta sem permissão de acesso." }
+    return { success: false, error: `Sem permissao. Debug: ${debugInfo}` }
   }
 
   return { success: true, role: profile.role as "admin" | "student" }
