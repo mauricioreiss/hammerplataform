@@ -58,7 +58,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .eq("id", user.id)
       .single()
 
@@ -76,7 +76,7 @@ export async function getAlunos(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .eq("role", "student")
       .order("created_at", { ascending: false })
 
@@ -96,7 +96,7 @@ export async function getAlunoById(id: string): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .eq("id", parsed.data)
       .single()
 
@@ -135,7 +135,7 @@ export async function getAlunosAguardando(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
       .in("id", waitingIds)
 
     if (error || !data) return []
@@ -851,6 +851,30 @@ export async function seedDefaultExercises(): Promise<{ success: boolean; error?
     if (error) return { success: false, error: error.message }
 
     revalidatePath("/admin/exercicios")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Avatar ---
+
+export async function updateAvatarUrl(
+  url: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from("users")
+      .update({ avatar_url: url })
+      .eq("id", user.id)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/aluno")
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }

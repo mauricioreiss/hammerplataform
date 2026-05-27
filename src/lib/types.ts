@@ -7,6 +7,7 @@ export type UserProfile = {
   plan_name: string | null
   plan_value: number | null
   expire_date: string | null
+  avatar_url: string | null
   created_at: string
 }
 

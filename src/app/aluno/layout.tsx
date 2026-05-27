@@ -26,6 +26,8 @@ export default async function AlunoLayout({
       <div className="w-full flex flex-col min-h-screen bg-zinc-950">
         <AlunoHeader
           initials={initials}
+          avatarUrl={user?.avatar_url ?? null}
+          userId={user?.id ?? ""}
           hasNotification={hasAlert}
         />
         <AlunoDesktopNav hasPaymentAlert={hasAlert} />
