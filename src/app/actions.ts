@@ -492,7 +492,6 @@ export async function getWorkoutComExercicios(workoutId: string): Promise<Workou
       .from("exercises")
       .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url")
       .eq("workout_id", parsed.data)
-      .order("created_at", { ascending: true })
 
     return {
       ...workout,
