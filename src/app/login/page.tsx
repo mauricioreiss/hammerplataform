@@ -28,18 +28,26 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 selection:bg-red-600 selection:text-white">
-      <div className="w-full max-w-[400px]">
+    <div className="min-h-screen relative flex items-center justify-center p-4 selection:bg-red-600 selection:text-white">
+      {/* Background image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/logo.jpeg"
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+      {/* Dark overlay so the form is readable */}
+      <div className="absolute inset-0 bg-black/70" />
+
+      {/* Content */}
+      <div className="w-full max-w-[400px] relative z-10">
         <div className="flex items-center justify-center mb-10">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.jpeg"
-            alt="Felipe Hammer"
-            className="h-20 object-contain"
-          />
+          <span className="font-black italic text-6xl text-white tracking-tighter drop-shadow-lg">
+            F<span className="-ml-2 text-zinc-300">H</span>
+          </span>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-2xl shadow-xl">
+        <div className="bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 p-6 rounded-2xl shadow-xl">
           <h1 className="text-2xl font-black italic text-white uppercase tracking-tight mb-6">
             Entrar
           </h1>
