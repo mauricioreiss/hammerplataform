@@ -354,11 +354,11 @@ function WorkoutCard({ workout, libraryExercises, expanded, onToggle }: {
   const [showAddExercise, setShowAddExercise] = useState(false)
 
   const exercises = workout.exercises ?? []
-  const isApproved = workout.status === "approved"
+  const isPublished = workout.status === "published" || workout.status === "approved"
 
   function handleStatusToggle() {
     startTransition(async () => {
-      await updateWorkoutStatus(workout.id, isApproved ? "draft" : "approved")
+      await updateWorkoutStatus(workout.id, isPublished ? "draft" : "published")
       router.refresh()
     })
   }
@@ -392,12 +392,12 @@ function WorkoutCard({ workout, libraryExercises, expanded, onToggle }: {
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
       <button onClick={onToggle} className="w-full px-4 py-3.5 flex items-center justify-between text-left">
         <div className="flex items-center gap-3 min-w-0">
-          <FileText size={18} className={isApproved ? "text-green-500" : "text-yellow-500"} />
+          <FileText size={18} className={isPublished ? "text-green-500" : "text-yellow-500"} />
           <div className="min-w-0">
             <p className="text-white text-sm font-bold truncate">{workout.title}</p>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isApproved ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
-                {isApproved ? "Aprovado" : "Rascunho"}
+              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isPublished ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                {isPublished ? "Publicado" : "Rascunho"}
               </span>
               {workout.is_ai_draft && <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-400">IA</span>}
               <span className="text-[10px] text-zinc-600">{exercises.length} exercicio{exercises.length !== 1 && "s"}</span>
@@ -431,8 +431,8 @@ function WorkoutCard({ workout, libraryExercises, expanded, onToggle }: {
             </button>
             <button onClick={handleStatusToggle} disabled={isPending}
               className={`text-[10px] font-bold uppercase py-2.5 px-3 rounded-lg flex items-center gap-1.5 active:scale-[0.97] ${
-                isApproved ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" : "bg-green-500/10 text-green-400 border border-green-500/30"}`}>
-              <CheckCircle2 size={12} /> {isApproved ? "Rascunho" : "Aprovar"}
+                isPublished ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" : "bg-green-500/10 text-green-400 border border-green-500/30"}`}>
+              <CheckCircle2 size={12} /> {isPublished ? "Rascunho" : "Publicar"}
             </button>
             <button onClick={handleDelete} disabled={isPending}
               className="bg-zinc-800 text-red-500 text-[10px] font-bold uppercase px-3 py-2.5 rounded-lg flex items-center gap-1.5 active:scale-[0.97]">

@@ -126,7 +126,7 @@ export async function getAlunosAguardando(): Promise<UserProfile[]> {
     const { data: usersWithWorkout } = await admin
       .from("workouts")
       .select("user_id")
-      .eq("status", "approved")
+      .in("status", ["published", "approved"])
 
     const approvedIds = new Set((usersWithWorkout ?? []).map((w) => w.user_id))
     const waitingIds = userIds.filter((id) => !approvedIds.has(id))
@@ -389,14 +389,35 @@ export async function getWorkoutsDoAluno(): Promise<Workout[]> {
     if (!user) return []
 
     const admin = createAdminClient()
-    const { data, error } = await admin
+
+    // Only show published workouts to students
+    const { data: workouts, error } = await admin
       .from("workouts")
       .select("id, user_id, title, is_ai_draft, status, created_at")
       .eq("user_id", user.id)
+      .in("status", ["published", "approved"])
       .order("created_at", { ascending: false })
 
-    if (error || !data) return []
-    return data as Workout[]
+    if (error || !workouts || workouts.length === 0) return []
+
+    // Fetch exercises for all workouts
+    const workoutIds = workouts.map((w) => w.id)
+    const { data: exercises } = await admin
+      .from("exercises")
+      .select("id, workout_id, name, muscle_group, sets, reps, rest, note, illustration_url")
+      .in("workout_id", workoutIds)
+
+    const byWorkout = new Map<string, Exercise[]>()
+    for (const ex of (exercises ?? []) as Exercise[]) {
+      const list = byWorkout.get(ex.workout_id!) ?? []
+      list.push(ex)
+      byWorkout.set(ex.workout_id!, list)
+    }
+
+    return workouts.map((w) => ({
+      ...w,
+      exercises: byWorkout.get(w.id) ?? [],
+    })) as Workout[]
   } catch {
     return []
   }
@@ -667,7 +688,7 @@ export async function removeExerciseFromWorkout(
 
 export async function updateWorkoutStatus(
   workoutId: string,
-  status: "draft" | "approved",
+  status: "draft" | "published",
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")

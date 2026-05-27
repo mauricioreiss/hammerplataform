@@ -22,9 +22,9 @@ export function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
             {workout.exercises?.length ?? 0} exercícios
           </p>
         </div>
-        {workout.status && (
-          <span className="bg-zinc-950 text-zinc-400 px-2 py-1 rounded text-[10px] font-bold border border-zinc-800 uppercase">
-            {workout.status}
+        {workout.status === "published" && (
+          <span className="bg-green-500/10 text-green-400 px-2 py-1 rounded text-[10px] font-bold border border-green-500/30 uppercase">
+            Ativo
           </span>
         )}
       </div>
