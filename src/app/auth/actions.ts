@@ -16,32 +16,34 @@ export async function login(
     return { success: false, error: "E-mail e senha obrigatórios." }
   }
 
-  const supabase = await createClient()
+  try {
+    const supabase = await createClient()
 
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-  if (error || !data.user) {
-    return { success: false, error: "E-mail ou senha incorretos." }
+    if (error || !data.user) {
+      return { success: false, error: "E-mail ou senha incorretos." }
+    }
+
+    const admin = createAdminClient()
+    const { data: profile, error: profileError } = await admin
+      .from("users")
+      .select("role")
+      .eq("id", data.user.id)
+      .single()
+
+    if (profileError || !profile?.role) {
+      await supabase.auth.signOut()
+      return { success: false, error: "Conta sem permissão de acesso." }
+    }
+
+    return { success: true, role: profile.role as "admin" | "student" }
+  } catch {
+    return { success: false, error: "Erro de conexão. Tente novamente." }
   }
-
-  // Use admin client to bypass RLS on users table
-  const admin = createAdminClient()
-  const { data: profile, error: profileError } = await admin
-    .from("users")
-    .select("role")
-    .eq("id", data.user.id)
-    .single()
-
-  if (!profile?.role) {
-    const debugInfo = `uid=${data.user.id} | profile=${JSON.stringify(profile)} | err=${profileError?.message ?? "none"}`
-    await supabase.auth.signOut()
-    return { success: false, error: `Sem permissao. Debug: ${debugInfo}` }
-  }
-
-  return { success: true, role: profile.role as "admin" | "student" }
 }
 
 export async function logout(): Promise<void> {

@@ -35,7 +35,9 @@ async function requireAdmin() {
     throw new Error("Not authenticated")
   }
 
-  const { data: profile } = await supabase
+  // Use admin client to bypass RLS on users table
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from("users")
     .select("role")
     .eq("id", user.id)
@@ -51,43 +53,47 @@ async function requireAdmin() {
 // --- Queries ---
 
 export async function getExercises(): Promise<ExerciseRow[]> {
-  await requireAdmin()
+  try {
+    await requireAdmin()
 
-  const supabase = createAdminClient()
+    const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from("exercises")
-    .select("id, workout_id, name, sets, reps, rest, note, illustration_url, created_at")
-    .order("name", { ascending: true })
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("id, workout_id, name, sets, reps, rest, note, illustration_url, created_at")
+      .order("name", { ascending: true })
 
-  if (error) {
-    throw new Error("Failed to fetch exercises")
+    if (error || !data) return []
+
+    return data as ExerciseRow[]
+  } catch {
+    return []
   }
-
-  return data as ExerciseRow[]
 }
 
 export async function getExerciseById(
   id: string,
 ): Promise<ExerciseRow | null> {
-  await requireAdmin()
+  try {
+    await requireAdmin()
 
-  const parsed = uuidSchema.safeParse(id)
-  if (!parsed.success) {
-    throw new Error("Invalid exercise ID")
+    const parsed = uuidSchema.safeParse(id)
+    if (!parsed.success) return null
+
+    const supabase = createAdminClient()
+
+    const { data, error } = await supabase
+      .from("exercises")
+      .select("id, workout_id, name, sets, reps, rest, note, illustration_url, created_at")
+      .eq("id", parsed.data)
+      .single()
+
+    if (error || !data) return null
+
+    return data as ExerciseRow
+  } catch {
+    return null
   }
-
-  const supabase = createAdminClient()
-
-  const { data, error } = await supabase
-    .from("exercises")
-    .select("id, workout_id, name, sets, reps, rest, note, illustration_url, created_at")
-    .eq("id", parsed.data)
-    .single()
-
-  if (error) return null
-
-  return data as ExerciseRow
 }
 
 // --- Mutations ---
@@ -100,74 +106,78 @@ export async function uploadIllustration(
   exerciseId: string,
   formData: FormData,
 ): Promise<UploadResult> {
-  await requireAdmin()
+  try {
+    await requireAdmin()
 
-  const parsed = uuidSchema.safeParse(exerciseId)
-  if (!parsed.success) {
-    return { success: false, error: "ID de exercicio invalido." }
-  }
-
-  const file = formData.get("file") as File | null
-  if (!file || file.size === 0) {
-    return { success: false, error: "Nenhum arquivo selecionado." }
-  }
-
-  const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"]
-  if (!allowedTypes.includes(file.type)) {
-    return { success: false, error: "Formato invalido. Use PNG, JPG, GIF ou WEBP." }
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    return { success: false, error: "Arquivo muito grande. Maximo 5MB." }
-  }
-
-  const supabase = createAdminClient()
-
-  // Remove old illustration if exists
-  const { data: existing } = await supabase
-    .from("exercises")
-    .select("illustration_url")
-    .eq("id", parsed.data)
-    .single()
-
-  if (existing?.illustration_url) {
-    const oldPath = extractStoragePath(existing.illustration_url)
-    if (oldPath) {
-      await supabase.storage.from("exercicios-illustracoes").remove([oldPath])
+    const parsed = uuidSchema.safeParse(exerciseId)
+    if (!parsed.success) {
+      return { success: false, error: "ID de exercicio invalido." }
     }
+
+    const file = formData.get("file") as File | null
+    if (!file || file.size === 0) {
+      return { success: false, error: "Nenhum arquivo selecionado." }
+    }
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"]
+    if (!allowedTypes.includes(file.type)) {
+      return { success: false, error: "Formato invalido. Use PNG, JPG, GIF ou WEBP." }
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return { success: false, error: "Arquivo muito grande. Maximo 5MB." }
+    }
+
+    const supabase = createAdminClient()
+
+    // Remove old illustration if exists
+    const { data: existing } = await supabase
+      .from("exercises")
+      .select("illustration_url")
+      .eq("id", parsed.data)
+      .single()
+
+    if (existing?.illustration_url) {
+      const oldPath = extractStoragePath(existing.illustration_url)
+      if (oldPath) {
+        await supabase.storage.from("exercicios-illustracoes").remove([oldPath])
+      }
+    }
+
+    // Upload new file
+    const ext = file.name.split(".").pop() ?? "png"
+    const storagePath = `exercises/${parsed.data}.${ext}`
+    const arrayBuffer = await file.arrayBuffer()
+
+    const { error: uploadError } = await supabase.storage
+      .from("exercicios-illustracoes")
+      .upload(storagePath, arrayBuffer, {
+        contentType: file.type,
+        upsert: true,
+      })
+
+    if (uploadError) {
+      return { success: false, error: "Falha no upload: " + uploadError.message }
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("exercicios-illustracoes")
+      .getPublicUrl(storagePath)
+
+    // Update exercise record
+    const { error: updateError } = await supabase
+      .from("exercises")
+      .update({ illustration_url: urlData.publicUrl })
+      .eq("id", parsed.data)
+
+    if (updateError) {
+      return { success: false, error: "Upload ok, mas falha ao salvar URL no banco." }
+    }
+
+    return { success: true, url: urlData.publicUrl }
+  } catch {
+    return { success: false, error: "Erro de conexão. Tente novamente." }
   }
-
-  // Upload new file
-  const ext = file.name.split(".").pop() ?? "png"
-  const storagePath = `exercises/${parsed.data}.${ext}`
-  const arrayBuffer = await file.arrayBuffer()
-
-  const { error: uploadError } = await supabase.storage
-    .from("exercicios-illustracoes")
-    .upload(storagePath, arrayBuffer, {
-      contentType: file.type,
-      upsert: true,
-    })
-
-  if (uploadError) {
-    return { success: false, error: "Falha no upload: " + uploadError.message }
-  }
-
-  const { data: urlData } = supabase.storage
-    .from("exercicios-illustracoes")
-    .getPublicUrl(storagePath)
-
-  // Update exercise record
-  const { error: updateError } = await supabase
-    .from("exercises")
-    .update({ illustration_url: urlData.publicUrl })
-    .eq("id", parsed.data)
-
-  if (updateError) {
-    return { success: false, error: "Upload ok, mas falha ao salvar URL no banco." }
-  }
-
-  return { success: true, url: urlData.publicUrl }
 }
 
 export type DeleteResult =
@@ -177,38 +187,42 @@ export type DeleteResult =
 export async function deleteIllustration(
   exerciseId: string,
 ): Promise<DeleteResult> {
-  await requireAdmin()
+  try {
+    await requireAdmin()
 
-  const parsed = uuidSchema.safeParse(exerciseId)
-  if (!parsed.success) {
-    return { success: false, error: "ID de exercicio invalido." }
-  }
-
-  const supabase = createAdminClient()
-
-  const { data: existing } = await supabase
-    .from("exercises")
-    .select("illustration_url")
-    .eq("id", parsed.data)
-    .single()
-
-  if (existing?.illustration_url) {
-    const oldPath = extractStoragePath(existing.illustration_url)
-    if (oldPath) {
-      await supabase.storage.from("exercicios-illustracoes").remove([oldPath])
+    const parsed = uuidSchema.safeParse(exerciseId)
+    if (!parsed.success) {
+      return { success: false, error: "ID de exercicio invalido." }
     }
+
+    const supabase = createAdminClient()
+
+    const { data: existing } = await supabase
+      .from("exercises")
+      .select("illustration_url")
+      .eq("id", parsed.data)
+      .single()
+
+    if (existing?.illustration_url) {
+      const oldPath = extractStoragePath(existing.illustration_url)
+      if (oldPath) {
+        await supabase.storage.from("exercicios-illustracoes").remove([oldPath])
+      }
+    }
+
+    const { error } = await supabase
+      .from("exercises")
+      .update({ illustration_url: null })
+      .eq("id", parsed.data)
+
+    if (error) {
+      return { success: false, error: "Falha ao remover ilustracao." }
+    }
+
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexão. Tente novamente." }
   }
-
-  const { error } = await supabase
-    .from("exercises")
-    .update({ illustration_url: null })
-    .eq("id", parsed.data)
-
-  if (error) {
-    return { success: false, error: "Falha ao remover ilustracao." }
-  }
-
-  return { success: true }
 }
 
 // --- Helpers ---

@@ -39,7 +39,9 @@ async function requireAdmin() {
     throw new Error("Not authenticated")
   }
 
-  const { data: profile } = await supabase
+  // Use admin client to bypass RLS on users table
+  const admin = createAdminClient()
+  const { data: profile } = await admin
     .from("users")
     .select("role")
     .eq("id", user.id)
@@ -55,76 +57,82 @@ async function requireAdmin() {
 // --- Queries ---
 
 export async function getAnamneses(): Promise<AnamneseWithUser[]> {
-  await requireAdmin()
+  try {
+    await requireAdmin()
 
-  const supabase = createAdminClient()
+    const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from("anamnesis")
-    .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
-    .order("created_at", { ascending: false })
+    const { data, error } = await supabase
+      .from("anamnesis")
+      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
+      .order("created_at", { ascending: false })
 
-  if (error) {
-    throw new Error("Failed to fetch anamneses")
-  }
+    if (error || !data) return []
 
-  const anamneses = data as AnamneseRow[]
+    const anamneses = data as AnamneseRow[]
 
-  // Fetch user names for anamneses that have user_id
-  const userIds = anamneses
-    .map((a) => a.user_id)
-    .filter((id): id is string => id !== null)
+    // Fetch user names for anamneses that have user_id
+    const userIds = anamneses
+      .map((a) => a.user_id)
+      .filter((id): id is string => id !== null)
 
-  let userMap: Record<string, string> = {}
+    let userMap: Record<string, string> = {}
 
-  if (userIds.length > 0) {
-    const { data: users } = await supabase
-      .from("users")
-      .select("id, full_name")
-      .in("id", userIds)
+    if (userIds.length > 0) {
+      const { data: users } = await supabase
+        .from("users")
+        .select("id, full_name")
+        .in("id", userIds)
 
-    if (users) {
-      userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name]))
+      if (users) {
+        userMap = Object.fromEntries(users.map((u) => [u.id, u.full_name]))
+      }
     }
-  }
 
-  return anamneses.map((a) => ({
-    ...a,
-    user_name: a.user_id ? userMap[a.user_id] ?? null : null,
-  }))
+    return anamneses.map((a) => ({
+      ...a,
+      user_name: a.user_id ? userMap[a.user_id] ?? null : null,
+    }))
+  } catch {
+    return []
+  }
 }
 
 export async function getAnamneseById(
   id: string,
 ): Promise<AnamneseWithUser | null> {
-  await requireAdmin()
+  try {
+    await requireAdmin()
 
-  const parsed = z.string().uuid().safeParse(id)
-  if (!parsed.success) return null
+    const parsed = z.string().uuid().safeParse(id)
+    if (!parsed.success) return null
 
-  const supabase = createAdminClient()
+    const supabase = createAdminClient()
 
-  const { data, error } = await supabase
-    .from("anamnesis")
-    .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
-    .eq("id", parsed.data)
-    .single()
-
-  if (error || !data) return null
-
-  const anamnese = data as AnamneseRow
-
-  let userName: string | null = null
-  if (anamnese.user_id) {
-    const { data: user } = await supabase
-      .from("users")
-      .select("full_name")
-      .eq("id", anamnese.user_id)
+    const { data, error } = await supabase
+      .from("anamnesis")
+      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
+      .eq("id", parsed.data)
       .single()
-    userName = user?.full_name ?? null
-  }
 
-  return { ...anamnese, user_name: userName }
+    if (error || !data) return null
+
+    const anamnese = data as AnamneseRow
+
+    let userName: string | null = null
+    if (anamnese.user_id) {
+      const { data: user } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("id", anamnese.user_id)
+        .single()
+      userName = user?.full_name ?? null
+    }
+
+    return { ...anamnese, user_name: userName }
+  } catch {
+    return null
+  }
 }
 
 // --- AI Analysis ---
@@ -169,28 +177,28 @@ Seja direto e técnico. Use linguagem de profissional de educação física. For
 }
 
 export async function analyzeAnamnese(id: string): Promise<AnalysisResult> {
-  await requireAdmin()
-
-  const parsed = z.string().uuid().safeParse(id)
-  if (!parsed.success) {
-    return { success: false, error: "ID inválido" }
-  }
-
-  const supabase = createAdminClient()
-
-  const { data, error } = await supabase
-    .from("anamnesis")
-    .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
-    .eq("id", parsed.data)
-    .single()
-
-  if (error || !data) {
-    return { success: false, error: "Anamnese não encontrada" }
-  }
-
-  const prompt = buildPrompt(data as AnamneseRow)
-
   try {
+    await requireAdmin()
+
+    const parsed = z.string().uuid().safeParse(id)
+    if (!parsed.success) {
+      return { success: false, error: "ID inválido" }
+    }
+
+    const supabase = createAdminClient()
+
+    const { data, error } = await supabase
+      .from("anamnesis")
+      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
+      .eq("id", parsed.data)
+      .single()
+
+    if (error || !data) {
+      return { success: false, error: "Anamnese não encontrada" }
+    }
+
+    const prompt = buildPrompt(data as AnamneseRow)
+
     const analysis = await generateCompletion(prompt)
     return { success: true, analysis }
   } catch (err) {
