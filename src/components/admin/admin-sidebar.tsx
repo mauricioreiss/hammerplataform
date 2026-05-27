@@ -19,10 +19,13 @@ export function AdminSidebar() {
     <aside className="hidden md:flex flex-col w-64 bg-zinc-950 border-r border-zinc-800 shrink-0 h-screen sticky top-0">
       {/* Logo */}
       <div className="px-6 h-16 flex items-center border-b border-zinc-800 shrink-0">
-        <span className="font-black italic text-2xl text-white tracking-tighter">
-          F<span className="-ml-1">H</span>
-        </span>
-        <span className="font-medium text-[8px] uppercase tracking-[0.2em] text-zinc-400 ml-2 mt-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/logo2.jpeg"
+          alt="Felipe Hammer"
+          className="h-8 object-contain"
+        />
+        <span className="font-medium text-[8px] uppercase tracking-[0.2em] text-zinc-400 ml-3 mt-1">
           Admin
         </span>
       </div>

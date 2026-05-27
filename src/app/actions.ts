@@ -58,12 +58,12 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .eq("id", user.id)
       .single()
 
     if (error || !data) return null
-    return data as UserProfile
+    return { ...data, avatar_url: null } as UserProfile
   } catch {
     return null
   }
@@ -76,12 +76,12 @@ export async function getAlunos(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .eq("role", "student")
       .order("created_at", { ascending: false })
 
     if (error || !data) return []
-    return data as UserProfile[]
+    return data.map((u) => ({ ...u, avatar_url: null })) as UserProfile[]
   } catch {
     return []
   }
@@ -96,12 +96,12 @@ export async function getAlunoById(id: string): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .eq("id", parsed.data)
       .single()
 
     if (error || !data) return null
-    return data as UserProfile
+    return { ...data, avatar_url: null } as UserProfile
   } catch {
     return null
   }
@@ -135,11 +135,11 @@ export async function getAlunosAguardando(): Promise<UserProfile[]> {
 
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, created_at")
       .in("id", waitingIds)
 
     if (error || !data) return []
-    return data as UserProfile[]
+    return data.map((u) => ({ ...u, avatar_url: null })) as UserProfile[]
   } catch {
     return []
   }

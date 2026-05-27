@@ -71,7 +71,7 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification }: Al
         <div className="flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src="/logo.jpeg"
+            src="/logo2.jpeg"
             alt="Felipe Hammer"
             className="h-8 object-contain"
           />
