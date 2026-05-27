@@ -201,7 +201,11 @@ export async function createAluno(data: {
     })
 
     if (authError || !authUser.user) {
-      return { success: false, error: authError?.message ?? "Falha ao criar conta." }
+      const msg = authError?.message ?? "Falha ao criar conta."
+      const translated = msg.includes("already been registered")
+        ? "Este e-mail já está cadastrado."
+        : msg
+      return { success: false, error: translated }
     }
 
     const { error: insertError } = await admin.from("users").insert({
@@ -216,7 +220,7 @@ export async function createAluno(data: {
     })
 
     if (insertError) {
-      return { success: false, error: "Conta criada mas falha ao salvar perfil." }
+      return { success: false, error: `Falha ao salvar perfil: ${insertError.message}` }
     }
 
     revalidatePath("/admin/alunos")
@@ -445,15 +449,48 @@ export async function toggleExerciseLog(
 export async function createExercise(data: {
   name: string
   muscleGroup: string
+  illustrationUrl?: string
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")
     const admin = createAdminClient()
 
-    const { error } = await admin.from("exercises").insert({
+    const row: Record<string, unknown> = {
       name: data.name,
       muscle_group: data.muscleGroup,
-    })
+    }
+    if (data.illustrationUrl) row.illustration_url = data.illustrationUrl
+
+    const { error } = await admin.from("exercises").insert(row)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/exercicios")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function seedDefaultExercises(): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const admin = createAdminClient()
+
+    const defaults = [
+      { name: "Supino Reto", muscle_group: "Peito" },
+      { name: "Supino Inclinado", muscle_group: "Peito" },
+      { name: "Agachamento Livre", muscle_group: "Pernas" },
+      { name: "Leg Press 45", muscle_group: "Pernas" },
+      { name: "Puxada Frontal", muscle_group: "Costas" },
+      { name: "Remada Curvada", muscle_group: "Costas" },
+      { name: "Desenvolvimento Militar", muscle_group: "Ombros" },
+      { name: "Rosca Direta", muscle_group: "Biceps" },
+      { name: "Triceps Corda", muscle_group: "Triceps" },
+      { name: "Levantamento Terra", muscle_group: "Posterior" },
+    ]
+
+    const { error } = await admin.from("exercises").insert(defaults)
 
     if (error) return { success: false, error: error.message }
 
