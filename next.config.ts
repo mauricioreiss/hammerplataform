@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "ebgvmjwzzwwgtwnxydom.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
+      {
+        protocol: "https",
+        hostname: "wger.de",
+        pathname: "/media/exercise-images/**",
+      },
     ],
   },
   async headers() {
