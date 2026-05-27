@@ -4,13 +4,25 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, X, Loader2 } from "lucide-react"
 import { createAluno } from "@/app/actions"
+import type { Plan } from "@/lib/types"
 
-export function AddStudentForm() {
+type AddStudentFormProps = {
+  plans: Plan[]
+}
+
+export function AddStudentForm({ plans }: AddStudentFormProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [form, setForm] = useState({ name: "", email: "", password: "", objective: "" })
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    password: "",
+    objective: "",
+    planId: "",
+    paymentReceived: false,
+  })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -25,7 +37,7 @@ export function AddStudentForm() {
       return
     }
 
-    setForm({ name: "", email: "", password: "", objective: "" })
+    setForm({ name: "", email: "", password: "", objective: "", planId: "", paymentReceived: false })
     setOpen(false)
     setLoading(false)
     router.refresh()
@@ -44,7 +56,7 @@ export function AddStudentForm() {
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md">
+      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-black italic text-white uppercase tracking-tight">
             Novo Aluno
@@ -91,6 +103,38 @@ export function AddStudentForm() {
             <option value="Emagrecimento">Emagrecimento</option>
             <option value="Forca">Forca</option>
           </select>
+
+          {/* Plan selection */}
+          <select
+            value={form.planId}
+            onChange={(e) => setForm({ ...form, planId: e.target.value })}
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
+          >
+            <option value="">Plano (opcional)</option>
+            {plans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.name} - R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {plan.cycle}
+              </option>
+            ))}
+          </select>
+
+          {/* Payment toggle */}
+          <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+            <span className="text-sm text-zinc-400">Pagamento Inicial Recebido?</span>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, paymentReceived: !form.paymentReceived })}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                form.paymentReceived ? "bg-green-600" : "bg-zinc-700"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  form.paymentReceived ? "translate-x-5" : ""
+                }`}
+              />
+            </button>
+          </div>
 
           {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
 

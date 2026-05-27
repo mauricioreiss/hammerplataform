@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, Loader2 } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise } from "@/lib/types"
+import { registerPayment, blockStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
@@ -22,26 +24,50 @@ type StudentProfileProps = {
 }
 
 export function StudentProfile({ student, avaliacoes, workouts, libraryExercises, quickStatus }: StudentProfileProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">("avaliacoes")
   const [showComparativo, setShowComparativo] = useState(false)
   const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false)
   const [showActionsMenu, setShowActionsMenu] = useState(false)
   const [showResetPassword, setShowResetPassword] = useState(false)
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
+  const [showBlockConfirm, setShowBlockConfirm] = useState(false)
 
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
   const after = avaliacoes[0]
 
+  const isExpired = student.expire_date && new Date(student.expire_date) < new Date()
+
   const statusLabel =
+    student.plan_status === "blocked" ? "Bloqueado" :
+    student.plan_status === "pending" ? "Pendente" :
     student.plan_status === "atrasado" ? "Atrasado" :
-    student.plan_status === "vencendo" ? "Vencendo" : "Plano Ativo"
+    student.plan_status === "vencendo" ? "Vencendo" :
+    isExpired ? "Expirado" : "Ativo"
 
   const statusColor =
-    student.plan_status === "atrasado"
+    student.plan_status === "blocked" || student.plan_status === "atrasado" || isExpired
       ? "bg-red-500/20 text-red-500 border-red-500/30"
-      : student.plan_status === "vencendo"
+      : student.plan_status === "pending" || student.plan_status === "vencendo"
         ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
         : "bg-green-500/20 text-green-500 border-green-500/30"
+
+  async function handleRegisterPayment() {
+    setPaymentLoading(true)
+    await registerPayment(student.id)
+    setPaymentLoading(false)
+    router.refresh()
+  }
+
+  async function handleBlock() {
+    setBlockLoading(true)
+    await blockStudent(student.id)
+    setBlockLoading(false)
+    setShowBlockConfirm(false)
+    router.refresh()
+  }
 
   const since = new Date(student.created_at).toLocaleDateString("pt-BR", {
     month: "short",
@@ -120,6 +146,69 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
                   </button>
                 </div>
               </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Financial Card */}
+      <div className="bg-zinc-950 border-b border-zinc-800 px-4 md:px-8 py-3">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <CreditCard size={14} className="text-zinc-500" />
+            <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Financeiro</p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-4">
+            <div>
+              <p className="text-zinc-600 text-[9px] font-bold uppercase">Plano</p>
+              <p className="text-white text-sm font-bold">{student.plan_name ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-zinc-600 text-[9px] font-bold uppercase">Status</p>
+              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border inline-block ${statusColor}`}>
+                {statusLabel}
+              </span>
+            </div>
+            <div>
+              <p className="text-zinc-600 text-[9px] font-bold uppercase">Valor</p>
+              <p className="text-white text-sm font-bold">
+                R$ {(student.plan_value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-zinc-600 text-[9px] font-bold uppercase">Vencimento</p>
+              <p className={`text-sm font-bold ${isExpired ? "text-red-500" : "text-white"}`}>
+                {student.expire_date
+                  ? new Date(student.expire_date).toLocaleDateString("pt-BR")
+                  : "—"}
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={handleRegisterPayment}
+              disabled={paymentLoading}
+              className="bg-green-600 hover:bg-green-700 text-white font-bold uppercase py-2.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {paymentLoading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+              Registrar Pagamento
+            </button>
+            {!showBlockConfirm ? (
+              <button
+                onClick={() => setShowBlockConfirm(true)}
+                className="border border-red-500/30 text-red-500 font-bold uppercase py-2.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 hover:bg-red-500/10 transition-colors"
+              >
+                <ShieldOff size={12} /> Bloquear Acesso
+              </button>
+            ) : (
+              <button
+                onClick={handleBlock}
+                disabled={blockLoading}
+                className="bg-red-600 text-white font-bold uppercase py-2.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-50 animate-in fade-in duration-150"
+              >
+                {blockLoading ? <Loader2 size={12} className="animate-spin" /> : <ShieldOff size={12} />}
+                Confirmar Bloqueio
+              </button>
             )}
           </div>
         </div>

@@ -1,9 +1,12 @@
 import { AddStudentForm } from "@/components/admin/add-student-form"
 import { StudentListWithSearch } from "@/components/admin/student-list-with-search"
-import { getAlunos } from "@/app/actions"
+import { getAlunos, getPlans } from "@/app/actions"
 
 export default async function AlunosPage() {
-  const students = await getAlunos()
+  const [students, plans] = await Promise.all([
+    getAlunos(),
+    getPlans(),
+  ])
 
   return (
     <div className="p-4 md:p-6 space-y-4 animate-in fade-in pb-24">
@@ -11,7 +14,7 @@ export default async function AlunosPage() {
         <h2 className="text-lg font-black italic text-white uppercase tracking-tight">
           Alunos
         </h2>
-        <AddStudentForm />
+        <AddStudentForm plans={plans} />
       </div>
 
       <StudentListWithSearch students={students} />

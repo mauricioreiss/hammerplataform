@@ -1,6 +1,7 @@
 import { AlunoHeader } from "@/components/aluno/aluno-header"
 import { AlunoDesktopNav } from "@/components/aluno/aluno-desktop-nav"
 import { AlunoBottomNav } from "@/components/aluno/aluno-bottom-nav"
+import { PaywallGuard } from "@/components/aluno/paywall-guard"
 import { getCurrentUser } from "@/app/actions"
 
 export default async function AlunoLayout({
@@ -22,23 +23,23 @@ export default async function AlunoLayout({
   const hasAlert = user?.plan_status === "vencendo" || user?.plan_status === "atrasado"
 
   return (
-    <div className="min-h-screen bg-black selection:bg-red-600 selection:text-white">
-      <div className="w-full flex flex-col min-h-screen bg-zinc-950">
-        <AlunoHeader
-          initials={initials}
-          avatarUrl={user?.avatar_url ?? null}
-          userId={user?.id ?? ""}
-          hasNotification={hasAlert}
-        />
-        <AlunoDesktopNav hasPaymentAlert={hasAlert} />
-        <main className="flex-1 overflow-y-auto bg-black relative">
-          <div className="w-full max-w-5xl mx-auto px-4 md:px-8">
+    <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-black selection:bg-red-600 selection:text-white">
+      <AlunoHeader
+        initials={initials}
+        avatarUrl={user?.avatar_url ?? null}
+        userId={user?.id ?? ""}
+        hasNotification={hasAlert}
+      />
+      <AlunoDesktopNav hasPaymentAlert={hasAlert} />
+      <main className="flex-1 overflow-y-auto bg-black pb-20 md:pb-0">
+        <div className="w-full max-w-5xl mx-auto px-4 md:px-8">
+          <PaywallGuard user={user}>
             {children}
-          </div>
-        </main>
-        <div className="md:hidden">
-          <AlunoBottomNav hasPaymentAlert={hasAlert} />
+          </PaywallGuard>
         </div>
+      </main>
+      <div className="md:hidden">
+        <AlunoBottomNav hasPaymentAlert={hasAlert} />
       </div>
     </div>
   )

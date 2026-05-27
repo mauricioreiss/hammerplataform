@@ -4,7 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import type { UserProfile, Evaluation, Workout, Exercise, Kpis } from "@/lib/types"
+import type { UserProfile, Evaluation, Workout, Exercise, Kpis, Plan } from "@/lib/types"
 
 // --- Validation ---
 
@@ -189,15 +189,45 @@ export async function getKpis(): Promise<Kpis> {
 
 // --- Student CRUD ---
 
+const CYCLE_DAYS: Record<string, number> = {
+  mensal: 30,
+  semestral: 180,
+  anual: 365,
+}
+
 export async function createAluno(data: {
   name: string
   email: string
   password: string
   objective: string
+  planId: string
+  paymentReceived: boolean
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")
     const admin = createAdminClient()
+
+    // Fetch plan details
+    let planName = "Mensal"
+    let planValue = 150
+    let planCycle = "mensal"
+
+    if (data.planId) {
+      const parsed = uuidSchema.safeParse(data.planId)
+      if (parsed.success) {
+        const { data: plan } = await admin
+          .from("plans")
+          .select("name, price, cycle")
+          .eq("id", parsed.data)
+          .single()
+
+        if (plan) {
+          planName = plan.name
+          planValue = plan.price
+          planCycle = plan.cycle
+        }
+      }
+    }
 
     let userId: string
 
@@ -208,15 +238,13 @@ export async function createAluno(data: {
     })
 
     if (authError) {
-      // Auth user already exists - check if profile is missing
       if (authError.message.includes("already been registered")) {
         const { data: usersRes } = await admin.auth.admin.listUsers()
         const existing = usersRes?.users?.find((u) => u.email === data.email)
         if (!existing) {
-          return { success: false, error: "Este e-mail já está cadastrado." }
+          return { success: false, error: "Este e-mail ja esta cadastrado." }
         }
 
-        // Check if profile already exists in users table
         const { data: profile } = await admin
           .from("users")
           .select("id")
@@ -224,10 +252,9 @@ export async function createAluno(data: {
           .maybeSingle()
 
         if (profile) {
-          return { success: false, error: "Este aluno já está cadastrado." }
+          return { success: false, error: "Este aluno ja esta cadastrado." }
         }
 
-        // Auth exists but profile is missing - recover
         userId = existing.id
       } else {
         return { success: false, error: authError.message }
@@ -238,14 +265,20 @@ export async function createAluno(data: {
       userId = authUser.user.id
     }
 
+    const days = CYCLE_DAYS[planCycle] ?? 30
+    const expireDate = data.paymentReceived
+      ? new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+      : null
+
     const { error: insertError } = await admin.from("users").insert({
       id: userId,
       full_name: data.name,
       role: "student",
       objective: data.objective,
-      plan_status: "ativo",
-      plan_name: "Mensal",
-      plan_value: 150,
+      plan_status: data.paymentReceived ? "ativo" : "pending",
+      plan_name: planName,
+      plan_value: planValue,
+      expire_date: expireDate,
     })
 
     if (insertError) {
@@ -1034,6 +1067,156 @@ export async function saveAnamnese(
       .insert(parsed.data)
 
     if (error) return { success: false, error: "Falha ao salvar anamnese." }
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Plans CRUD ---
+
+export async function getPlans(): Promise<Plan[]> {
+  try {
+    await requireAuth("admin")
+    const admin = createAdminClient()
+
+    const { data, error } = await admin
+      .from("plans")
+      .select("id, name, price, cycle, created_at")
+      .order("price", { ascending: true })
+
+    if (error || !data) return []
+    return data as Plan[]
+  } catch {
+    return []
+  }
+}
+
+export async function createPlan(data: {
+  name: string
+  price: number
+  cycle: string
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const admin = createAdminClient()
+
+    const { error } = await admin.from("plans").insert({
+      name: data.name,
+      price: data.price,
+      cycle: data.cycle,
+    })
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/configuracoes")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function updatePlan(
+  id: string,
+  data: { name: string; price: number; cycle: string },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(id)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    const { error } = await admin
+      .from("plans")
+      .update({ name: data.name, price: data.price, cycle: data.cycle })
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/configuracoes")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function deletePlan(id: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(id)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    const { error } = await admin
+      .from("plans")
+      .delete()
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin/configuracoes")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Financial Management ---
+
+export async function registerPayment(studentId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(studentId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    const { data: student, error: fetchErr } = await admin
+      .from("users")
+      .select("plan_name")
+      .eq("id", parsed.data)
+      .single()
+
+    if (fetchErr || !student) return { success: false, error: "Aluno nao encontrado." }
+
+    const cycleName = (student.plan_name ?? "Mensal").toLowerCase()
+    const days = CYCLE_DAYS[cycleName] ?? 30
+    const expireDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+
+    const { error } = await admin
+      .from("users")
+      .update({ plan_status: "ativo", expire_date: expireDate })
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath(`/admin/alunos/${parsed.data}`)
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function blockStudent(studentId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(studentId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    const { error } = await admin
+      .from("users")
+      .update({ plan_status: "blocked" })
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath(`/admin/alunos/${parsed.data}`)
+    revalidatePath("/admin/alunos")
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }

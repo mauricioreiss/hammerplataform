@@ -62,3 +62,11 @@ export type Kpis = {
   mrr: string
   novosHoje: number
 }
+
+export type Plan = {
+  id: string
+  name: string
+  price: number
+  cycle: "mensal" | "semestral" | "anual"
+  created_at: string
+}

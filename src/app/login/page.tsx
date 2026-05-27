@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
 import { login } from "@/app/auth/actions"
 
 export default function LoginPage() {
@@ -28,26 +29,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-4 selection:bg-red-600 selection:text-white">
+    <div className="min-h-screen relative flex flex-col items-center justify-end pb-12 p-4 selection:bg-red-600 selection:text-white">
       {/* Background image */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src="/logo.jpeg"
+      <Image
+        src="/logo2.jpeg"
         alt=""
-        className="absolute inset-0 w-full h-full object-cover"
+        fill
+        priority
+        className="object-cover object-top"
       />
-      {/* Dark overlay so the form is readable */}
-      <div className="absolute inset-0 bg-black/70" />
+      {/* Gradient overlay - lighter at top to show logo, darker at bottom for form */}
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
 
-      {/* Content */}
+      {/* Login card pushed to bottom */}
       <div className="w-full max-w-[400px] relative z-10">
-        <div className="flex items-center justify-center mb-10">
-          <span className="font-black italic text-6xl text-white tracking-tighter drop-shadow-lg">
-            F<span className="-ml-2 text-zinc-300">H</span>
-          </span>
-        </div>
-
-        <div className="bg-zinc-900/90 backdrop-blur-sm border border-zinc-800 p-6 rounded-2xl shadow-xl">
+        <div className="bg-zinc-950/70 backdrop-blur-md border border-zinc-800/50 p-6 rounded-2xl shadow-2xl">
           <h1 className="text-2xl font-black italic text-white uppercase tracking-tight mb-6">
             Entrar
           </h1>
@@ -59,7 +55,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+              className="w-full bg-zinc-950/80 border border-zinc-800/50 rounded-xl p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
             />
             <input
               type="password"
@@ -67,7 +63,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+              className="w-full bg-zinc-950/80 border border-zinc-800/50 rounded-xl p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
             />
 
             {error && (

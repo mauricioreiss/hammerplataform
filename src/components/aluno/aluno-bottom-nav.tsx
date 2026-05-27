@@ -39,7 +39,7 @@ export function AlunoBottomNav({ hasPaymentAlert }: AlunoBottomNavProps) {
   const pathname = usePathname()
 
   return (
-    <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 sticky bottom-0 left-0 right-0 z-30 pb-safe">
+    <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 fixed bottom-0 left-0 right-0 z-50 pb-safe">
       <div className="flex justify-around items-center h-16 px-2">
         {tabs.map((tab) => {
           const isActive = tab.match(pathname)

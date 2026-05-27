@@ -9,7 +9,7 @@ type WorkoutDayCardProps = {
 export function WorkoutDayCard({ workout }: WorkoutDayCardProps) {
   return (
     <Link
-      href="/aluno/treino"
+      href={`/aluno/treino/${workout.id}`}
       className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl relative overflow-hidden block shadow-[0_0_20px_rgba(0,0,0,0.5)] active:scale-95 transition-transform"
     >
       <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/10 rounded-full blur-3xl" />

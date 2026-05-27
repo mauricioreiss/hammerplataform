@@ -3,6 +3,7 @@ import { Scale, ChevronDown } from "lucide-react"
 import { getCurrentUser, getWorkoutsDoAluno } from "@/app/actions"
 import { PaymentAlert } from "@/components/aluno/payment-alert"
 import { WorkoutDayCard } from "@/components/aluno/workout-day-card"
+import { InstallPrompt } from "@/components/aluno/install-prompt"
 
 export default async function AlunoPage() {
   const [user, workouts] = await Promise.all([
@@ -25,6 +26,9 @@ export default async function AlunoPage() {
           {firstName}
         </h2>
       </div>
+
+      {/* Install PWA prompt */}
+      <InstallPrompt />
 
       {/* Payment alert */}
       {hasAlert && <PaymentAlert />}
