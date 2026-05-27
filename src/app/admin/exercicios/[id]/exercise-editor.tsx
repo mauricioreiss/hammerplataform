@@ -13,8 +13,9 @@ import {
   ImageOff,
   Dumbbell,
 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 import {
-  uploadIllustration,
+  updateIllustrationUrl,
   deleteIllustration,
   type ExerciseRow,
 } from "../actions"
@@ -38,23 +39,60 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
     const file = e.target.files?.[0]
     if (!file) return
 
+    const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"]
+    if (!allowedTypes.includes(file.type)) {
+      setMessage({ type: "error", text: "Formato invalido. Use PNG, JPG, GIF ou WEBP." })
+      return
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setMessage({ type: "error", text: "Arquivo muito grande. Maximo 10MB." })
+      return
+    }
+
     setLoading(true)
     setMessage(null)
 
-    const formData = new FormData()
-    formData.append("file", file)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split(".").pop() ?? "gif"
+      const storagePath = `exercises/${exercise.id}.${ext}`
 
-    const result = await uploadIllustration(exercise.id, formData)
+      // Upload direct to Supabase Storage from browser
+      const { error: uploadError } = await supabase.storage
+        .from("exercicios-illustracoes")
+        .upload(storagePath, file, {
+          contentType: file.type,
+          upsert: true,
+        })
 
-    if (result.success) {
-      setIllustrationUrl(result.url)
-      setMessage({ type: "success", text: "Ilustracao atualizada." })
-    } else {
-      setMessage({ type: "error", text: result.error })
+      if (uploadError) {
+        setMessage({ type: "error", text: "Falha no upload: " + uploadError.message })
+        setLoading(false)
+        return
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("exercicios-illustracoes")
+        .getPublicUrl(storagePath)
+
+      // Cache-bust: append timestamp so the browser shows the new image
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now()
+
+      // Save URL to database via server action (small payload)
+      const result = await updateIllustrationUrl(exercise.id, publicUrl)
+
+      if (result.success) {
+        setIllustrationUrl(publicUrl)
+        setMessage({ type: "success", text: "Ilustracao atualizada." })
+      } else {
+        setMessage({ type: "error", text: result.error })
+      }
+    } catch {
+      setMessage({ type: "error", text: "Erro de conexao." })
     }
 
     setLoading(false)
-    // Reset input so the same file can be re-selected
     if (fileInputRef.current) fileInputRef.current.value = ""
   }
 

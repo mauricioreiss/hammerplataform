@@ -100,12 +100,12 @@ export async function getExerciseById(
 // --- Mutations ---
 
 export type UploadResult =
-  | { success: true; url: string }
+  | { success: true }
   | { success: false; error: string }
 
-export async function uploadIllustration(
+export async function updateIllustrationUrl(
   exerciseId: string,
-  formData: FormData,
+  url: string,
 ): Promise<UploadResult> {
   try {
     await requireAdmin()
@@ -115,69 +115,17 @@ export async function uploadIllustration(
       return { success: false, error: "ID de exercicio invalido." }
     }
 
-    const file = formData.get("file") as File | null
-    if (!file || file.size === 0) {
-      return { success: false, error: "Nenhum arquivo selecionado." }
-    }
-
-    const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"]
-    if (!allowedTypes.includes(file.type)) {
-      return { success: false, error: "Formato invalido. Use PNG, JPG, GIF ou WEBP." }
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      return { success: false, error: "Arquivo muito grande. Maximo 10MB." }
-    }
-
     const supabase = createAdminClient()
-
-    // Remove old illustration if exists
-    const { data: existing } = await supabase
+    const { error } = await supabase
       .from("exercises")
-      .select("illustration_url")
-      .eq("id", parsed.data)
-      .single()
-
-    if (existing?.illustration_url) {
-      const oldPath = extractStoragePath(existing.illustration_url)
-      if (oldPath) {
-        await supabase.storage.from("exercicios-illustracoes").remove([oldPath])
-      }
-    }
-
-    // Upload new file
-    const ext = file.name.split(".").pop() ?? "png"
-    const storagePath = `exercises/${parsed.data}.${ext}`
-    const arrayBuffer = await file.arrayBuffer()
-
-    const { error: uploadError } = await supabase.storage
-      .from("exercicios-illustracoes")
-      .upload(storagePath, arrayBuffer, {
-        contentType: file.type,
-        upsert: true,
-      })
-
-    if (uploadError) {
-      return { success: false, error: "Falha no upload: " + uploadError.message }
-    }
-
-    const { data: urlData } = supabase.storage
-      .from("exercicios-illustracoes")
-      .getPublicUrl(storagePath)
-
-    // Update exercise record
-    const { error: updateError } = await supabase
-      .from("exercises")
-      .update({ illustration_url: urlData.publicUrl })
+      .update({ illustration_url: url })
       .eq("id", parsed.data)
 
-    if (updateError) {
-      return { success: false, error: "Upload ok, mas falha ao salvar URL no banco." }
-    }
+    if (error) return { success: false, error: error.message }
 
-    return { success: true, url: urlData.publicUrl }
+    return { success: true }
   } catch {
-    return { success: false, error: "Erro de conexão. Tente novamente." }
+    return { success: false, error: "Erro de conexao." }
   }
 }
 
