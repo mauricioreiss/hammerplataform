@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { AlunoHeader } from "@/components/aluno/aluno-header"
 import { AlunoDesktopNav } from "@/components/aluno/aluno-desktop-nav"
 import { AlunoBottomNav } from "@/components/aluno/aluno-bottom-nav"
@@ -14,6 +15,10 @@ export default async function AlunoLayout({
     getCurrentUser(),
     getUnreadNotificationCount(),
   ])
+
+  if (user?.role === "admin") {
+    redirect("/admin")
+  }
 
   const initials = user
     ? user.full_name

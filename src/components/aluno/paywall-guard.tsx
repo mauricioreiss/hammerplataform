@@ -13,7 +13,7 @@ export function PaywallGuard({ user, children }: PaywallGuardProps) {
   const pathname = usePathname()
   const isAssinatura = pathname === "/aluno/assinatura"
 
-  if (user && !isAssinatura) {
+  if (user && user.role !== "admin" && !isAssinatura) {
     const isBlocked = user.plan_status === "blocked" || user.plan_status === "pending"
     const isExpired = user.expire_date && new Date(user.expire_date) < new Date()
 

@@ -13,7 +13,7 @@ export function FirstLoginGuard({ user, children }: FirstLoginGuardProps) {
   const pathname = usePathname()
   const isChangePassword = pathname === "/aluno/trocar-senha"
 
-  if (user && !isChangePassword && user.is_first_login) {
+  if (user && user.role !== "admin" && !isChangePassword && user.is_first_login) {
     redirect("/aluno/trocar-senha")
   }
 

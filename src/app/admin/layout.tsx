@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminBottomNav } from "@/components/admin/admin-bottom-nav"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
@@ -13,6 +14,10 @@ export default async function AdminLayout({
     getAuthEmail(),
     getUnreadNotificationCount(),
   ])
+
+  if (user?.role === "student") {
+    redirect("/aluno")
+  }
 
   const initials = user
     ? user.full_name
