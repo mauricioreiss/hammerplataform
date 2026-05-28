@@ -29,7 +29,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] relative w-full flex flex-col items-center justify-end pb-[10vh] px-4 bg-[#2a2a2a] selection:bg-red-600 selection:text-white">
+    <div className="min-h-[100dvh] relative w-full flex flex-col items-center justify-end pb-[16vh] px-4 bg-[#2a2a2a] selection:bg-red-600 selection:text-white">
       {/* Background image */}
       <Image
         src="/Logo3.png"
