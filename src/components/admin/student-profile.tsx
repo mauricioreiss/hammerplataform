@@ -262,7 +262,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
                 <p className="text-white text-sm font-bold">{anamnesis.days_per_week ? `${anamnesis.days_per_week}x` : "—"}</p>
               </div>
               <div>
-                <p className="text-zinc-600 text-[9px] font-bold uppercase">Lesoes / Dores</p>
+                <p className="text-zinc-600 text-[9px] font-bold uppercase">Lesões / Dores</p>
                 {anamnesis.injuries ? (
                   <p className="text-red-400 text-sm font-bold">{anamnesis.injuries}</p>
                 ) : (
@@ -292,7 +292,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               <Calendar size={14} className="text-zinc-400" />
             </div>
             <div>
-              <p className="text-zinc-500 text-[9px] font-bold uppercase">Ultima Avaliacao</p>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase">Última Avaliação</p>
               <p className="text-white text-xs font-bold">
                 {quickStatus.lastEvalDate
                   ? new Date(quickStatus.lastEvalDate).toLocaleDateString("pt-BR")
@@ -305,7 +305,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               <CheckCircle2 size={14} className="text-green-500" />
             </div>
             <div>
-              <p className="text-zinc-500 text-[9px] font-bold uppercase">Exercicios Feitos</p>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase">Exercícios Feitos</p>
               <p className="text-white text-xs font-bold">{quickStatus.completedExercises}</p>
             </div>
           </div>
@@ -328,7 +328,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
             activeTab === "avaliacoes" ? "border-red-600 text-red-500" : "border-transparent text-zinc-500"
           }`}
         >
-          Avaliacoes Fisicas
+          Avaliações Físicas
         </button>
       </div>
 
@@ -342,7 +342,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
                 onClick={() => setShowAvaliacaoModal(true)}
                 className="bg-zinc-900 border border-zinc-800 text-white font-bold py-3 rounded-xl text-xs uppercase flex items-center justify-center gap-2 active:bg-zinc-800 transition-colors"
               >
-                <Plus size={16} /> Nova Avaliacao
+                <Plus size={16} /> Nova Avaliação
               </button>
               {hasEnoughForComparativo && (
                 <button
@@ -355,7 +355,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
             </div>
 
             <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest">
-              Historico
+              Histórico
             </h3>
 
             {avaliacoes.map((av, index) => (
@@ -364,7 +364,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
 
             {avaliacoes.length === 0 && (
               <div className="text-center text-zinc-500 pt-10">
-                <p className="text-xs">Nenhuma avaliacao registrada.</p>
+                <p className="text-xs">Nenhuma avaliação registrada.</p>
               </div>
             )}
           </div>

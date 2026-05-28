@@ -55,7 +55,7 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
 
     const priceNum = parseFloat(price)
     if (isNaN(priceNum) || priceNum <= 0) {
-      setError("Valor invalido.")
+      setError("Valor inválido.")
       setLoading(false)
       return
     }

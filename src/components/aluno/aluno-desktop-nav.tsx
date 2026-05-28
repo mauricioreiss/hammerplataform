@@ -12,7 +12,7 @@ const tabs = [
   {
     href: "/aluno",
     icon: Home,
-    label: "Inicio",
+    label: "Início",
     match: (p: string) => p === "/aluno",
   },
   {
@@ -24,7 +24,7 @@ const tabs = [
   {
     href: "/aluno/evolucao",
     icon: Activity,
-    label: "Evolucao",
+    label: "Evolução",
     match: (p: string) => p.startsWith("/aluno/evolucao"),
   },
   {

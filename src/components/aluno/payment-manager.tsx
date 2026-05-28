@@ -25,7 +25,7 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
 
   const statusLabel =
     isBlocked ? "Bloqueado" :
-    isReview ? "Em Analise" :
+    isReview ? "Em Análise" :
     isPending ? "Pendente" :
     isExpired ? "Expirado" :
     user.plan_status === "atrasado" ? "Atrasado" :
@@ -44,7 +44,7 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
 
   const pageTitle =
     isBlocked ? "Acesso Bloqueado" :
-    isReview ? "Pagamento em Analise" :
+    isReview ? "Pagamento em Análise" :
     isPending ? "Pagamento Pendente" :
     isExpired ? "Plano Expirado" : "Sua Assinatura"
 
@@ -74,11 +74,11 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
           <div className="w-20 h-20 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mx-auto mb-4">
             <Hourglass size={32} className="text-yellow-500 animate-pulse" />
           </div>
-          <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
-            Pagamento em Analise
+          <h2 className="text-2xl font-black italic text-white uppercase tracking-tight">
+            Pagamento em Análise
           </h2>
           <p className="text-zinc-400 text-sm mt-4 max-w-sm mx-auto leading-relaxed">
-            Seu comprovante foi sinalizado. O professor Felipe esta validando o PIX e estruturando a sua ficha de treino. Assim que tudo estiver pronto, seu acesso ao App sera liberado automaticamente aqui.
+            Seu comprovante foi sinalizado. O professor Felipe está validando o PIX e estruturando a sua ficha de treino. Assim que tudo estiver pronto, seu acesso ao App será liberado automaticamente aqui.
           </p>
         </div>
 
@@ -91,7 +91,7 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
               <p className="text-white font-bold">{user.plan_name ?? "—"}</p>
             </div>
             <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] font-black uppercase">
-              Em Analise
+              Em Análise
             </span>
           </div>
           <div className="text-center">
@@ -114,7 +114,7 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
               Pagamento via PIX
             </h3>
             <p className="text-zinc-400 text-xs mb-6">
-              Copie a chave abaixo e faca a transferencia para liberar seu acesso.
+              Copie a chave abaixo e faça a transferência para liberar seu acesso.
             </p>
 
             <div className="bg-white p-4 inline-block rounded-xl mb-6 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
@@ -146,11 +146,11 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
               className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50 mb-4"
             >
               {notifying ? <Loader2 size={20} className="animate-spin" /> : <CreditCard size={20} />}
-              {notifying ? "Enviando..." : "Ja fiz o pagamento"}
+              {notifying ? "Enviando..." : "Já fiz o pagamento"}
             </button>
 
             <p className="text-[10px] text-zinc-500 font-bold uppercase">
-              Apos o pagamento, o professor ira liberar seu acesso.
+              Após o pagamento, o professor irá liberar seu acesso.
             </p>
           </div>
 
@@ -175,7 +175,7 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
         }`}>
           <PageIcon size={24} className={isPaywalled ? "text-red-500" : "text-zinc-400"} />
         </div>
-        <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
+        <h2 className="text-2xl font-black italic text-white uppercase tracking-tight">
           {pageTitle}
         </h2>
         {isPaywalled && (
