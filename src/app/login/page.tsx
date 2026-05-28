@@ -36,10 +36,10 @@ export default function LoginPage() {
         alt=""
         fill
         priority
-        className="-z-10 object-cover object-top"
+        className="z-0 object-cover object-top"
       />
       {/* Gradient overlay - lighter at top to show logo, darker at bottom for form */}
-      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
 
       {/* Login card in the lower half of the image */}
       <div className="w-full max-w-[400px] relative z-10">
