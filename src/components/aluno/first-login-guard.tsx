@@ -12,8 +12,9 @@ type FirstLoginGuardProps = {
 export function FirstLoginGuard({ user, children }: FirstLoginGuardProps) {
   const pathname = usePathname()
   const isChangePassword = pathname === "/aluno/trocar-senha"
+  const isAssinatura = pathname === "/aluno/assinatura"
 
-  if (user && user.role !== "admin" && !isChangePassword && user.is_first_login) {
+  if (user && user.role !== "admin" && !isChangePassword && !isAssinatura && user.is_first_login) {
     redirect("/aluno/trocar-senha")
   }
 

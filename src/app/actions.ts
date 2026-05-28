@@ -1178,7 +1178,7 @@ export async function registerFromLanding(
     role: "student",
     objective: objective || null,
     plan_status: "pending",
-    is_first_login: true,
+    is_first_login: false,
   })
 
   if (userError) {
