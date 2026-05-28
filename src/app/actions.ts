@@ -1353,6 +1353,55 @@ export async function registerPayment(studentId: string): Promise<{ success: boo
   }
 }
 
+export async function notifyPaymentMade(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const admin = createAdminClient()
+
+    const { data: profile } = await admin
+      .from("users")
+      .select("plan_status, full_name")
+      .eq("id", user.id)
+      .single()
+
+    if (!profile) return { success: false, error: "Perfil nao encontrado." }
+    if (profile.plan_status !== "pending") {
+      return { success: false, error: "Status atual nao permite essa acao." }
+    }
+
+    const { error } = await admin
+      .from("users")
+      .update({ plan_status: "review" })
+      .eq("id", user.id)
+
+    if (error) return { success: false, error: error.message }
+
+    // Notify admin
+    const { data: adminUser } = await admin
+      .from("users")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1)
+      .single()
+
+    if (adminUser?.id) {
+      await insertNotification(
+        adminUser.id,
+        "Pagamento sinalizado",
+        `${profile.full_name} informou que realizou o pagamento e aguarda validacao.`,
+      )
+    }
+
+    revalidatePath("/aluno/assinatura")
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
 export async function blockStudent(studentId: string): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")

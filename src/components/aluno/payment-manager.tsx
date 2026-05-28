@@ -1,7 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { CreditCard, QrCode, Copy, ShieldAlert, Clock, AlertTriangle } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { CreditCard, QrCode, Copy, ShieldAlert, Clock, AlertTriangle, Hourglass, Loader2 } from "lucide-react"
+import { notifyPaymentMade } from "@/app/actions"
 import type { UserProfile } from "@/lib/types"
 
 type PaymentManagerProps = {
@@ -10,16 +12,20 @@ type PaymentManagerProps = {
 }
 
 export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
+  const router = useRouter()
   const [step, setStep] = useState<"status" | "pix">("status")
   const [copied, setCopied] = useState(false)
+  const [notifying, setNotifying] = useState(false)
 
   const isBlocked = user.plan_status === "blocked"
   const isPending = user.plan_status === "pending"
+  const isReview = user.plan_status === "review"
   const isExpired = user.expire_date && new Date(user.expire_date) < new Date()
-  const isPaywalled = isBlocked || isPending || isExpired
+  const isPaywalled = isBlocked || isPending || isReview || isExpired
 
   const statusLabel =
     isBlocked ? "Bloqueado" :
+    isReview ? "Em Analise" :
     isPending ? "Pendente" :
     isExpired ? "Expirado" :
     user.plan_status === "atrasado" ? "Atrasado" :
@@ -28,7 +34,7 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
   const statusColor =
     isBlocked || isExpired || user.plan_status === "atrasado"
       ? "bg-red-500/20 text-red-500 border-red-500/30"
-      : isPending || user.plan_status === "vencendo"
+      : isPending || isReview || user.plan_status === "vencendo"
         ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
         : "bg-green-500/20 text-green-500 border-green-500/30"
 
@@ -38,11 +44,13 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
 
   const pageTitle =
     isBlocked ? "Acesso Bloqueado" :
+    isReview ? "Pagamento em Analise" :
     isPending ? "Pagamento Pendente" :
     isExpired ? "Plano Expirado" : "Sua Assinatura"
 
   const PageIcon =
     isBlocked ? ShieldAlert :
+    isReview ? Hourglass :
     isPending ? Clock :
     isExpired ? AlertTriangle : CreditCard
 
@@ -50,6 +58,51 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
     navigator.clipboard.writeText(pixKey)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleNotifyPayment() {
+    setNotifying(true)
+    await notifyPaymentMade()
+    setNotifying(false)
+    router.refresh()
+  }
+
+  if (isReview) {
+    return (
+      <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
+        <div className="text-center mb-8 pt-8">
+          <div className="w-20 h-20 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mx-auto mb-4">
+            <Hourglass size={32} className="text-yellow-500 animate-pulse" />
+          </div>
+          <h2 className="text-2xl font-black italic text-white uppercase tracking-tighter">
+            Pagamento em Analise
+          </h2>
+          <p className="text-zinc-400 text-sm mt-4 max-w-sm mx-auto leading-relaxed">
+            Seu comprovante foi sinalizado. O professor Felipe esta validando o PIX e estruturando a sua ficha de treino. Assim que tudo estiver pronto, seu acesso ao App sera liberado automaticamente aqui.
+          </p>
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl">
+          <div className="flex justify-between items-center border-b border-zinc-800 pb-4 mb-4">
+            <div>
+              <p className="text-zinc-400 text-[10px] font-bold uppercase tracking-widest">
+                Plano Atual
+              </p>
+              <p className="text-white font-bold">{user.plan_name ?? "—"}</p>
+            </div>
+            <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-1 rounded text-[10px] font-black uppercase">
+              Em Analise
+            </span>
+          </div>
+          <div className="text-center">
+            <p className="text-zinc-500 text-[10px] uppercase font-bold">Valor</p>
+            <p className="text-3xl font-black text-white">
+              R$ {(user.plan_value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (step === "pix") {
@@ -86,6 +139,15 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
                 R$ {(user.plan_value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
               </p>
             </div>
+
+            <button
+              onClick={handleNotifyPayment}
+              disabled={notifying}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50 mb-4"
+            >
+              {notifying ? <Loader2 size={20} className="animate-spin" /> : <CreditCard size={20} />}
+              {notifying ? "Enviando..." : "Ja fiz o pagamento"}
+            </button>
 
             <p className="text-[10px] text-zinc-500 font-bold uppercase">
               Apos o pagamento, o professor ira liberar seu acesso.

@@ -1,6 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Clock } from "lucide-react"
 import type { UserProfile } from "@/lib/types"
 
 type StudentListItemProps = {
@@ -35,7 +35,14 @@ export function StudentListItem({ student }: StudentListItemProps) {
           )}
         </div>
         <div>
-          <p className="font-bold text-white text-sm">{student.full_name}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-bold text-white text-sm">{student.full_name}</p>
+            {student.plan_status === "review" && (
+              <span className="bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-1.5 py-0.5 rounded text-[8px] font-black uppercase flex items-center gap-1">
+                <Clock size={10} /> Aguardando
+              </span>
+            )}
+          </div>
           <p className="text-[10px] text-zinc-500 font-bold uppercase">
             {student.objective} &bull; {student.plan_name ?? "Mensal"}
           </p>

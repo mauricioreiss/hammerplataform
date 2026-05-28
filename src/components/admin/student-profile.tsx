@@ -43,6 +43,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
 
   const statusLabel =
     student.plan_status === "blocked" ? "Bloqueado" :
+    student.plan_status === "review" ? "Aguardando Pagamento" :
     student.plan_status === "pending" ? "Pendente" :
     student.plan_status === "atrasado" ? "Atrasado" :
     student.plan_status === "vencendo" ? "Vencendo" :
@@ -51,7 +52,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
   const statusColor =
     student.plan_status === "blocked" || student.plan_status === "atrasado" || isExpired
       ? "bg-red-500/20 text-red-500 border-red-500/30"
-      : student.plan_status === "pending" || student.plan_status === "vencendo"
+      : student.plan_status === "pending" || student.plan_status === "review" || student.plan_status === "vencendo"
         ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
         : "bg-green-500/20 text-green-500 border-green-500/30"
 
