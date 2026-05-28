@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2 } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
 import { registerPayment, blockStudent, unblockStudent, deleteStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
@@ -12,6 +12,7 @@ import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
 import { AddAvaliacaoModal } from "./add-avaliacao-modal"
 import { ResetPasswordModal } from "./reset-password-modal"
+import { AnamneseModal } from "./anamnese-modal"
 
 type StudentProfileProps = {
   student: UserProfile
@@ -37,6 +38,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [showAnamneseModal, setShowAnamneseModal] = useState(false)
 
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
@@ -261,9 +263,18 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
       {/* Anamnese Card */}
       <div className="bg-zinc-950 border-b border-zinc-800 px-4 md:px-8 py-3">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ClipboardList size={14} className="text-zinc-500" />
-            <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Dados da Anamnese</p>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ClipboardList size={14} className="text-zinc-500" />
+              <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Dados da Anamnese</p>
+            </div>
+            <button
+              onClick={() => setShowAnamneseModal(true)}
+              className="text-zinc-500 hover:text-white text-[10px] font-bold uppercase flex items-center gap-1 transition-colors"
+            >
+              <Pencil size={12} />
+              {anamnesis ? "Editar" : "Preencher"}
+            </button>
           </div>
           {anamnesis ? (
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
@@ -425,6 +436,14 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
       )}
 
       {/* Delete Confirmation Modal */}
+      {showAnamneseModal && (
+        <AnamneseModal
+          studentId={student.id}
+          anamnesis={anamnesis}
+          onClose={() => setShowAnamneseModal(false)}
+        />
+      )}
+
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
