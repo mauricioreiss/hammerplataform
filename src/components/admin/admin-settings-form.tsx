@@ -82,7 +82,7 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
     const result = await updateAdminProfile({
       fullName: fullName.trim(),
       avatarUrl: currentAvatar ?? undefined,
-      pixKey: pixKey.trim() || undefined,
+      pixKey: pixKey.trim(),
     })
 
     if (!result.success) {

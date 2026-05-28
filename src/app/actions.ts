@@ -398,10 +398,73 @@ export async function getAnamneseByUserId(userId: string) {
       .limit(1)
       .maybeSingle()
 
-    if (error || !data) return null
-    return data
-  } catch {
+    if (error) {
+      console.error("getAnamneseByUserId query error:", error)
+      return null
+    }
+    return data ?? null
+  } catch (err) {
+    console.error("getAnamneseByUserId unexpected error:", err)
     return null
+  }
+}
+
+export async function upsertAnamnesis(
+  userId: string,
+  formData: {
+    weight?: number
+    height?: number
+    injuries?: string
+    days_per_week?: number
+    par_q_data?: Record<string, boolean>
+  },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsedId = uuidSchema.safeParse(userId)
+    if (!parsedId.success) return { success: false, error: "ID inválido." }
+
+    const parsed = anamneseSchema.safeParse(formData)
+    if (!parsed.success) {
+      return { success: false, error: parsed.error.issues.map((i) => i.message).join(", ") }
+    }
+
+    const admin = createAdminClient()
+
+    // Check if anamnesis already exists for this user
+    const { data: existing } = await admin
+      .from("anamnesis")
+      .select("id")
+      .eq("user_id", parsedId.data)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const payload = {
+      weight: parsed.data.weight ?? null,
+      height: parsed.data.height ?? null,
+      injuries: parsed.data.injuries ?? null,
+      days_per_week: parsed.data.days_per_week ?? null,
+      par_q_data: parsed.data.par_q_data ?? null,
+    }
+
+    if (existing) {
+      const { error } = await admin
+        .from("anamnesis")
+        .update(payload)
+        .eq("id", existing.id)
+      if (error) return { success: false, error: error.message }
+    } else {
+      const { error } = await admin
+        .from("anamnesis")
+        .insert({ user_id: parsedId.data, ...payload })
+      if (error) return { success: false, error: error.message }
+    }
+
+    revalidatePath(`/admin/alunos/${parsedId.data}`)
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexão." }
   }
 }
 
@@ -968,6 +1031,7 @@ export async function updateAdminProfile(data: {
     if (error) return { success: false, error: error.message }
 
     revalidatePath("/admin")
+    revalidatePath("/admin/configuracoes")
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }
@@ -1077,9 +1141,6 @@ export async function getStudentQuickStatus(
 
 export async function getAdminPixKey(): Promise<string> {
   try {
-    const user = await getAuthUser()
-    if (!user) return ""
-
     const admin = createAdminClient()
     const { data } = await admin
       .from("users")

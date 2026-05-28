@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { CreditCard, QrCode, Copy, ShieldAlert, Clock, AlertTriangle, Hourglass, Loader2 } from "lucide-react"
+import { CreditCard, Copy, ShieldAlert, Clock, AlertTriangle, Hourglass, Loader2, AlertCircle } from "lucide-react"
+import { QRCodeSVG } from "qrcode.react"
 import { notifyPaymentMade } from "@/app/actions"
 import type { UserProfile } from "@/lib/types"
 
@@ -16,7 +17,9 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
   const [step, setStep] = useState<"status" | "pix">("status")
   const [copied, setCopied] = useState(false)
   const [notifying, setNotifying] = useState(false)
+  const [paymentError, setPaymentError] = useState("")
 
+  const hasPixKey = Boolean(pixKey)
   const isBlocked = user.plan_status === "blocked"
   const isPending = user.plan_status === "pending"
   const isReview = user.plan_status === "review"
@@ -62,9 +65,19 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
 
   async function handleNotifyPayment() {
     setNotifying(true)
-    await notifyPaymentMade()
-    setNotifying(false)
-    router.refresh()
+    setPaymentError("")
+    try {
+      const result = await notifyPaymentMade()
+      if (!result.success) {
+        setPaymentError(result.error ?? "Erro ao sinalizar pagamento.")
+        return
+      }
+      router.refresh()
+    } catch {
+      setPaymentError("Falha de conexão. Tente novamente.")
+    } finally {
+      setNotifying(false)
+    }
   }
 
   if (isReview) {
@@ -113,45 +126,68 @@ export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
             <h3 className="text-white font-bold uppercase mb-2">
               Pagamento via PIX
             </h3>
-            <p className="text-zinc-400 text-xs mb-6">
-              Copie a chave abaixo e faça a transferência para liberar seu acesso.
-            </p>
 
-            <div className="bg-white p-4 inline-block rounded-xl mb-6 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-              <QrCode size={180} className="text-black" />
-            </div>
+            {hasPixKey ? (
+              <>
+                <p className="text-zinc-400 text-xs mb-6">
+                  Copie a chave abaixo e faça a transferência para liberar seu acesso.
+                </p>
 
-            <div className="bg-zinc-950 border border-zinc-800 p-3 rounded-lg flex justify-between items-center mb-4">
-              <span className="text-zinc-500 text-xs font-mono truncate mr-2">
-                {pixKey}
-              </span>
-              <button
-                onClick={handleCopy}
-                className="text-red-500 font-bold text-[10px] uppercase flex items-center gap-1 shrink-0"
-              >
-                <Copy size={12} /> {copied ? "Copiado!" : "Copiar"}
-              </button>
-            </div>
+                <div className="bg-white p-4 inline-block rounded-xl mb-6 shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                  <QRCodeSVG value={pixKey} size={180} />
+                </div>
 
-            <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-4">
-              <p className="text-zinc-500 text-[10px] font-bold uppercase mb-1">Valor</p>
-              <p className="text-white text-lg font-black">
-                R$ {(user.plan_value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
-              </p>
-            </div>
+                <div className="bg-zinc-950 border border-zinc-800 p-3 rounded-lg flex justify-between items-center mb-4">
+                  <span className="text-zinc-500 text-xs font-mono truncate mr-2">
+                    {pixKey}
+                  </span>
+                  <button
+                    onClick={handleCopy}
+                    className="text-red-500 font-bold text-[10px] uppercase flex items-center gap-1 shrink-0"
+                  >
+                    <Copy size={12} /> {copied ? "Copiado!" : "Copiar"}
+                  </button>
+                </div>
 
-            <button
-              onClick={handleNotifyPayment}
-              disabled={notifying}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50 mb-4"
-            >
-              {notifying ? <Loader2 size={20} className="animate-spin" /> : <CreditCard size={20} />}
-              {notifying ? "Enviando..." : "Já fiz o pagamento"}
-            </button>
+                <div className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 mb-4">
+                  <p className="text-zinc-500 text-[10px] font-bold uppercase mb-1">Valor</p>
+                  <p className="text-white text-lg font-black">
+                    R$ {(user.plan_value ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
 
-            <p className="text-[10px] text-zinc-500 font-bold uppercase">
-              Após o pagamento, o professor irá liberar seu acesso.
-            </p>
+                <button
+                  onClick={handleNotifyPayment}
+                  disabled={notifying}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white font-black uppercase py-4 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50 mb-4"
+                >
+                  {notifying ? <Loader2 size={20} className="animate-spin" /> : <CreditCard size={20} />}
+                  {notifying ? "Enviando..." : "Já fiz o pagamento"}
+                </button>
+
+                {paymentError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                    <p className="text-red-400 text-xs font-bold text-center">{paymentError}</p>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-zinc-500 font-bold uppercase">
+                  Após o pagamento, o professor irá liberar seu acesso.
+                </p>
+              </>
+            ) : (
+              <div className="py-6">
+                <div className="w-16 h-16 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle size={24} className="text-yellow-500" />
+                </div>
+                <p className="text-yellow-400 text-sm font-bold mb-2">
+                  Chave PIX não configurada
+                </p>
+                <p className="text-zinc-400 text-xs max-w-xs mx-auto leading-relaxed">
+                  O professor ainda não configurou a chave PIX para recebimento. Entre em contato para realizar o pagamento.
+                </p>
+              </div>
+            )}
           </div>
 
           <button
