@@ -1148,90 +1148,100 @@ export async function registerFromLanding(
     return { success: false, error: messages }
   }
 
-  const { email, password, name, plan_id, objective, weight, height, injuries, days_per_week, par_q_data } = parsed.data
-  const admin = createAdminClient()
+  try {
+    const { email, password, name, plan_id, objective, weight, height, injuries, days_per_week, par_q_data } = parsed.data
+    const admin = createAdminClient()
 
-  // 1. Look up selected plan
-  const { data: plan } = await admin
-    .from("plans")
-    .select("name, price")
-    .eq("id", plan_id)
-    .single()
+    // 1. Look up selected plan
+    const { data: plan, error: planError } = await admin
+      .from("plans")
+      .select("name, price")
+      .eq("id", plan_id)
+      .single()
 
-  if (!plan) {
-    return { success: false, error: "Plano selecionado nao encontrado." }
-  }
-
-  // 2. Create auth user
-  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  })
-
-  if (authError) {
-    console.error("registerFromLanding auth error:", authError)
-    if (authError.message.includes("already been registered")) {
-      return { success: false, error: "Este e-mail ja esta cadastrado." }
+    if (planError || !plan) {
+      console.error("registerFromLanding plan lookup error:", planError)
+      return { success: false, error: "Plano selecionado nao encontrado." }
     }
-    return { success: false, error: authError.message }
+
+    // 2. Create auth user
+    const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    })
+
+    if (authError) {
+      console.error("registerFromLanding auth error:", authError)
+      if (authError.message.includes("already been registered")) {
+        return { success: false, error: "Este e-mail ja esta cadastrado." }
+      }
+      return { success: false, error: authError.message }
+    }
+
+    if (!authUser.user) {
+      return { success: false, error: "Falha ao criar conta." }
+    }
+
+    const userId = authUser.user.id
+
+    // 3. Insert into users table
+    const { error: userError } = await admin.from("users").insert({
+      id: userId,
+      full_name: name,
+      role: "student",
+      objective: objective || null,
+      plan_status: "pending",
+      plan_name: plan.name,
+      plan_value: plan.price,
+      is_first_login: false,
+    })
+
+    if (userError) {
+      console.error("registerFromLanding users insert error:", userError)
+      return { success: false, error: `Falha ao criar perfil: ${userError.message}` }
+    }
+
+    // 4. Insert anamnesis with ALL columns explicit (nulls for missing values)
+    const hasParq = par_q_data && Object.keys(par_q_data).length > 0
+
+    const { error: anamError } = await admin.from("anamnesis").insert({
+      user_id: userId,
+      weight: weight ?? null,
+      height: height ?? null,
+      injuries: injuries ?? null,
+      days_per_week: days_per_week ?? null,
+      par_q_data: hasParq ? par_q_data : null,
+    })
+
+    if (anamError) {
+      console.error("registerFromLanding anamnesis insert error:", anamError)
+      // Log full payload for debugging
+      console.error("anamnesis payload was:", { user_id: userId, weight, height, injuries, days_per_week, par_q_data: hasParq ? par_q_data : null })
+      return { success: false, error: `Falha ao salvar anamnese: ${anamError.message}` }
+    }
+
+    // 5. Notify admin about new registration
+    const { data: admins } = await admin
+      .from("users")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1)
+      .single()
+
+    if (admins?.id) {
+      await insertNotification(
+        admins.id,
+        "Novo aluno cadastrado",
+        `${name} se cadastrou pela landing page e aguarda liberacao.`,
+      )
+    }
+
+    return { success: true }
+  } catch (err) {
+    console.error("registerFromLanding unexpected error:", err)
+    return { success: false, error: err instanceof Error ? err.message : "Erro inesperado no cadastro." }
   }
-
-  if (!authUser.user) {
-    return { success: false, error: "Falha ao criar conta." }
-  }
-
-  const userId = authUser.user.id
-
-  // 2. Insert into users table
-  const { error: userError } = await admin.from("users").insert({
-    id: userId,
-    full_name: name,
-    role: "student",
-    objective: objective || null,
-    plan_status: "pending",
-    plan_name: plan.name,
-    plan_value: plan.price,
-    is_first_login: false,
-  })
-
-  if (userError) {
-    console.error("registerFromLanding users insert error:", userError)
-    return { success: false, error: `Falha ao criar perfil: ${userError.message}` }
-  }
-
-  // 3. Insert anamnesis
-  const anamnesisPayload: Record<string, unknown> = { user_id: userId }
-  if (weight !== undefined) anamnesisPayload.weight = weight
-  if (height !== undefined) anamnesisPayload.height = height
-  if (injuries !== undefined) anamnesisPayload.injuries = injuries
-  if (days_per_week !== undefined) anamnesisPayload.days_per_week = days_per_week
-  if (par_q_data !== undefined) anamnesisPayload.par_q_data = par_q_data
-
-  const { error: anamError } = await admin.from("anamnesis").insert(anamnesisPayload)
-
-  if (anamError) {
-    console.error("registerFromLanding anamnesis insert error:", anamError)
-    return { success: false, error: `Falha ao salvar anamnese: ${anamError.message}` }
-  }
-
-  // 4. Notify admin about new registration
-  const { data: admins } = await admin
-    .from("users")
-    .select("id")
-    .eq("role", "admin")
-    .limit(1)
-    .single()
-
-  if (admins?.id) {
-    await insertNotification(
-      admins.id,
-      "Novo aluno cadastrado",
-      `${name} se cadastrou pela landing page e aguarda liberacao.`,
-    )
-  }
-
-  return { success: true }
 }
 
 // --- Plans CRUD ---
