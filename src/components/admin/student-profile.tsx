@@ -4,9 +4,9 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, Loader2 } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2 } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise } from "@/lib/types"
-import { registerPayment, blockStudent } from "@/app/actions"
+import { registerPayment, blockStudent, unblockStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
@@ -69,6 +69,15 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
     setShowBlockConfirm(false)
     router.refresh()
   }
+
+  async function handleUnblock() {
+    setBlockLoading(true)
+    await unblockStudent(student.id)
+    setBlockLoading(false)
+    router.refresh()
+  }
+
+  const isBlocked = student.plan_status === "blocked"
 
   const since = new Date(student.created_at).toLocaleDateString("pt-BR", {
     month: "short",
@@ -195,7 +204,16 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               {paymentLoading ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
               Registrar Pagamento
             </button>
-            {!showBlockConfirm ? (
+            {isBlocked ? (
+              <button
+                onClick={handleUnblock}
+                disabled={blockLoading}
+                className="border border-zinc-600 text-zinc-300 font-bold uppercase py-2.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                {blockLoading ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
+                Desbloquear Acesso
+              </button>
+            ) : !showBlockConfirm ? (
               <button
                 onClick={() => setShowBlockConfirm(true)}
                 className="border border-red-500/30 text-red-500 font-bold uppercase py-2.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 hover:bg-red-500/10 transition-colors"

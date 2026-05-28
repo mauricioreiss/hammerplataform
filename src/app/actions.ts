@@ -1276,6 +1276,38 @@ export async function blockStudent(studentId: string): Promise<{ success: boolea
   }
 }
 
+export async function unblockStudent(studentId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(studentId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    const { data: profile } = await admin
+      .from("users")
+      .select("expire_date")
+      .eq("id", parsed.data)
+      .single()
+
+    const isExpired = profile?.expire_date && new Date(profile.expire_date) < new Date()
+    const newStatus = isExpired ? "pending" : "active"
+
+    const { error } = await admin
+      .from("users")
+      .update({ plan_status: newStatus })
+      .eq("id", parsed.data)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath(`/admin/alunos/${parsed.data}`)
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
 // --- Notifications ---
 
 async function insertNotification(userId: string, title: string, message: string) {
