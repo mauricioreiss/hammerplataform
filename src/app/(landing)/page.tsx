@@ -1,13 +1,16 @@
 import { redirect } from "next/navigation"
-import { getCurrentUser } from "@/app/actions"
+import { getCurrentUser, getPublicPlans } from "@/app/actions"
 import { SalesFunnel } from "@/components/landing/sales-funnel"
 
 export default async function LandingPage() {
-  const user = await getCurrentUser()
+  const [user, plans] = await Promise.all([
+    getCurrentUser(),
+    getPublicPlans(),
+  ])
 
   if (user) {
     redirect(user.role === "admin" ? "/admin" : "/aluno")
   }
 
-  return <SalesFunnel />
+  return <SalesFunnel plans={plans} />
 }

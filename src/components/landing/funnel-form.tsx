@@ -12,8 +12,10 @@ import {
   Loader2,
 } from "lucide-react"
 import { registerFromLanding } from "@/app/actions"
+import type { Plan } from "@/lib/types"
 
 type FunnelFormProps = {
+  plans: Plan[]
   onBack: () => void
   onComplete: (objetivo: string) => void
 }
@@ -33,7 +35,13 @@ const INPUT_CLASS =
 
 const SELECT_CLASS = INPUT_CLASS + " text-zinc-400"
 
-export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
+const CYCLE_LABELS: Record<string, string> = {
+  mensal: "Mensal",
+  semestral: "Semestral",
+  anual: "Anual",
+}
+
+export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -52,6 +60,7 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
     nivelEstresse: "",
     lesoes: "",
     anabolizantes: "",
+    planoId: "",
     parq: {} as Record<number, boolean>,
     termo: false,
   })
@@ -80,6 +89,7 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
       email: formData.email,
       password: formData.senha,
       name: formData.nome,
+      plan_id: formData.planoId,
       objective: formData.objetivo || undefined,
       weight: formData.peso ? Number(formData.peso) : undefined,
       height: formData.altura ? Number(formData.altura) : undefined,
@@ -316,6 +326,43 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
                   Detalhes Finais
                 </h2>
               </div>
+
+              {/* Plan selection */}
+              <div>
+                <p className="text-zinc-400 text-sm mb-3">Escolha seu plano de acompanhamento:</p>
+                <div className="space-y-2">
+                  {plans.map((plan) => (
+                    <button
+                      key={plan.id}
+                      type="button"
+                      onClick={() => update("planoId", plan.id)}
+                      className={`w-full p-4 rounded-xl border text-left transition-all ${
+                        formData.planoId === plan.id
+                          ? "border-red-600 bg-red-600/10"
+                          : "border-zinc-800 bg-zinc-950 hover:border-zinc-700"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className={`font-bold text-sm ${formData.planoId === plan.id ? "text-white" : "text-zinc-300"}`}>
+                            {plan.name}
+                          </p>
+                          <p className="text-zinc-500 text-[10px] font-bold uppercase">
+                            {CYCLE_LABELS[plan.cycle] ?? plan.cycle}
+                          </p>
+                        </div>
+                        <p className={`text-lg font-black ${formData.planoId === plan.id ? "text-red-500" : "text-zinc-400"}`}>
+                          R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {plans.length === 0 && (
+                  <p className="text-zinc-500 text-xs">Nenhum plano disponivel no momento.</p>
+                )}
+              </div>
+
               <textarea
                 rows={3}
                 placeholder="Histórico de lesões, dores atuais ou cirurgias? (Opcional)"
@@ -368,9 +415,9 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
                 ? handleComplete
                 : () => setStep((s) => s + 1)
             }
-            disabled={(step === TOTAL_STEPS && !formData.termo) || saving}
+            disabled={(step === TOTAL_STEPS && (!formData.termo || !formData.planoId)) || saving}
             className={`w-full mt-8 font-black italic uppercase py-5 rounded-xl flex items-center justify-center gap-2 transition-all ${
-              (step === TOTAL_STEPS && !formData.termo) || saving
+              (step === TOTAL_STEPS && (!formData.termo || !formData.planoId)) || saving
                 ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                 : "bg-red-600 hover:bg-red-700 text-white active:scale-95 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
             }`}

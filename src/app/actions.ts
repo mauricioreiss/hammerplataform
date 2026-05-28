@@ -1130,6 +1130,7 @@ const registerSchema = z.object({
   email: z.string().email("E-mail invalido."),
   password: z.string().min(6, "Senha deve ter no minimo 6 caracteres."),
   name: z.string().min(2, "Nome obrigatorio.").max(200),
+  plan_id: z.string().uuid("Selecione um plano."),
   objective: z.string().max(200).optional(),
   weight: z.number().positive().max(500).optional(),
   height: z.number().positive().max(300).optional(),
@@ -1147,10 +1148,21 @@ export async function registerFromLanding(
     return { success: false, error: messages }
   }
 
-  const { email, password, name, objective, weight, height, injuries, days_per_week, par_q_data } = parsed.data
+  const { email, password, name, plan_id, objective, weight, height, injuries, days_per_week, par_q_data } = parsed.data
   const admin = createAdminClient()
 
-  // 1. Create auth user
+  // 1. Look up selected plan
+  const { data: plan } = await admin
+    .from("plans")
+    .select("name, price")
+    .eq("id", plan_id)
+    .single()
+
+  if (!plan) {
+    return { success: false, error: "Plano selecionado nao encontrado." }
+  }
+
+  // 2. Create auth user
   const { data: authUser, error: authError } = await admin.auth.admin.createUser({
     email,
     password,
@@ -1178,6 +1190,8 @@ export async function registerFromLanding(
     role: "student",
     objective: objective || null,
     plan_status: "pending",
+    plan_name: plan.name,
+    plan_value: plan.price,
     is_first_login: false,
   })
 
@@ -1227,6 +1241,21 @@ export async function getPlans(): Promise<Plan[]> {
     await requireAuth("admin")
     const admin = createAdminClient()
 
+    const { data, error } = await admin
+      .from("plans")
+      .select("id, name, price, cycle, created_at")
+      .order("price", { ascending: true })
+
+    if (error || !data) return []
+    return data as Plan[]
+  } catch {
+    return []
+  }
+}
+
+export async function getPublicPlans(): Promise<Plan[]> {
+  try {
+    const admin = createAdminClient()
     const { data, error } = await admin
       .from("plans")
       .select("id, name, price, cycle, created_at")

@@ -6,10 +6,15 @@ import { LandingResults } from "./landing-results"
 import { FunnelForm } from "./funnel-form"
 import { AILoading } from "./ai-loading"
 import { Paywall } from "./paywall"
+import type { Plan } from "@/lib/types"
 
 type Stage = "landing" | "form" | "loading" | "paywall"
 
-export function SalesFunnel() {
+type SalesFunnelProps = {
+  plans: Plan[]
+}
+
+export function SalesFunnel({ plans }: SalesFunnelProps) {
   const [stage, setStage] = useState<Stage>("landing")
   const [objetivo, setObjetivo] = useState("")
 
@@ -34,6 +39,7 @@ export function SalesFunnel() {
 
         {stage === "form" && (
           <FunnelForm
+            plans={plans}
             onBack={() => setStage("landing")}
             onComplete={handleFormComplete}
           />
