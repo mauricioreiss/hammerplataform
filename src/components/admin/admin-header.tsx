@@ -22,9 +22,13 @@ export function AdminHeader({ initials, avatarUrl, adminName, adminEmail, unread
     <>
       <header className="bg-zinc-950 border-b border-zinc-800 px-5 md:px-8 h-16 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div className="flex items-center md:hidden">
-          <span className="font-black italic text-2xl text-white tracking-tighter">
-            F<span className="-ml-1">H</span>
-          </span>
+          <Image
+            src="/Logo3.png"
+            alt="FH"
+            width={40}
+            height={40}
+            className="object-contain"
+          />
         </div>
         <div className="hidden md:block">
           <p className="text-zinc-400 text-xs font-bold">

@@ -32,11 +32,11 @@ export default function LoginPage() {
     <div className="min-h-screen relative flex flex-col items-center justify-end pb-12 p-4 selection:bg-red-600 selection:text-white">
       {/* Background image */}
       <Image
-        src="/logo2.jpeg"
+        src="/Logo3.png"
         alt=""
         fill
         priority
-        className="object-cover object-top"
+        className="-z-10 object-cover object-top"
       />
       {/* Gradient overlay - lighter at top to show logo, darker at bottom for form */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
