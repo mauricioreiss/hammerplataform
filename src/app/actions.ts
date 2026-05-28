@@ -1486,6 +1486,57 @@ export async function unblockStudent(studentId: string): Promise<{ success: bool
   }
 }
 
+export async function deleteStudent(studentId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(studentId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const admin = createAdminClient()
+
+    // 1. Get workout IDs to delete their exercises
+    const { data: workouts } = await admin
+      .from("workouts")
+      .select("id")
+      .eq("user_id", parsed.data)
+
+    const workoutIds = (workouts ?? []).map((w) => w.id)
+
+    // 2. Delete in dependency order (child tables first)
+    if (workoutIds.length > 0) {
+      await admin.from("exercise_logs").delete().in("workout_id", workoutIds)
+      await admin.from("exercises").delete().in("workout_id", workoutIds)
+    }
+
+    await Promise.all([
+      admin.from("exercise_logs").delete().eq("user_id", parsed.data),
+      admin.from("workouts").delete().eq("user_id", parsed.data),
+      admin.from("evaluations").delete().eq("user_id", parsed.data),
+      admin.from("anamnesis").delete().eq("user_id", parsed.data),
+      admin.from("notifications").delete().eq("user_id", parsed.data),
+    ])
+
+    // 3. Delete user profile
+    const { error: userError } = await admin
+      .from("users")
+      .delete()
+      .eq("id", parsed.data)
+
+    if (userError) return { success: false, error: userError.message }
+
+    // 4. Delete auth credential
+    const { error: authError } = await admin.auth.admin.deleteUser(parsed.data)
+    if (authError) {
+      console.error("deleteStudent auth cleanup error:", authError)
+    }
+
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
 // --- Notifications ---
 
 async function insertNotification(userId: string, title: string, message: string) {

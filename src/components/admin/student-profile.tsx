@@ -4,9 +4,9 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2 } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
-import { registerPayment, blockStudent, unblockStudent } from "@/app/actions"
+import { registerPayment, blockStudent, unblockStudent, deleteStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
@@ -35,6 +35,8 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
   const [paymentLoading, setPaymentLoading] = useState(false)
   const [blockLoading, setBlockLoading] = useState(false)
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
@@ -77,6 +79,17 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
     await unblockStudent(student.id)
     setBlockLoading(false)
     router.refresh()
+  }
+
+  async function handleDelete() {
+    setDeleteLoading(true)
+    const result = await deleteStudent(student.id)
+    if (result.success) {
+      router.push("/admin/alunos")
+      return
+    }
+    setDeleteLoading(false)
+    setShowDeleteConfirm(false)
   }
 
   const isBlocked = student.plan_status === "blocked"
@@ -156,6 +169,15 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
                     className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                   >
                     <Key size={14} /> Resetar Senha
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(true)
+                      setShowActionsMenu(false)
+                    }}
+                    className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-red-500 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 size={14} /> Excluir Aluno
                   </button>
                 </div>
               </>
@@ -400,6 +422,44 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
           studentName={student.full_name}
           onClose={() => setShowResetPassword(false)}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => !deleteLoading && setShowDeleteConfirm(false)}
+          />
+          <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto mb-4">
+              <Trash2 size={20} className="text-red-500" />
+            </div>
+            <h3 className="text-white font-black uppercase text-center text-sm mb-2">
+              Excluir Aluno
+            </h3>
+            <p className="text-zinc-400 text-xs text-center leading-relaxed mb-6">
+              Tem certeza que deseja excluir <strong className="text-white">{student.full_name}</strong>? Esta ação apagará definitivamente todas as fichas de treino, avaliações, anamnese e o acesso do usuário. Esta ação não pode ser desfeita.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={deleteLoading}
+                className="border border-zinc-700 text-zinc-300 font-bold uppercase py-3 rounded-xl text-xs hover:bg-zinc-800 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteLoading}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold uppercase py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {deleteLoading ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {deleteLoading ? "Excluindo..." : "Sim, Excluir"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
