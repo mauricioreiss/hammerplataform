@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ChevronRight } from "lucide-react"
 import type { UserProfile } from "@/lib/types"
@@ -22,10 +23,11 @@ export function StudentListItem({ student }: StudentListItemProps) {
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-zinc-800 overflow-hidden shrink-0 flex items-center justify-center border border-zinc-700">
           {student.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={student.avatar_url}
               alt={student.full_name}
+              width={48}
+              height={48}
               className="w-full h-full object-cover"
             />
           ) : (

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Camera, Loader2, Save, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
@@ -117,10 +118,11 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
               </div>
             )}
             {currentAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <Image
                 src={currentAvatar}
                 alt="Avatar"
+                width={80}
+                height={80}
                 className="w-full h-full object-cover"
               />
             ) : (

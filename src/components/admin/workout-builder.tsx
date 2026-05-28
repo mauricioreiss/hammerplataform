@@ -16,10 +16,12 @@ import {
   GripVertical,
   Save,
   Pencil,
+  MoreVertical,
 } from "lucide-react"
 import type { Workout, Exercise } from "@/lib/types"
 import {
   createWorkoutWithExercises,
+  updateWorkoutWithExercises,
   addExerciseToWorkout,
   removeExerciseFromWorkout,
   updateWorkoutStatus,
@@ -54,6 +56,7 @@ export function WorkoutBuilder({
   libraryExercises,
 }: WorkoutBuilderProps) {
   const [showModal, setShowModal] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null)
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(
     workouts[0]?.id ?? null,
   )
@@ -105,12 +108,13 @@ export function WorkoutBuilder({
         </button>
       </div>
 
-      {/* Modal */}
-      {showModal && (
+      {/* Modal (create or edit) */}
+      {(showModal || editingWorkout) && (
         <WorkoutCreatorModal
           studentId={studentId}
           libraryExercises={libraryExercises}
-          onClose={() => setShowModal(false)}
+          onClose={() => { setShowModal(false); setEditingWorkout(null) }}
+          editWorkout={editingWorkout ?? undefined}
         />
       )}
 
@@ -136,6 +140,7 @@ export function WorkoutBuilder({
           onToggle={() =>
             setExpandedWorkout(expandedWorkout === workout.id ? null : workout.id)
           }
+          onEdit={() => setEditingWorkout(workout)}
         />
       ))}
     </div>
@@ -148,18 +153,35 @@ function WorkoutCreatorModal({
   studentId,
   libraryExercises,
   onClose,
+  editWorkout,
 }: {
   studentId: string
   libraryExercises: Exercise[]
   onClose: () => void
+  editWorkout?: Workout
 }) {
   const router = useRouter()
-  const [title, setTitle] = useState("")
-  const [icon, setIcon] = useState("")
-  const [exercises, setExercises] = useState<ExerciseDraft[]>([makeEmptyExercise(1)])
+  const isEdit = !!editWorkout
+
+  const initialExercises: ExerciseDraft[] = editWorkout?.exercises?.length
+    ? editWorkout.exercises.map((ex, i) => ({
+        key: i + 1,
+        name: ex.name,
+        muscleGroup: ex.muscle_group ?? "",
+        sets: ex.sets ?? "",
+        reps: ex.reps ?? "",
+        rest: ex.rest ?? "",
+        note: ex.note ?? "",
+        illustrationUrl: ex.illustration_url ?? "",
+      }))
+    : [makeEmptyExercise(1)]
+
+  const [title, setTitle] = useState(editWorkout?.title ?? "")
+  const [icon, setIcon] = useState(editWorkout?.icon ?? "")
+  const [exercises, setExercises] = useState<ExerciseDraft[]>(initialExercises)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const nextKey = useRef(2)
+  const nextKey = useRef(initialExercises.length + 1)
 
   function addExercise() {
     setExercises((prev) => [...prev, makeEmptyExercise(nextKey.current++)])
@@ -193,15 +215,15 @@ function WorkoutCreatorModal({
     setLoading(true)
     setError("")
 
-    const result = await createWorkoutWithExercises(
-      studentId, title,
-      valid.map((ex) => ({
-        name: ex.name.trim(), muscleGroup: ex.muscleGroup,
-        sets: ex.sets || "3", reps: ex.reps || "12", rest: ex.rest || "60s",
-        note: ex.note || undefined, illustrationUrl: ex.illustrationUrl || undefined,
-      })),
-      icon.trim() || undefined,
-    )
+    const mapped = valid.map((ex) => ({
+      name: ex.name.trim(), muscleGroup: ex.muscleGroup,
+      sets: ex.sets || "3", reps: ex.reps || "12", rest: ex.rest || "60s",
+      note: ex.note || undefined, illustrationUrl: ex.illustrationUrl || undefined,
+    }))
+
+    const result = isEdit
+      ? await updateWorkoutWithExercises(editWorkout!.id, title, mapped, icon.trim() || undefined)
+      : await createWorkoutWithExercises(studentId, title, mapped, icon.trim() || undefined)
 
     if (!result.success) { setError(result.error ?? "Erro ao salvar ficha."); setLoading(false); return }
     setLoading(false)
@@ -214,7 +236,7 @@ function WorkoutCreatorModal({
       <div className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <Dumbbell size={20} className="text-red-500" />
-          <h2 className="text-base font-black text-white uppercase tracking-tight">Construtor de Treino</h2>
+          <h2 className="text-base font-black text-white uppercase tracking-tight">{isEdit ? "Editar Ficha" : "Construtor de Treino"}</h2>
         </div>
         <button onClick={onClose} className="text-zinc-500 hover:text-white p-1"><X size={22} /></button>
       </div>
@@ -266,7 +288,7 @@ function WorkoutCreatorModal({
         <button onClick={handleSave} disabled={loading}
           className="flex-[2] bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(220,38,38,0.25)]">
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {loading ? "Salvando..." : "Salvar Ficha Completa"}
+          {loading ? "Salvando..." : isEdit ? "Salvar Alteracoes" : "Salvar Ficha Completa"}
         </button>
       </div>
     </div>
@@ -353,14 +375,15 @@ function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary
 
 // --- Workout Card ---
 
-function WorkoutCard({ workout, libraryExercises, expanded, onToggle }: {
-  workout: Workout; libraryExercises: Exercise[]; expanded: boolean; onToggle: () => void
+function WorkoutCard({ workout, libraryExercises, expanded, onToggle, onEdit }: {
+  workout: Workout; libraryExercises: Exercise[]; expanded: boolean; onToggle: () => void; onEdit: () => void
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState(workout.title)
   const [showAddExercise, setShowAddExercise] = useState(false)
+  const [showMenu, setShowMenu] = useState(false)
 
   const exercises = workout.exercises ?? []
   const isPublished = workout.status === "published" || workout.status === "approved"
@@ -399,25 +422,64 @@ function WorkoutCard({ workout, libraryExercises, expanded, onToggle }: {
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
-      <button onClick={onToggle} className="w-full px-4 py-3.5 flex items-center justify-between text-left">
-        <div className="flex items-center gap-3 min-w-0">
-          <FileText size={18} className={isPublished ? "text-green-500" : "text-yellow-500"} />
-          <div className="min-w-0">
-            <p className="text-white text-sm font-bold truncate">
-              {workout.icon && <span className="mr-1">{workout.icon}</span>}
-              {workout.title}
-            </p>
-            <div className="flex items-center gap-2 mt-0.5">
-              <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isPublished ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
-                {isPublished ? "Publicado" : "Rascunho"}
-              </span>
-              {workout.is_ai_draft && <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-400">IA</span>}
-              <span className="text-[10px] text-zinc-600">{exercises.length} exercicio{exercises.length !== 1 && "s"}</span>
+      <div className="flex items-center">
+        <button onClick={onToggle} className="flex-1 px-4 py-3.5 flex items-center justify-between text-left min-w-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <FileText size={18} className={isPublished ? "text-green-500" : "text-yellow-500"} />
+            <div className="min-w-0">
+              <p className="text-white text-sm font-bold truncate">
+                {workout.icon && <span className="mr-1">{workout.icon}</span>}
+                {workout.title}
+              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isPublished ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                  {isPublished ? "Publicado" : "Rascunho"}
+                </span>
+                {workout.is_ai_draft && <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-400">IA</span>}
+                <span className="text-[10px] text-zinc-600">{exercises.length} exercicio{exercises.length !== 1 && "s"}</span>
+              </div>
             </div>
           </div>
+          {expanded ? <ChevronUp size={16} className="text-zinc-500 shrink-0" /> : <ChevronDown size={16} className="text-zinc-500 shrink-0" />}
+        </button>
+
+        {/* Actions dropdown */}
+        <div className="relative pr-3">
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu) }}
+            className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
+          >
+            <MoreVertical size={16} />
+          </button>
+          {showMenu && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div className="absolute right-0 top-10 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                <button
+                  onClick={() => { setShowMenu(false); onEdit() }}
+                  className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                >
+                  <Pencil size={13} /> Editar Ficha
+                </button>
+                <button
+                  onClick={() => { setShowMenu(false); handleStatusToggle() }}
+                  className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                >
+                  <CheckCircle2 size={13} /> {isPublished ? "Rascunho" : "Publicar"}
+                </button>
+                <div className="border-t border-zinc-800">
+                  <button
+                    onClick={() => { setShowMenu(false); handleDelete() }}
+                    className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-red-500 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
+                  >
+                    <Trash2 size={13} /> Excluir
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
-        {expanded ? <ChevronUp size={16} className="text-zinc-500 shrink-0" /> : <ChevronDown size={16} className="text-zinc-500 shrink-0" />}
-      </button>
+      </div>
 
       {expanded && (
         <div className="border-t border-zinc-800 px-4 py-3 space-y-3">

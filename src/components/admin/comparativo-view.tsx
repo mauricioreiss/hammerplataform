@@ -1,3 +1,4 @@
+import Image from "next/image"
 import {
   ChevronRight,
   Scale,
@@ -110,11 +111,12 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
           <div className="grid grid-cols-2 gap-2">
             {before.photo_url && (
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden border border-zinc-800">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={before.photo_url}
                   alt="Antes"
-                  className="w-full h-full object-cover grayscale"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 300px"
+                  className="object-cover grayscale"
                 />
                 <div className="absolute bottom-2 left-2 bg-black/80 px-2 py-1 rounded text-[10px] font-bold text-white uppercase backdrop-blur">
                   Antes
@@ -123,11 +125,12 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
             )}
             {after.photo_url && (
               <div className="relative aspect-[3/4] rounded-xl overflow-hidden border-2 border-red-600 shadow-[0_0_20px_rgba(220,38,38,0.2)]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src={after.photo_url}
                   alt="Depois"
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 300px"
+                  className="object-cover"
                 />
                 <div className="absolute bottom-2 right-2 bg-red-600 px-2 py-1 rounded text-[10px] font-bold text-white uppercase shadow-lg">
                   Atual

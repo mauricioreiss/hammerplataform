@@ -1,19 +1,22 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Bell, LogOut, Camera, Loader2, X } from "lucide-react"
+import Image from "next/image"
+import { LogOut, Camera, Loader2, X } from "lucide-react"
 import { logout } from "@/app/auth/actions"
 import { updateAvatarUrl } from "@/app/actions"
 import { createClient } from "@/lib/supabase/client"
+import { NotificationPanel } from "@/components/notification-panel"
 
 type AlunoHeaderProps = {
   initials: string
   avatarUrl: string | null
   userId: string
   hasNotification?: boolean
+  unreadCount: number
 }
 
-export function AlunoHeader({ initials, avatarUrl, userId, hasNotification }: AlunoHeaderProps) {
+export function AlunoHeader({ initials, avatarUrl, userId, hasNotification, unreadCount }: AlunoHeaderProps) {
   const [showMenu, setShowMenu] = useState(false)
   const [showUpload, setShowUpload] = useState(false)
   const [currentAvatar, setCurrentAvatar] = useState(avatarUrl)
@@ -74,12 +77,7 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification }: Al
           </span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-zinc-400 relative active:text-white transition-colors">
-            <Bell size={18} />
-            {hasNotification && (
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-600 rounded-full border-2 border-zinc-950" />
-            )}
-          </button>
+          <NotificationPanel unreadCount={hasNotification ? Math.max(unreadCount, 1) : unreadCount} />
 
           {/* Avatar - clicavel */}
           <div className="relative">
@@ -93,10 +91,11 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification }: Al
                 </div>
               )}
               {currentAvatar ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={currentAvatar}
                   alt="Avatar"
+                  width={40}
+                  height={40}
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -160,10 +159,11 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification }: Al
                   </div>
                 )}
                 {currentAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={currentAvatar}
                     alt="Avatar"
+                    width={96}
+                    height={96}
                     className="w-full h-full object-cover"
                   />
                 ) : (

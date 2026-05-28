@@ -1,3 +1,5 @@
+import Image from "next/image"
+
 const RESULTS = [
   {
     src: "https://images.unsplash.com/photo-1603988363607-e1e4a66962c6?q=80&w=400&auto=format&fit=crop",
@@ -29,10 +31,11 @@ export function LandingResults() {
             key={r.label}
             className="relative aspect-square rounded-2xl overflow-hidden border border-zinc-800"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={r.src}
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-cover"
               alt={`Resultado: ${r.label}`}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent flex items-end p-4">

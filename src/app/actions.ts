@@ -4,7 +4,7 @@ import { z } from "zod"
 import { revalidatePath } from "next/cache"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
-import type { UserProfile, Evaluation, Workout, Exercise, Kpis, Plan } from "@/lib/types"
+import type { UserProfile, Evaluation, Workout, Exercise, Kpis, Plan, Notification } from "@/lib/types"
 
 // --- Validation ---
 
@@ -63,7 +63,7 @@ export async function getCurrentUser(): Promise<UserProfile | null> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("users")
-      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, pix_key, created_at")
+      .select("id, full_name, role, objective, plan_status, plan_name, plan_value, expire_date, avatar_url, pix_key, is_first_login, created_at")
       .eq("id", user.id)
       .single()
 
@@ -117,21 +117,17 @@ export async function getAlunosAguardando(): Promise<UserProfile[]> {
     await requireAuth("admin")
     const admin = createAdminClient()
 
-    // Students who have anamnesis but no approved workout
-    const { data: anamneseUsers } = await admin
-      .from("anamnesis")
-      .select("user_id")
+    // Parallel: fetch anamnesis IDs and approved workout IDs at the same time
+    const [{ data: anamneseUsers }, { data: usersWithWorkout }] = await Promise.all([
+      admin.from("anamnesis").select("user_id"),
+      admin.from("workouts").select("user_id").in("status", ["published", "approved"]),
+    ])
 
     const userIds = (anamneseUsers ?? [])
       .map((a) => a.user_id)
       .filter((id): id is string => id !== null)
 
     if (userIds.length === 0) return []
-
-    const { data: usersWithWorkout } = await admin
-      .from("workouts")
-      .select("user_id")
-      .in("status", ["published", "approved"])
 
     const approvedIds = new Set((usersWithWorkout ?? []).map((w) => w.user_id))
     const waitingIds = userIds.filter((id) => !approvedIds.has(id))
@@ -157,25 +153,15 @@ export async function getKpis(): Promise<Kpis> {
     await requireAuth("admin")
     const admin = createAdminClient()
 
-    const { count: total } = await admin
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "student")
+    const today = new Date().toISOString().split("T")[0]
 
-    const { data: values } = await admin
-      .from("users")
-      .select("plan_value")
-      .eq("role", "student")
-      .not("plan_status", "eq", "atrasado")
+    const [{ count: total }, { data: values }, { count: novos }] = await Promise.all([
+      admin.from("users").select("id", { count: "exact", head: true }).eq("role", "student"),
+      admin.from("users").select("plan_value").eq("role", "student").not("plan_status", "eq", "atrasado"),
+      admin.from("users").select("id", { count: "exact", head: true }).eq("role", "student").gte("created_at", today),
+    ])
 
     const mrr = (values ?? []).reduce((sum, u) => sum + (u.plan_value ?? 0), 0)
-
-    const today = new Date().toISOString().split("T")[0]
-    const { count: novos } = await admin
-      .from("users")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "student")
-      .gte("created_at", today)
 
     return {
       total: total ?? 0,
@@ -471,21 +457,21 @@ export async function getWorkoutComExercicios(workoutId: string): Promise<Workou
 
     const admin = createAdminClient()
 
-    const { data: workout, error } = await admin
-      .from("workouts")
-      .select("id, user_id, title, icon, is_ai_draft, status, created_at")
-      .eq("id", parsed.data)
-      .single()
+    // Parallel: fetch workout and user role at the same time
+    const [{ data: workout, error }, { data: profile }] = await Promise.all([
+      admin
+        .from("workouts")
+        .select("id, user_id, title, icon, is_ai_draft, status, created_at")
+        .eq("id", parsed.data)
+        .single(),
+      admin
+        .from("users")
+        .select("role")
+        .eq("id", user.id)
+        .single(),
+    ])
 
     if (error || !workout) return null
-
-    // Students can only see their own workouts
-    const { data: profile } = await admin
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single()
-
     if (profile?.role === "student" && workout.user_id !== user.id) return null
 
     const { data: exercises } = await admin
@@ -742,6 +728,23 @@ export async function updateWorkoutStatus(
 
     if (error) return { success: false, error: error.message }
 
+    // Notify student when workout is published
+    if (status === "published") {
+      const { data: workout } = await admin
+        .from("workouts")
+        .select("user_id")
+        .eq("id", parsed.data)
+        .single()
+
+      if (workout?.user_id) {
+        await insertNotification(
+          workout.user_id,
+          "Nova ficha de treino!",
+          "Sua nova ficha de treino ja esta disponivel. Bora treinar!",
+        )
+      }
+    }
+
     revalidatePath("/admin/alunos")
     return { success: true }
   } catch {
@@ -989,6 +992,46 @@ export async function resetStudentPassword(
     })
 
     if (error) return { success: false, error: error.message }
+
+    // Force student to change password on next login
+    await admin
+      .from("users")
+      .update({ is_first_login: true })
+      .eq("id", parsed.data)
+
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- First Login Password Change ---
+
+export async function updateInitialPassword(
+  newPassword: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, error: "Senha deve ter no minimo 6 caracteres." }
+    }
+
+    const supabase = await createClient()
+    const { error: authError } = await supabase.auth.updateUser({
+      password: newPassword,
+    })
+
+    if (authError) return { success: false, error: authError.message }
+
+    const admin = createAdminClient()
+    await admin
+      .from("users")
+      .update({ is_first_login: false })
+      .eq("id", user.id)
+
+    revalidatePath("/aluno")
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }
@@ -1034,6 +1077,9 @@ export async function getStudentQuickStatus(
 
 export async function getAdminPixKey(): Promise<string> {
   try {
+    const user = await getAuthUser()
+    if (!user) return ""
+
     const admin = createAdminClient()
     const { data } = await admin
       .from("users")
@@ -1054,6 +1100,8 @@ export async function saveAnamnese(
   formData: Record<string, unknown>,
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    await requireAuth("admin")
+
     const parsed = anamneseSchema.safeParse(formData)
     if (!parsed.success) {
       const messages = parsed.error.issues.map((i) => i.message).join(", ")
@@ -1191,6 +1239,12 @@ export async function registerPayment(studentId: string): Promise<{ success: boo
 
     if (error) return { success: false, error: error.message }
 
+    await insertNotification(
+      parsed.data,
+      "Pagamento confirmado!",
+      "Seu pagamento foi registrado e seu treino esta liberado.",
+    )
+
     revalidatePath(`/admin/alunos/${parsed.data}`)
     revalidatePath("/admin/alunos")
     return { success: true }
@@ -1215,6 +1269,135 @@ export async function blockStudent(studentId: string): Promise<{ success: boolea
     if (error) return { success: false, error: error.message }
 
     revalidatePath(`/admin/alunos/${parsed.data}`)
+    revalidatePath("/admin/alunos")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Notifications ---
+
+async function insertNotification(userId: string, title: string, message: string) {
+  try {
+    const admin = createAdminClient()
+    await admin.from("notifications").insert({ user_id: userId, title, message })
+  } catch {
+    // Non-blocking: notification failure should not break the main operation
+  }
+}
+
+export async function getUnreadNotificationCount(): Promise<number> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return 0
+
+    const admin = createAdminClient()
+    const { count, error } = await admin
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+
+    if (error) return 0
+    return count ?? 0
+  } catch {
+    return 0
+  }
+}
+
+export async function getNotifications(): Promise<Notification[]> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return []
+
+    const admin = createAdminClient()
+    const { data, error } = await admin
+      .from("notifications")
+      .select("id, user_id, title, message, is_read, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20)
+
+    if (error || !data) return []
+    return data as Notification[]
+  } catch {
+    return []
+  }
+}
+
+export async function markNotificationsRead(): Promise<{ success: boolean }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false }
+
+    const admin = createAdminClient()
+    await admin
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+
+    revalidatePath("/aluno")
+    revalidatePath("/admin")
+    return { success: true }
+  } catch {
+    return { success: false }
+  }
+}
+
+// --- Update Workout With Exercises ---
+
+export async function updateWorkoutWithExercises(
+  workoutId: string,
+  title: string,
+  exercises: Array<{
+    name: string
+    muscleGroup: string
+    sets: string
+    reps: string
+    rest: string
+    note?: string
+    illustrationUrl?: string
+  }>,
+  icon?: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+    if (!title.trim()) return { success: false, error: "Titulo obrigatorio." }
+    if (exercises.length === 0) return { success: false, error: "Adicione pelo menos um exercicio." }
+
+    const admin = createAdminClient()
+
+    const updateData: Record<string, unknown> = { title: title.trim() }
+    if (icon !== undefined) updateData.icon = icon || null
+
+    const { error: updateErr } = await admin
+      .from("workouts")
+      .update(updateData)
+      .eq("id", parsed.data)
+
+    if (updateErr) return { success: false, error: updateErr.message }
+
+    // Delete existing exercises and insert new ones
+    await admin.from("exercises").delete().eq("workout_id", parsed.data)
+
+    const rows = exercises.map((ex) => ({
+      workout_id: parsed.data,
+      name: ex.name.trim(),
+      muscle_group: ex.muscleGroup || null,
+      sets: ex.sets || null,
+      reps: ex.reps || null,
+      rest: ex.rest || null,
+      note: ex.note || null,
+      illustration_url: ex.illustrationUrl || null,
+    }))
+
+    const { error: insertErr } = await admin.from("exercises").insert(rows)
+    if (insertErr) return { success: false, error: insertErr.message }
+
     revalidatePath("/admin/alunos")
     return { success: true }
   } catch {

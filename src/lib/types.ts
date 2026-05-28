@@ -9,6 +9,7 @@ export type UserProfile = {
   expire_date: string | null
   avatar_url: string | null
   pix_key: string | null
+  is_first_login: boolean
   created_at: string
 }
 
@@ -68,5 +69,14 @@ export type Plan = {
   name: string
   price: number
   cycle: "mensal" | "semestral" | "anual"
+  created_at: string
+}
+
+export type Notification = {
+  id: string
+  user_id: string
+  title: string
+  message: string
+  is_read: boolean
   created_at: string
 }

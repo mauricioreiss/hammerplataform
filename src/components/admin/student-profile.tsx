@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, Loader2 } from "lucide-react"
@@ -95,10 +96,11 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-zinc-800 overflow-hidden border-2 border-red-600 flex items-center justify-center">
               {student.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={student.avatar_url}
                   alt={student.full_name}
+                  width={64}
+                  height={64}
                   className="w-full h-full object-cover"
                 />
               ) : (

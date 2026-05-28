@@ -1,18 +1,21 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
-import { Bell, LogOut, Settings } from "lucide-react"
+import { LogOut, Settings } from "lucide-react"
 import { logout } from "@/app/auth/actions"
+import { NotificationPanel } from "@/components/notification-panel"
 
 type AdminHeaderProps = {
   initials: string
   avatarUrl: string | null
   adminName: string
   adminEmail: string
+  unreadCount: number
 }
 
-export function AdminHeader({ initials, avatarUrl, adminName, adminEmail }: AdminHeaderProps) {
+export function AdminHeader({ initials, avatarUrl, adminName, adminEmail, unreadCount }: AdminHeaderProps) {
   const [showMenu, setShowMenu] = useState(false)
 
   return (
@@ -29,9 +32,7 @@ export function AdminHeader({ initials, avatarUrl, adminName, adminEmail }: Admi
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <button className="text-zinc-400 relative active:text-white transition-colors">
-            <Bell size={18} />
-          </button>
+          <NotificationPanel unreadCount={unreadCount} />
 
           <div className="relative">
             <button
@@ -39,10 +40,11 @@ export function AdminHeader({ initials, avatarUrl, adminName, adminEmail }: Admi
               className="w-10 h-10 rounded-full bg-zinc-800 overflow-hidden border-2 border-zinc-700 flex items-center justify-center hover:border-red-600 transition-colors"
             >
               {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={avatarUrl}
                   alt="Avatar"
+                  width={40}
+                  height={40}
                   className="w-full h-full object-cover"
                 />
               ) : (

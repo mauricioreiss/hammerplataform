@@ -1,16 +1,17 @@
 import { AdminHeader } from "@/components/admin/admin-header"
 import { AdminBottomNav } from "@/components/admin/admin-bottom-nav"
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { getCurrentUser, getAuthEmail } from "@/app/actions"
+import { getCurrentUser, getAuthEmail, getUnreadNotificationCount } from "@/app/actions"
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [user, email] = await Promise.all([
+  const [user, email, unreadCount] = await Promise.all([
     getCurrentUser(),
     getAuthEmail(),
+    getUnreadNotificationCount(),
   ])
 
   const initials = user
@@ -32,6 +33,7 @@ export default async function AdminLayout({
           avatarUrl={user?.avatar_url ?? null}
           adminName={user?.full_name ?? "Admin"}
           adminEmail={email}
+          unreadCount={unreadCount}
         />
         <main className="flex-1 overflow-y-auto bg-black relative">
           <div className="w-full max-w-7xl mx-auto">

@@ -25,11 +25,41 @@ export function AddAvaliacaoModal({ studentId, onClose }: Props) {
     waist: "",
   })
 
-  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setPhotoFile(file)
-    setPhotoPreview(URL.createObjectURL(file))
+  async function compressImage(file: File, maxWidth = 1080, quality = 0.8): Promise<File> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image()
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        let { width, height } = img
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width)
+          width = maxWidth
+        }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext("2d")
+        if (!ctx) { resolve(file); return }
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) { resolve(file); return }
+            resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }))
+          },
+          "image/jpeg",
+          quality,
+        )
+      }
+      img.onerror = () => resolve(file)
+      img.src = URL.createObjectURL(file)
+    })
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0]
+    if (!raw) return
+    const compressed = await compressImage(raw)
+    setPhotoFile(compressed)
+    setPhotoPreview(URL.createObjectURL(compressed))
   }
 
   async function handleSubmit(e: React.FormEvent) {
