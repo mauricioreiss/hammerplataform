@@ -29,7 +29,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] relative w-full flex flex-col items-center justify-center px-4 bg-[#2a2a2a] selection:bg-red-600 selection:text-white">
+    <div className="min-h-[100dvh] relative w-full flex flex-col items-center justify-end pb-[10vh] px-4 bg-[#2a2a2a] selection:bg-red-600 selection:text-white">
       {/* Background image */}
       <Image
         src="/Logo3.png"
@@ -41,8 +41,8 @@ export default function LoginPage() {
       {/* Gradient overlay - lighter at top to show logo, darker at bottom for form */}
       <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/80" />
 
-      {/* Login card - mt pushes it into the dark tile area below the header art */}
-      <div className="w-full max-w-[400px] relative z-10 mt-[45vh]">
+      {/* Login card in the lower half of the image */}
+      <div className="w-full max-w-[400px] relative z-10">
         <div className="bg-zinc-950/70 backdrop-blur-md border border-zinc-800/50 p-6 rounded-2xl shadow-2xl">
           <h1 className="text-2xl font-black italic text-white uppercase tracking-tight mb-6">
             Entrar
