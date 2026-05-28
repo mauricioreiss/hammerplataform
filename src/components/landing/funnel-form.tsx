@@ -11,7 +11,7 @@ import {
   BrainCircuit,
   Loader2,
 } from "lucide-react"
-import { saveAnamnese } from "@/app/actions"
+import { registerFromLanding } from "@/app/actions"
 
 type FunnelFormProps = {
   onBack: () => void
@@ -39,6 +39,8 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     nome: "",
+    email: "",
+    senha: "",
     idade: "",
     sexo: "",
     peso: "",
@@ -74,7 +76,11 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
       parqData[`q${key}`] = val
     }
 
-    const result = await saveAnamnese({
+    const result = await registerFromLanding({
+      email: formData.email,
+      password: formData.senha,
+      name: formData.nome,
+      objective: formData.objetivo || undefined,
       weight: formData.peso ? Number(formData.peso) : undefined,
       height: formData.altura ? Number(formData.altura) : undefined,
       injuries: formData.lesoes || undefined,
@@ -85,7 +91,7 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
     setSaving(false)
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao salvar anamnese.")
+      setError(result.error ?? "Erro ao salvar cadastro.")
       return
     }
 
@@ -129,6 +135,20 @@ export function FunnelForm({ onBack, onComplete }: FunnelFormProps) {
                 placeholder="Nome Completo"
                 value={formData.nome}
                 onChange={(e) => update("nome", e.target.value)}
+                className={INPUT_CLASS}
+              />
+              <input
+                type="email"
+                placeholder="E-mail"
+                value={formData.email}
+                onChange={(e) => update("email", e.target.value)}
+                className={INPUT_CLASS}
+              />
+              <input
+                type="password"
+                placeholder="Crie uma senha (min. 6 caracteres)"
+                value={formData.senha}
+                onChange={(e) => update("senha", e.target.value)}
                 className={INPUT_CLASS}
               />
               <div className="grid grid-cols-2 gap-4">

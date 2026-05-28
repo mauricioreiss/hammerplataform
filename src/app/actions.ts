@@ -1094,7 +1094,7 @@ export async function getAdminPixKey(): Promise<string> {
   }
 }
 
-// --- Anamnese ---
+// --- Anamnese (admin-only, used by IA module) ---
 
 export async function saveAnamnese(
   formData: Record<string, unknown>,
@@ -1113,11 +1113,111 @@ export async function saveAnamnese(
       .from("anamnesis")
       .insert(parsed.data)
 
-    if (error) return { success: false, error: "Falha ao salvar anamnese." }
+    if (error) {
+      console.error("saveAnamnese insert error:", error)
+      return { success: false, error: error.message }
+    }
     return { success: true }
-  } catch {
-    return { success: false, error: "Erro de conexao." }
+  } catch (err) {
+    console.error("saveAnamnese unexpected error:", err)
+    return { success: false, error: err instanceof Error ? err.message : "Erro inesperado." }
   }
+}
+
+// --- Landing Page Registration (public, no auth required) ---
+
+const registerSchema = z.object({
+  email: z.string().email("E-mail invalido."),
+  password: z.string().min(6, "Senha deve ter no minimo 6 caracteres."),
+  name: z.string().min(2, "Nome obrigatorio.").max(200),
+  objective: z.string().max(200).optional(),
+  weight: z.number().positive().max(500).optional(),
+  height: z.number().positive().max(300).optional(),
+  injuries: z.string().max(2000).trim().optional(),
+  days_per_week: z.number().int().min(1).max(7).optional(),
+  par_q_data: z.record(z.string(), z.boolean()).optional(),
+})
+
+export async function registerFromLanding(
+  formData: Record<string, unknown>,
+): Promise<{ success: boolean; error?: string }> {
+  const parsed = registerSchema.safeParse(formData)
+  if (!parsed.success) {
+    const messages = parsed.error.issues.map((i) => i.message).join(", ")
+    return { success: false, error: messages }
+  }
+
+  const { email, password, name, objective, weight, height, injuries, days_per_week, par_q_data } = parsed.data
+  const admin = createAdminClient()
+
+  // 1. Create auth user
+  const { data: authUser, error: authError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+
+  if (authError) {
+    console.error("registerFromLanding auth error:", authError)
+    if (authError.message.includes("already been registered")) {
+      return { success: false, error: "Este e-mail ja esta cadastrado." }
+    }
+    return { success: false, error: authError.message }
+  }
+
+  if (!authUser.user) {
+    return { success: false, error: "Falha ao criar conta." }
+  }
+
+  const userId = authUser.user.id
+
+  // 2. Insert into users table
+  const { error: userError } = await admin.from("users").insert({
+    id: userId,
+    full_name: name,
+    role: "student",
+    objective: objective || null,
+    plan_status: "pending",
+    is_first_login: true,
+  })
+
+  if (userError) {
+    console.error("registerFromLanding users insert error:", userError)
+    return { success: false, error: `Falha ao criar perfil: ${userError.message}` }
+  }
+
+  // 3. Insert anamnesis
+  const anamnesisPayload: Record<string, unknown> = { user_id: userId }
+  if (weight !== undefined) anamnesisPayload.weight = weight
+  if (height !== undefined) anamnesisPayload.height = height
+  if (injuries !== undefined) anamnesisPayload.injuries = injuries
+  if (days_per_week !== undefined) anamnesisPayload.days_per_week = days_per_week
+  if (par_q_data !== undefined) anamnesisPayload.par_q_data = par_q_data
+
+  const { error: anamError } = await admin.from("anamnesis").insert(anamnesisPayload)
+
+  if (anamError) {
+    console.error("registerFromLanding anamnesis insert error:", anamError)
+    return { success: false, error: `Falha ao salvar anamnese: ${anamError.message}` }
+  }
+
+  // 4. Notify admin about new registration
+  const { data: admins } = await admin
+    .from("users")
+    .select("id")
+    .eq("role", "admin")
+    .limit(1)
+    .single()
+
+  if (admins?.id) {
+    await insertNotification(
+      admins.id,
+      "Novo aluno cadastrado",
+      `${name} se cadastrou pela landing page e aguarda liberacao.`,
+    )
+  }
+
+  return { success: true }
 }
 
 // --- Plans CRUD ---
