@@ -72,6 +72,17 @@ export type Plan = {
   created_at: string
 }
 
+export type Anamnesis = {
+  id: string
+  user_id: string
+  weight: number | null
+  height: number | null
+  injuries: string | null
+  days_per_week: number | null
+  par_q_data: Record<string, boolean> | null
+  created_at: string
+}
+
 export type Notification = {
   id: string
   user_id: string

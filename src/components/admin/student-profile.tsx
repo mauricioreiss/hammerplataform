@@ -4,8 +4,8 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2 } from "lucide-react"
-import type { UserProfile, Evaluation, Workout, Exercise } from "@/lib/types"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList } from "lucide-react"
+import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
 import { registerPayment, blockStudent, unblockStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
@@ -22,9 +22,10 @@ type StudentProfileProps = {
     lastEvalDate: string | null
     completedExercises: number
   }
+  anamnesis: Anamnesis | null
 }
 
-export function StudentProfile({ student, avaliacoes, workouts, libraryExercises, quickStatus }: StudentProfileProps) {
+export function StudentProfile({ student, avaliacoes, workouts, libraryExercises, quickStatus, anamnesis }: StudentProfileProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">("avaliacoes")
   const [showComparativo, setShowComparativo] = useState(false)
@@ -232,6 +233,54 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               </button>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* Anamnese Card */}
+      <div className="bg-zinc-950 border-b border-zinc-800 px-4 md:px-8 py-3">
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList size={14} className="text-zinc-500" />
+            <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Dados da Anamnese</p>
+          </div>
+          {anamnesis ? (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <div>
+                <p className="text-zinc-600 text-[9px] font-bold uppercase">Objetivo</p>
+                <p className="text-white text-sm font-bold">{student.objective ?? "—"}</p>
+              </div>
+              <div>
+                <p className="text-zinc-600 text-[9px] font-bold uppercase">Peso / Altura</p>
+                <p className="text-white text-sm font-bold">
+                  {anamnesis.weight ? `${anamnesis.weight}kg` : "—"}
+                  {" / "}
+                  {anamnesis.height ? `${(anamnesis.height / 100).toFixed(2)}m` : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-zinc-600 text-[9px] font-bold uppercase">Dias por Semana</p>
+                <p className="text-white text-sm font-bold">{anamnesis.days_per_week ? `${anamnesis.days_per_week}x` : "—"}</p>
+              </div>
+              <div>
+                <p className="text-zinc-600 text-[9px] font-bold uppercase">Lesoes / Dores</p>
+                {anamnesis.injuries ? (
+                  <p className="text-red-400 text-sm font-bold">{anamnesis.injuries}</p>
+                ) : (
+                  <p className="text-green-500 text-sm font-bold">Nenhuma</p>
+                )}
+              </div>
+              {anamnesis.par_q_data && Object.values(anamnesis.par_q_data).some(Boolean) && (
+                <div className="col-span-2">
+                  <p className="text-zinc-600 text-[9px] font-bold uppercase mb-1">PAR-Q (Alertas)</p>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5">
+                    <p className="text-red-400 text-xs font-bold">Respondeu SIM em {Object.values(anamnesis.par_q_data).filter(Boolean).length} pergunta(s) do PAR-Q</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-zinc-500 text-xs">Nenhuma anamnese inicial registrada.</p>
+          )}
         </div>
       </div>
 
