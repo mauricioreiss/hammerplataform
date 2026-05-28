@@ -44,6 +44,11 @@ data/images-treino/*
 !data/images-treino/.gitkeep
 data/exercise-mapping.json
 
+# one-shot scripts and logs
+/scripts/
+PROGRESSO.md
+nul
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
