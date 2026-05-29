@@ -387,7 +387,10 @@ export async function getAnamneseByUserId(userId: string) {
   try {
     await requireAuth("admin")
     const parsed = uuidSchema.safeParse(userId)
-    if (!parsed.success) return null
+    if (!parsed.success) {
+      console.error("[getAnamneseByUserId] invalid UUID:", userId)
+      return null
+    }
 
     const admin = createAdminClient()
     const { data, error } = await admin
@@ -398,13 +401,15 @@ export async function getAnamneseByUserId(userId: string) {
       .limit(1)
       .maybeSingle()
 
+    console.log("[getAnamneseByUserId]", { userId: parsed.data, hasData: !!data, error: error ?? null })
+
     if (error) {
-      console.error("getAnamneseByUserId query error:", error)
+      console.error("[getAnamneseByUserId] query error:", error)
       return null
     }
     return data ?? null
   } catch (err) {
-    console.error("getAnamneseByUserId unexpected error:", err)
+    console.error("[getAnamneseByUserId] unexpected error:", err)
     return null
   }
 }
@@ -898,6 +903,45 @@ export async function toggleExerciseLog(
   }
 }
 
+// --- Workout Sessions ---
+
+export async function finishWorkoutSession(
+  workoutId: string,
+  startedAt: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    const completedAt = new Date()
+    const started = new Date(startedAt)
+    const totalDuration = Math.max(0, Math.round((completedAt.getTime() - started.getTime()) / 1000))
+
+    const admin = createAdminClient()
+    const { error } = await admin.from("workout_sessions").insert({
+      user_id: user.id,
+      workout_id: parsed.data,
+      started_at: started.toISOString(),
+      completed_at: completedAt.toISOString(),
+      total_duration: totalDuration,
+    })
+
+    if (error) {
+      console.error("[finishWorkoutSession] insert error:", error)
+      return { success: false, error: error.message }
+    }
+
+    revalidatePath("/aluno/treino")
+    return { success: true }
+  } catch (err) {
+    console.error("[finishWorkoutSession] unexpected error:", err)
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
 // --- Exercises CRUD ---
 
 export async function createExercise(data: {
@@ -1106,15 +1150,24 @@ export async function updateInitialPassword(
 
 export async function getStudentQuickStatus(
   userId: string,
-): Promise<{ lastEvalDate: string | null; completedExercises: number }> {
+): Promise<{
+  lastEvalDate: string | null
+  completedExercises: number
+  monthlyWorkouts: number
+  avgDuration: number
+}> {
   try {
     await requireAuth("admin")
     const parsed = uuidSchema.safeParse(userId)
-    if (!parsed.success) return { lastEvalDate: null, completedExercises: 0 }
+    if (!parsed.success) return { lastEvalDate: null, completedExercises: 0, monthlyWorkouts: 0, avgDuration: 0 }
 
     const admin = createAdminClient()
 
-    const [evalResult, logsResult] = await Promise.all([
+    const monthStart = new Date()
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
+
+    const [evalResult, logsResult, sessionsResult] = await Promise.all([
       admin
         .from("evaluations")
         .select("date")
@@ -1126,14 +1179,27 @@ export async function getStudentQuickStatus(
         .from("exercise_logs")
         .select("id", { count: "exact", head: true })
         .eq("user_id", parsed.data),
+      admin
+        .from("workout_sessions")
+        .select("total_duration")
+        .eq("user_id", parsed.data)
+        .gte("completed_at", monthStart.toISOString()),
     ])
+
+    const sessions = sessionsResult.data ?? []
+    const monthlyWorkouts = sessions.length
+    const avgDuration = monthlyWorkouts > 0
+      ? Math.round(sessions.reduce((sum, s) => sum + (s.total_duration ?? 0), 0) / monthlyWorkouts)
+      : 0
 
     return {
       lastEvalDate: evalResult.data?.date ?? null,
       completedExercises: logsResult.count ?? 0,
+      monthlyWorkouts,
+      avgDuration,
     }
   } catch {
-    return { lastEvalDate: null, completedExercises: 0 }
+    return { lastEvalDate: null, completedExercises: 0, monthlyWorkouts: 0, avgDuration: 0 }
   }
 }
 
@@ -1464,11 +1530,14 @@ export async function notifyPaymentMade(): Promise<{ success: boolean; error?: s
       .from("users")
       .select("plan_status, full_name")
       .eq("id", user.id)
-      .single()
+      .maybeSingle()
 
-    if (!profile) return { success: false, error: "Perfil nao encontrado." }
-    if (profile.plan_status !== "pending") {
-      return { success: false, error: "Status atual nao permite essa acao." }
+    // Legacy accounts may have incomplete profile - proceed anyway
+    if (profile?.plan_status === "review") {
+      return { success: false, error: "Pagamento ja esta em analise." }
+    }
+    if (profile?.plan_status === "ativo") {
+      return { success: false, error: "Seu plano ja esta ativo." }
     }
 
     const { error } = await admin
@@ -1476,28 +1545,33 @@ export async function notifyPaymentMade(): Promise<{ success: boolean; error?: s
       .update({ plan_status: "review" })
       .eq("id", user.id)
 
-    if (error) return { success: false, error: error.message }
+    if (error) {
+      console.error("[notifyPaymentMade] update error:", error)
+      return { success: false, error: error.message }
+    }
 
-    // Notify admin
+    // Notify admin (non-blocking)
     const { data: adminUser } = await admin
       .from("users")
       .select("id")
       .eq("role", "admin")
       .limit(1)
-      .single()
+      .maybeSingle()
 
     if (adminUser?.id) {
+      const studentName = profile?.full_name ?? "Aluno"
       await insertNotification(
         adminUser.id,
         "Pagamento sinalizado",
-        `${profile.full_name} informou que realizou o pagamento e aguarda validacao.`,
+        `${studentName} informou que realizou o pagamento e aguarda validacao.`,
       )
     }
 
     revalidatePath("/aluno/assinatura")
     revalidatePath("/admin/alunos")
     return { success: true }
-  } catch {
+  } catch (err) {
+    console.error("[notifyPaymentMade] unexpected error:", err)
     return { success: false, error: "Erro de conexao." }
   }
 }
@@ -1581,6 +1655,7 @@ export async function deleteStudent(studentId: string): Promise<{ success: boole
 
     await Promise.all([
       admin.from("exercise_logs").delete().eq("user_id", parsed.data),
+      admin.from("workout_sessions").delete().eq("user_id", parsed.data),
       admin.from("workouts").delete().eq("user_id", parsed.data),
       admin.from("evaluations").delete().eq("user_id", parsed.data),
       admin.from("anamnesis").delete().eq("user_id", parsed.data),

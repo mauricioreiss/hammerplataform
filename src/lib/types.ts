@@ -83,6 +83,16 @@ export type Anamnesis = {
   created_at: string
 }
 
+export type WorkoutSession = {
+  id: string
+  user_id: string
+  workout_id: string
+  started_at: string
+  completed_at: string
+  total_duration: number
+  created_at: string
+}
+
 export type Notification = {
   id: string
   user_id: string

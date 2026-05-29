@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
 import { registerPayment, blockStudent, unblockStudent, deleteStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
@@ -22,6 +22,8 @@ type StudentProfileProps = {
   quickStatus: {
     lastEvalDate: string | null
     completedExercises: number
+    monthlyWorkouts: number
+    avgDuration: number
   }
   anamnesis: Anamnesis | null
 }
@@ -335,11 +337,18 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
           </div>
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center shrink-0">
-              <CheckCircle2 size={14} className="text-green-500" />
+              <TrendingUp size={14} className="text-red-500" />
             </div>
             <div>
-              <p className="text-zinc-500 text-[9px] font-bold uppercase">Exercícios Feitos</p>
-              <p className="text-white text-xs font-bold">{quickStatus.completedExercises}</p>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase">Frequência (Mês)</p>
+              <p className="text-white text-xs font-bold">
+                {quickStatus.monthlyWorkouts} treino{quickStatus.monthlyWorkouts !== 1 ? "s" : ""}
+                {quickStatus.avgDuration > 0 && (
+                  <span className="text-zinc-500 font-bold ml-1">
+                    ({Math.round(quickStatus.avgDuration / 60)}min)
+                  </span>
+                )}
+              </p>
             </div>
           </div>
         </div>

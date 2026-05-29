@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo, useTransition } from "react"
-import { CheckCircle2 } from "lucide-react"
+import { useState, useMemo, useTransition, useRef, useEffect } from "react"
+import { CheckCircle2, Clock, Loader2, Timer } from "lucide-react"
 import type { Workout } from "@/lib/types"
-import { toggleExerciseLog } from "@/app/actions"
+import { toggleExerciseLog, finishWorkoutSession } from "@/app/actions"
 import { ExerciseItem } from "./exercise-item"
 
 type WorkoutSessionProps = {
@@ -11,11 +11,30 @@ type WorkoutSessionProps = {
   initialCompletedIds: string[]
 }
 
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  const pad = (n: number) => n.toString().padStart(2, "0")
+  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
+}
+
 export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionProps) {
   const exercises = workout.exercises ?? []
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [completedIds, setCompletedIds] = useState<string[]>(initialCompletedIds)
   const [, startTransition] = useTransition()
+  const [elapsed, setElapsed] = useState(0)
+  const [finishing, setFinishing] = useState(false)
+  const [finished, setFinished] = useState(false)
+  const sessionStartedAt = useRef(new Date().toISOString())
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setElapsed((prev) => prev + 1)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   const progress = useMemo(
     () => exercises.length > 0 ? (completedIds.length / exercises.length) * 100 : 0,
@@ -41,6 +60,15 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
     })
   }
 
+  async function handleFinish() {
+    setFinishing(true)
+    const result = await finishWorkoutSession(workout.id, sessionStartedAt.current)
+    if (result.success) {
+      setFinished(true)
+    }
+    setFinishing(false)
+  }
+
   return (
     <div className="py-6 space-y-4 pb-24 md:pb-6 animate-in fade-in duration-300">
       {/* Workout header */}
@@ -49,11 +77,17 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
           {workout.title}
         </h1>
 
-        {/* Progress bar */}
+        {/* Timer + Progress */}
         <div className="mt-6 bg-zinc-900 p-3 rounded-xl border border-zinc-800">
           <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
             <span className="text-zinc-400">Progresso do Treino</span>
-            <span className="text-red-500">{Math.round(progress)}%</span>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1 text-zinc-400">
+                <Timer size={10} />
+                {formatDuration(elapsed)}
+              </span>
+              <span className="text-red-500">{Math.round(progress)}%</span>
+            </div>
           </div>
           <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
             <div
@@ -83,9 +117,32 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
       {/* Completion */}
       {progress === 100 && (
         <div className="pt-6 animate-in slide-in-from-bottom-4">
-          <button className="w-full bg-green-600 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all">
-            <CheckCircle2 size={24} /> Treino Finalizado!
-          </button>
+          {finished ? (
+            <div className="w-full bg-green-600 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2">
+              <CheckCircle2 size={24} /> Treino Finalizado!
+            </div>
+          ) : (
+            <button
+              onClick={handleFinish}
+              disabled={finishing}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {finishing ? (
+                <Loader2 size={24} className="animate-spin" />
+              ) : (
+                <CheckCircle2 size={24} />
+              )}
+              {finishing ? "Salvando..." : "Finalizar Treino"}
+            </button>
+          )}
+          {finished && (
+            <div className="mt-3 bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-center">
+              <p className="text-zinc-400 text-xs">
+                <Clock size={12} className="inline mr-1" />
+                Tempo total: <strong className="text-white">{formatDuration(elapsed)}</strong>
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

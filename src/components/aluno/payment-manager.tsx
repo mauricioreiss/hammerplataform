@@ -12,13 +12,14 @@ type PaymentManagerProps = {
   pixKey: string
 }
 
-export function PaymentManager({ user, pixKey }: PaymentManagerProps) {
+export function PaymentManager({ user, pixKey: rawPixKey }: PaymentManagerProps) {
   const router = useRouter()
   const [step, setStep] = useState<"status" | "pix">("status")
   const [copied, setCopied] = useState(false)
   const [notifying, setNotifying] = useState(false)
   const [paymentError, setPaymentError] = useState("")
 
+  const pixKey = rawPixKey || ""
   const hasPixKey = Boolean(pixKey)
   const isBlocked = user.plan_status === "blocked"
   const isPending = user.plan_status === "pending"
