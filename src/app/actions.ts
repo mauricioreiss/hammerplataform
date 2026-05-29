@@ -397,11 +397,10 @@ export async function getAnamneseByUserId(userId: string) {
       .from("anamnesis")
       .select("*")
       .eq("user_id", parsed.data)
-      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    console.log("[getAnamneseByUserId]", { userId: parsed.data, hasData: !!data, error: error ?? null })
+    console.log("[getAnamneseByUserId]", { userId: parsed.data, data, error: error ?? null })
 
     if (error) {
       console.error("[getAnamneseByUserId] query error:", error)
