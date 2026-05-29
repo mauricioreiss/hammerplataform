@@ -8,6 +8,7 @@ import {
   getAnamneseByUserId,
 } from "@/app/actions"
 import { StudentProfile } from "@/components/admin/student-profile"
+import { RealtimeProfileListener } from "@/components/admin/realtime-profile-listener"
 
 export default async function StudentPage({
   params,
@@ -28,13 +29,16 @@ export default async function StudentPage({
   ])
 
   return (
-    <StudentProfile
-      student={student}
-      avaliacoes={avaliacoes}
-      workouts={workouts}
-      libraryExercises={libraryExercises}
-      quickStatus={quickStatus}
-      anamnesis={anamnesis}
-    />
+    <>
+      <RealtimeProfileListener userId={student.id} />
+      <StudentProfile
+        student={student}
+        avaliacoes={avaliacoes}
+        workouts={workouts}
+        libraryExercises={libraryExercises}
+        quickStatus={quickStatus}
+        anamnesis={anamnesis}
+      />
+    </>
   )
 }
