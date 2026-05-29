@@ -8,28 +8,37 @@ import {
   ChevronUp,
   Clock,
   ImageOff,
+  LineChart,
 } from "lucide-react"
 import type { Exercise } from "@/lib/types"
+import { ExerciseHistoryModal } from "./exercise-history-modal"
 
 type ExerciseItemProps = {
   exercise: Exercise
   isExpanded: boolean
   isCompleted: boolean
+  weight: string
+  onWeightChange: (value: string) => void
   onToggleExpand: () => void
   onToggleComplete: () => void
   // View-only: workout already finished this cycle, no toggling allowed.
   readOnly?: boolean
+  // Tried to check the exercise without a valid load: flash the input red.
+  hasError?: boolean
 }
 
 export function ExerciseItem({
   exercise,
   isExpanded,
   isCompleted,
+  weight,
+  onWeightChange,
   onToggleExpand,
   onToggleComplete,
   readOnly = false,
+  hasError = false,
 }: ExerciseItemProps) {
-  const [weight, setWeight] = useState("")
+  const [showHistory, setShowHistory] = useState(false)
 
   return (
     <div
@@ -106,15 +115,21 @@ export function ExerciseItem({
 
           {/* Weight + rest */}
           <div className="flex gap-3">
-            <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl p-2 relative">
-              <label className="text-[9px] uppercase font-bold text-zinc-500 absolute top-2 left-3">
+            <div
+              className={`flex-1 bg-zinc-950 border rounded-xl p-2 relative transition-colors ${
+                hasError ? "border-red-500 ring-1 ring-red-500" : "border-zinc-800"
+              }`}
+            >
+              <label className={`text-[9px] uppercase font-bold absolute top-2 left-3 ${hasError ? "text-red-500" : "text-zinc-500"}`}>
                 Carga Hoje (Kg)
               </label>
               <input
                 type="number"
+                inputMode="decimal"
                 value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className="w-full bg-transparent border-none text-white focus:outline-none font-black text-lg text-center mt-4 pb-1"
+                onChange={(e) => onWeightChange(e.target.value)}
+                disabled={readOnly}
+                className="w-full bg-transparent border-none text-white focus:outline-none focus:ring-0 font-black text-lg text-center mt-4 pb-1 disabled:text-zinc-500"
                 placeholder="--"
               />
             </div>
@@ -127,6 +142,14 @@ export function ExerciseItem({
               </div>
             </div>
           </div>
+
+          {/* Evolução — own load history for this movement */}
+          <button
+            onClick={() => setShowHistory(true)}
+            className="w-full py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 font-bold uppercase text-xs flex items-center justify-center gap-2 transition-colors"
+          >
+            <LineChart size={14} /> Evolução
+          </button>
 
           {/* Complete button — hidden in read-only (workout already finished) */}
           {!readOnly && (
@@ -144,6 +167,14 @@ export function ExerciseItem({
           )}
         </div>
       </div>
+
+      {showHistory && (
+        <ExerciseHistoryModal
+          exerciseId={exercise.id}
+          exerciseName={exercise.name}
+          onClose={() => setShowHistory(false)}
+        />
+      )}
     </div>
   )
 }

@@ -4,10 +4,10 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
-import { registerPayment, blockStudent, unblockStudent, deleteStudent } from "@/app/actions"
-import type { QuickStatus, RecentSession } from "@/app/actions"
+import { registerPayment, blockStudent, unblockStudent, deleteStudent, getSessionDetail } from "@/app/actions"
+import type { QuickStatus, RecentSession, SessionExercise } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
@@ -31,6 +31,14 @@ function formatDuration(seconds: number): string {
   if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
   return `${m} min`
 }
+
+// Progressive-overload indicator: green up, red down, yellow flat/first time.
+const TREND_ICON = {
+  up: { Icon: TrendingUp, color: "text-green-500" },
+  down: { Icon: TrendingDown, color: "text-red-500" },
+  same: { Icon: Minus, color: "text-yellow-500" },
+  first: { Icon: Minus, color: "text-yellow-500" },
+} as const
 
 function relativeDay(dateStr: string): string {
   const date = new Date(dateStr)
@@ -68,6 +76,23 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [showAnamneseModal, setShowAnamneseModal] = useState(false)
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null)
+  const [sessionDetails, setSessionDetails] = useState<Record<string, SessionExercise[]>>({})
+  const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null)
+
+  async function handleToggleSession(sessionId: string) {
+    if (expandedSessionId === sessionId) {
+      setExpandedSessionId(null)
+      return
+    }
+    setExpandedSessionId(sessionId)
+    if (!sessionDetails[sessionId]) {
+      setLoadingSessionId(sessionId)
+      const detail = await getSessionDetail(sessionId)
+      setSessionDetails((prev) => ({ ...prev, [sessionId]: detail }))
+      setLoadingSessionId(null)
+    }
+  }
 
   const hasEnoughForComparativo = avaliacoes.length >= 2
   const before = avaliacoes[avaliacoes.length - 1]
@@ -398,21 +423,62 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Últimos Treinos</p>
             </div>
             <div className="space-y-2">
-              {recentSessions.map((s) => (
-                <div
-                  key={s.id}
-                  className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5"
-                >
-                  <div className="min-w-0">
-                    <p className="text-white text-xs font-bold truncate">{s.title}</p>
-                    <p className="text-zinc-600 text-[10px] font-bold uppercase">{relativeDay(s.completed_at)}</p>
+              {recentSessions.map((s) => {
+                const isOpen = expandedSessionId === s.id
+                const detail = sessionDetails[s.id]
+                return (
+                  <div key={s.id} className="bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => handleToggleSession(s.id)}
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-left active:bg-zinc-900 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-white text-xs font-bold truncate">{s.title}</p>
+                        <p className="text-zinc-600 text-[10px] font-bold uppercase">{relativeDay(s.completed_at)}</p>
+                      </div>
+                      <span className="flex items-center gap-2 shrink-0 ml-3">
+                        <span className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold">
+                          <Timer size={11} />
+                          {formatDuration(s.total_duration)}
+                        </span>
+                        {isOpen ? <ChevronUp size={14} className="text-zinc-500" /> : <ChevronDown size={14} className="text-zinc-500" />}
+                      </span>
+                    </button>
+
+                    {isOpen && (
+                      <div className="border-t border-zinc-800 px-3 py-2 space-y-1.5 animate-in fade-in duration-200">
+                        {loadingSessionId === s.id ? (
+                          <div className="flex justify-center py-3">
+                            <Loader2 size={16} className="animate-spin text-zinc-600" />
+                          </div>
+                        ) : detail && detail.length > 0 ? (
+                          detail.map((ex) => {
+                            const { Icon, color } = TREND_ICON[ex.trend]
+                            return (
+                              <div key={ex.exerciseId} className="flex items-center justify-between py-1">
+                                <p className="text-zinc-300 text-[11px] font-bold truncate min-w-0">{ex.name}</p>
+                                <span className="flex items-center gap-1.5 shrink-0 ml-3">
+                                  <span className="text-white text-[11px] font-black">
+                                    {ex.currentWeight != null ? `${ex.currentWeight} kg` : "—"}
+                                  </span>
+                                  {ex.previousWeight != null && (
+                                    <span className="text-zinc-600 text-[9px] font-bold">
+                                      (ant. {ex.previousWeight})
+                                    </span>
+                                  )}
+                                  <Icon size={14} className={color} />
+                                </span>
+                              </div>
+                            )
+                          })
+                        ) : (
+                          <p className="text-zinc-600 text-[10px] text-center py-3">Sem cargas registradas nesta sessão.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <span className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold shrink-0 ml-3">
-                    <Timer size={11} />
-                    {formatDuration(s.total_duration)}
-                  </span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </div>

@@ -54,7 +54,8 @@ export type ExerciseLog = {
   user_id: string
   exercise_id: string
   workout_id: string
-  weight_used: string | null
+  workout_session_id: string | null
+  weight_used: number | null
   completed_at: string
 }
 

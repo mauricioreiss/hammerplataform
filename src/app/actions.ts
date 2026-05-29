@@ -842,66 +842,6 @@ export async function deleteWorkout(
   }
 }
 
-// --- Exercise Logs ---
-
-export async function getExerciseLogs(workoutId: string): Promise<string[]> {
-  try {
-    const user = await getAuthUser()
-    if (!user) return []
-
-    const parsed = uuidSchema.safeParse(workoutId)
-    if (!parsed.success) return []
-
-    const admin = createAdminClient()
-    const { data, error } = await admin
-      .from("exercise_logs")
-      .select("exercise_id")
-      .eq("user_id", user.id)
-      .eq("workout_id", parsed.data)
-
-    if (error || !data) return []
-    return data.map((d) => d.exercise_id)
-  } catch {
-    return []
-  }
-}
-
-export async function toggleExerciseLog(
-  exerciseId: string,
-  workoutId: string,
-): Promise<{ success: boolean }> {
-  try {
-    const user = await getAuthUser()
-    if (!user) return { success: false }
-
-    const admin = createAdminClient()
-
-    // Check if already completed
-    const { data: existing } = await admin
-      .from("exercise_logs")
-      .select("id")
-      .eq("user_id", user.id)
-      .eq("exercise_id", exerciseId)
-      .eq("workout_id", workoutId)
-      .maybeSingle()
-
-    if (existing) {
-      await admin.from("exercise_logs").delete().eq("id", existing.id)
-    } else {
-      await admin.from("exercise_logs").insert({
-        user_id: user.id,
-        exercise_id: exerciseId,
-        workout_id: workoutId,
-      })
-    }
-
-    revalidatePath("/aluno/treino")
-    return { success: true }
-  } catch {
-    return { success: false }
-  }
-}
-
 // --- Workout Sessions ---
 
 export async function getLastFinishedWorkoutId(): Promise<string | null> {
@@ -952,9 +892,15 @@ export async function isWorkoutCompletedThisWeek(workoutId: string): Promise<boo
   }
 }
 
+export type ExerciseLogInput = {
+  exerciseId: string
+  weight: number | null
+}
+
 export async function finishWorkoutSession(
   workoutId: string,
   startedAt: string,
+  logs: ExerciseLogInput[] = [],
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const user = await getAuthUser()
@@ -968,17 +914,44 @@ export async function finishWorkoutSession(
     const totalDuration = Math.max(0, Math.round((completedAt.getTime() - started.getTime()) / 1000))
 
     const admin = createAdminClient()
-    const { error } = await admin.from("workout_sessions").insert({
-      user_id: user.id,
-      workout_id: parsed.data,
-      started_at: started.toISOString(),
-      completed_at: completedAt.toISOString(),
-      total_duration: totalDuration,
-    })
+    const { data: session, error } = await admin
+      .from("workout_sessions")
+      .insert({
+        user_id: user.id,
+        workout_id: parsed.data,
+        started_at: started.toISOString(),
+        completed_at: completedAt.toISOString(),
+        total_duration: totalDuration,
+      })
+      .select("id")
+      .single()
 
-    if (error) {
-      console.error("[finishWorkoutSession] insert error:", error)
-      return { success: false, error: error.message }
+    if (error || !session) {
+      console.error("[finishWorkoutSession] session insert error:", error)
+      return { success: false, error: error?.message ?? "Erro ao salvar sessao." }
+    }
+
+    // One historical log row per completed exercise, tied to this session.
+    // Weight is captured at finish time for progressive-overload tracking.
+    const rows = logs
+      .filter((l) => uuidSchema.safeParse(l.exerciseId).success)
+      .map((l) => ({
+        user_id: user.id,
+        exercise_id: l.exerciseId,
+        workout_id: parsed.data,
+        workout_session_id: session.id,
+        weight_used: Number.isFinite(l.weight) ? l.weight : null,
+        completed_at: completedAt.toISOString(),
+      }))
+
+    if (rows.length > 0) {
+      const { error: logErr } = await admin.from("exercise_logs").insert(rows)
+      if (logErr) {
+        // Roll back the orphan session so the cycle isn't locked without logs.
+        await admin.from("workout_sessions").delete().eq("id", session.id)
+        console.error("[finishWorkoutSession] logs insert error:", logErr)
+        return { success: false, error: logErr.message }
+      }
     }
 
     revalidatePath("/aluno/treino")
@@ -986,6 +959,117 @@ export async function finishWorkoutSession(
   } catch (err) {
     console.error("[finishWorkoutSession] unexpected error:", err)
     return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export type WeightHistoryEntry = {
+  weight: number
+  date: string
+}
+
+// Per-exercise load history for the logged-in student (own data only).
+export async function getExerciseWeightHistory(exerciseId: string): Promise<WeightHistoryEntry[]> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return []
+
+    const parsed = uuidSchema.safeParse(exerciseId)
+    if (!parsed.success) return []
+
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from("exercise_logs")
+      .select("weight_used, completed_at")
+      .eq("user_id", user.id)
+      .eq("exercise_id", parsed.data)
+      .not("weight_used", "is", null)
+      .order("completed_at", { ascending: false })
+      .limit(20)
+
+    if (!data) return []
+    return data.map((d) => ({ weight: Number(d.weight_used), date: d.completed_at }))
+  } catch {
+    return []
+  }
+}
+
+export type SessionExercise = {
+  exerciseId: string
+  name: string
+  currentWeight: number | null
+  previousWeight: number | null
+  trend: "up" | "down" | "same" | "first"
+}
+
+// Admin view: every exercise logged in a session, with the load compared
+// against the student's previous recorded run of that same exercise.
+export async function getSessionDetail(sessionId: string): Promise<SessionExercise[]> {
+  try {
+    await requireAuth("admin")
+
+    const parsed = uuidSchema.safeParse(sessionId)
+    if (!parsed.success) return []
+
+    const admin = createAdminClient()
+    const { data: session } = await admin
+      .from("workout_sessions")
+      .select("id, user_id, completed_at")
+      .eq("id", parsed.data)
+      .maybeSingle()
+
+    if (!session) return []
+
+    const { data: logs } = await admin
+      .from("exercise_logs")
+      .select("exercise_id, weight_used")
+      .eq("workout_session_id", session.id)
+
+    if (!logs || logs.length === 0) return []
+
+    const exerciseIds = [...new Set(logs.map((l) => l.exercise_id))]
+
+    // Previous run of each exercise before this session, newest first, only
+    // rows that actually recorded a weight. One query, no N+1.
+    const { data: prevLogs } = await admin
+      .from("exercise_logs")
+      .select("exercise_id, weight_used, completed_at")
+      .eq("user_id", session.user_id)
+      .in("exercise_id", exerciseIds)
+      .lt("completed_at", session.completed_at)
+      .not("weight_used", "is", null)
+      .order("completed_at", { ascending: false })
+
+    const previousByExercise = new Map<string, number>()
+    for (const p of prevLogs ?? []) {
+      if (!previousByExercise.has(p.exercise_id)) {
+        previousByExercise.set(p.exercise_id, Number(p.weight_used))
+      }
+    }
+
+    const { data: exercises } = await admin
+      .from("exercises")
+      .select("id, name")
+      .in("id", exerciseIds)
+
+    const nameById = new Map((exercises ?? []).map((e) => [e.id, e.name]))
+
+    return logs.map((l) => {
+      const current = l.weight_used != null ? Number(l.weight_used) : null
+      const previous = previousByExercise.get(l.exercise_id) ?? null
+      let trend: SessionExercise["trend"] = "first"
+      if (previous != null && current != null) {
+        trend = current > previous ? "up" : current < previous ? "down" : "same"
+      }
+      return {
+        exerciseId: l.exercise_id,
+        name: nameById.get(l.exercise_id) ?? "Exercício",
+        currentWeight: current,
+        previousWeight: previous,
+        trend,
+      }
+    })
+  } catch {
+    return []
   }
 }
 

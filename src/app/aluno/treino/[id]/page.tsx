@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 import { WorkoutSession } from "@/components/aluno/workout-session"
-import { getWorkoutComExercicios, getExerciseLogs, isWorkoutCompletedThisWeek } from "@/app/actions"
+import { getWorkoutComExercicios, isWorkoutCompletedThisWeek } from "@/app/actions"
 
 type Props = {
   params: Promise<{ id: string }>
@@ -9,9 +9,8 @@ type Props = {
 export default async function TreinoDetalhePage({ params }: Props) {
   const { id } = await params
 
-  const [workout, completedIds, alreadyCompleted] = await Promise.all([
+  const [workout, alreadyCompleted] = await Promise.all([
     getWorkoutComExercicios(id),
-    getExerciseLogs(id),
     isWorkoutCompletedThisWeek(id),
   ])
 
@@ -38,7 +37,6 @@ export default async function TreinoDetalhePage({ params }: Props) {
     <WorkoutSession
       key={workout.id}
       workout={workout}
-      initialCompletedIds={completedIds}
       isCompleted={alreadyCompleted}
     />
   )

@@ -1,14 +1,15 @@
 "use client"
 
-import { useState, useMemo, useTransition, useRef, useEffect } from "react"
-import { CheckCircle2, Clock, Loader2, Timer } from "lucide-react"
+import { useState, useMemo, useRef, useEffect } from "react"
+import { AlertTriangle, CheckCircle2, Clock, Loader2, Timer } from "lucide-react"
 import type { Workout } from "@/lib/types"
-import { toggleExerciseLog, finishWorkoutSession } from "@/app/actions"
+import { finishWorkoutSession, type ExerciseLogInput } from "@/app/actions"
 import { ExerciseItem } from "./exercise-item"
+
+const WEIGHT_REQUIRED_MSG = "Preencha a carga utilizada nesta série."
 
 type WorkoutSessionProps = {
   workout: Workout
-  initialCompletedIds: string[]
   // Already finished this weekly cycle: lock the timer and execution,
   // student can only view the sheet.
   isCompleted?: boolean
@@ -22,16 +23,28 @@ function formatDuration(seconds: number): string {
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
-export function WorkoutSession({ workout, initialCompletedIds, isCompleted = false }: WorkoutSessionProps) {
+// Load must be filled in and non-negative before an exercise counts as done.
+function isValidWeight(raw: string | undefined): boolean {
+  if (raw == null || raw.trim() === "") return false
+  const n = Number(raw)
+  return Number.isFinite(n) && n >= 0
+}
+
+export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionProps) {
   const exercises = workout.exercises ?? []
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [completedIds, setCompletedIds] = useState<string[]>(initialCompletedIds)
-  const [, startTransition] = useTransition()
+  const [completedIds, setCompletedIds] = useState<string[]>([])
+  // Per-exercise load (kg), kept in memory until the workout is finished.
+  const [weights, setWeights] = useState<Record<string, string>>({})
   const [elapsed, setElapsed] = useState(0)
   const [finishing, setFinishing] = useState(false)
   const [finished, setFinished] = useState(false)
+  // Exercise whose weight input should flash red after a failed check.
+  const [errorId, setErrorId] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
   const sessionStartedAt = useRef(new Date().toISOString())
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     // Locked workout: never run the timer, it's view-only.
@@ -44,35 +57,79 @@ export function WorkoutSession({ workout, initialCompletedIds, isCompleted = fal
     }
   }, [isCompleted])
 
+  useEffect(() => {
+    return () => {
+      if (toastRef.current) clearTimeout(toastRef.current)
+    }
+  }, [])
+
   const progress = useMemo(
     () => exercises.length > 0 ? (completedIds.length / exercises.length) * 100 : 0,
     [completedIds.length, exercises.length],
   )
+
+  // Fallback gate: every completed exercise must carry a valid load.
+  const allCompletedHaveWeight = completedIds.every((id) => isValidWeight(weights[id]))
+
+  function showToast(message: string) {
+    setToast(message)
+    if (toastRef.current) clearTimeout(toastRef.current)
+    toastRef.current = setTimeout(() => setToast(null), 2500)
+  }
 
   function toggleComplete(exerciseId: string) {
     if (isCompleted) return // locked: no execution on a finished workout
 
     const isDone = completedIds.includes(exerciseId)
 
+    // Unmarking is always allowed.
     if (isDone) {
       setCompletedIds(completedIds.filter((id) => id !== exerciseId))
-    } else {
-      setCompletedIds([...completedIds, exerciseId])
-      const currentIndex = exercises.findIndex((e) => e.id === exerciseId)
-      const nextExercise = exercises.find(
-        (e, i) => i > currentIndex && !completedIds.includes(e.id),
-      )
-      setExpandedId(nextExercise?.id ?? null)
+      return
     }
 
-    startTransition(() => {
-      toggleExerciseLog(exerciseId, workout.id)
-    })
+    // Guard: can't mark an exercise done without recording its load.
+    if (!isValidWeight(weights[exerciseId])) {
+      setErrorId(exerciseId)
+      setExpandedId(exerciseId)
+      showToast(WEIGHT_REQUIRED_MSG)
+      return
+    }
+
+    setErrorId(null)
+    setCompletedIds([...completedIds, exerciseId])
+    const currentIndex = exercises.findIndex((e) => e.id === exerciseId)
+    const nextExercise = exercises.find(
+      (e, i) => i > currentIndex && !completedIds.includes(e.id),
+    )
+    setExpandedId(nextExercise?.id ?? null)
+  }
+
+  function setWeight(exerciseId: string, value: string) {
+    setWeights((prev) => ({ ...prev, [exerciseId]: value }))
+    // Clear the error as soon as the student types a valid value.
+    if (errorId === exerciseId && isValidWeight(value)) setErrorId(null)
   }
 
   async function handleFinish() {
+    // Fallback: never submit if a completed exercise lost its load.
+    if (!allCompletedHaveWeight) {
+      const invalid = completedIds.find((id) => !isValidWeight(weights[id]))
+      if (invalid) {
+        setErrorId(invalid)
+        setExpandedId(invalid)
+        showToast(WEIGHT_REQUIRED_MSG)
+      }
+      return
+    }
+
     setFinishing(true)
-    const result = await finishWorkoutSession(workout.id, sessionStartedAt.current)
+    // One log per completed exercise, with the load the student recorded.
+    const logs: ExerciseLogInput[] = completedIds.map((id) => ({
+      exerciseId: id,
+      weight: Number(weights[id]),
+    }))
+    const result = await finishWorkoutSession(workout.id, sessionStartedAt.current, logs)
     if (result.success) {
       if (timerRef.current) clearInterval(timerRef.current)
       setFinished(true)
@@ -128,6 +185,9 @@ export function WorkoutSession({ workout, initialCompletedIds, isCompleted = fal
             isExpanded={expandedId === exercise.id}
             isCompleted={completedIds.includes(exercise.id)}
             readOnly={isCompleted}
+            weight={weights[exercise.id] ?? ""}
+            hasError={errorId === exercise.id}
+            onWeightChange={(value) => setWeight(exercise.id, value)}
             onToggleExpand={() =>
               setExpandedId(expandedId === exercise.id ? null : exercise.id)
             }
@@ -146,8 +206,8 @@ export function WorkoutSession({ workout, initialCompletedIds, isCompleted = fal
           ) : (
             <button
               onClick={handleFinish}
-              disabled={finishing}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+              disabled={finishing || !allCompletedHaveWeight}
+              className="w-full bg-green-600 hover:bg-green-700 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {finishing ? (
                 <Loader2 size={24} className="animate-spin" />
@@ -165,6 +225,16 @@ export function WorkoutSession({ workout, initialCompletedIds, isCompleted = fal
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Validation toast */}
+      {toast && (
+        <div className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="bg-red-600 text-white text-xs font-bold rounded-xl px-4 py-3 shadow-lg flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" />
+            {toast}
+          </div>
         </div>
       )}
     </div>
