@@ -18,6 +18,8 @@ type ExerciseItemProps = {
   isExpanded: boolean
   isCompleted: boolean
   weight: string
+  // Whether the recorded load is valid (> 0). Gates marking the exercise done.
+  weightValid: boolean
   onWeightChange: (value: string) => void
   onToggleExpand: () => void
   onToggleComplete: () => void
@@ -32,6 +34,7 @@ export function ExerciseItem({
   isExpanded,
   isCompleted,
   weight,
+  weightValid,
   onWeightChange,
   onToggleExpand,
   onToggleComplete,
@@ -39,6 +42,9 @@ export function ExerciseItem({
   hasError = false,
 }: ExerciseItemProps) {
   const [showHistory, setShowHistory] = useState(false)
+  // Can't mark a not-yet-done exercise without a valid load. Unchecking an
+  // already-done one stays allowed.
+  const completeDisabled = readOnly || (!isCompleted && !weightValid)
 
   return (
     <div
@@ -53,14 +59,14 @@ export function ExerciseItem({
           <button
             onClick={(e) => {
               e.stopPropagation()
-              if (!readOnly) onToggleComplete()
+              if (!completeDisabled) onToggleComplete()
             }}
-            disabled={readOnly}
+            disabled={completeDisabled}
             className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
               isCompleted
                 ? "bg-green-600 border-green-600 text-white"
                 : "border-zinc-600 text-transparent"
-            } ${readOnly ? "cursor-default" : ""}`}
+            } ${completeDisabled && !isCompleted ? "opacity-40 cursor-not-allowed" : ""} ${readOnly ? "cursor-default" : ""}`}
           >
             <CheckCircle2 size={18} />
           </button>
@@ -155,14 +161,15 @@ export function ExerciseItem({
           {!readOnly && (
             <button
               onClick={onToggleComplete}
-              className={`w-full py-3 rounded-xl font-black italic uppercase text-sm flex items-center justify-center gap-2 transition-colors ${
+              disabled={completeDisabled}
+              className={`w-full py-3 rounded-xl font-black italic uppercase text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                 isCompleted
                   ? "bg-zinc-800 text-zinc-400"
                   : "bg-red-600 text-white"
               }`}
             >
               <CheckCircle2 size={18} />
-              {isCompleted ? "Desmarcar" : "Concluir Exercício"}
+              {isCompleted ? "Desmarcar" : !weightValid ? "Preencha a carga" : "Concluir Exercício"}
             </button>
           )}
         </div>

@@ -23,11 +23,12 @@ function formatDuration(seconds: number): string {
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
-// Load must be filled in and non-negative before an exercise counts as done.
+// Load is mandatory: must be a number greater than 0. Empty, null,
+// non-numeric or <= 0 all count as missing.
 function isValidWeight(raw: string | undefined): boolean {
   if (raw == null || raw.trim() === "") return false
   const n = Number(raw)
-  return Number.isFinite(n) && n >= 0
+  return Number.isFinite(n) && n > 0
 }
 
 export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionProps) {
@@ -112,14 +113,13 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
   }
 
   async function handleFinish() {
-    // Fallback: never submit if a completed exercise lost its load.
-    if (!allCompletedHaveWeight) {
-      const invalid = completedIds.find((id) => !isValidWeight(weights[id]))
-      if (invalid) {
-        setErrorId(invalid)
-        setExpandedId(invalid)
-        showToast(WEIGHT_REQUIRED_MSG)
-      }
+    // Hard guard: block the Supabase submit if any completed exercise is
+    // missing a valid load. First line of the handler, before anything else.
+    const invalid = completedIds.find((id) => !isValidWeight(weights[id]))
+    if (invalid) {
+      setErrorId(invalid)
+      setExpandedId(invalid)
+      showToast("Você esqueceu de anotar o peso em alguns exercícios!")
       return
     }
 
@@ -186,6 +186,7 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
             isCompleted={completedIds.includes(exercise.id)}
             readOnly={isCompleted}
             weight={weights[exercise.id] ?? ""}
+            weightValid={isValidWeight(weights[exercise.id])}
             hasError={errorId === exercise.id}
             onWeightChange={(value) => setWeight(exercise.id, value)}
             onToggleExpand={() =>
