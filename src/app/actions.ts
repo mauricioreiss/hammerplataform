@@ -924,6 +924,34 @@ export async function getLastFinishedWorkoutId(): Promise<string | null> {
   }
 }
 
+// True if the current user already finished this workout in the current
+// weekly cycle (Monday 00:00 onward). Used to lock re-execution until the
+// cycle resets. Scoped to the authenticated user — never trusts a client id.
+export async function isWorkoutCompletedThisWeek(workoutId: string): Promise<boolean> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return false
+
+    const parsed = uuidSchema.safeParse(workoutId)
+    if (!parsed.success) return false
+
+    const admin = createAdminClient()
+    const weekStart = getWeekStart()
+    const { data } = await admin
+      .from("workout_sessions")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("workout_id", parsed.data)
+      .gte("completed_at", weekStart.toISOString())
+      .limit(1)
+      .maybeSingle()
+
+    return !!data
+  } catch {
+    return false
+  }
+}
+
 export async function finishWorkoutSession(
   workoutId: string,
   startedAt: string,
@@ -1243,17 +1271,29 @@ export async function getRecentSessions(userId: string): Promise<RecentSession[]
     if (!parsed.success) return []
 
     const admin = createAdminClient()
+    const weekStart = getWeekStart()
     const { data: sessions, error } = await admin
       .from("workout_sessions")
       .select("id, workout_id, total_duration, completed_at")
       .eq("user_id", parsed.data)
+      .gte("completed_at", weekStart.toISOString())
       .order("completed_at", { ascending: false })
-      .limit(8)
 
     if (error || !sessions || sessions.length === 0) return []
 
+    // Keep only the most recent execution of each distinct workout this week.
+    // Sessions arrive newest-first, so the first time a workout_id is seen is
+    // its latest run. Drops the older duplicates a student creates by redoing
+    // the same sheet.
+    const seen = new Set<string>()
+    const unique = sessions.filter((s) => {
+      if (!s.workout_id || seen.has(s.workout_id)) return false
+      seen.add(s.workout_id)
+      return true
+    })
+
     // Resolve workout titles in one batch (no N+1).
-    const workoutIds = [...new Set(sessions.map((s) => s.workout_id).filter(Boolean))]
+    const workoutIds = [...seen]
     const { data: workouts } = await admin
       .from("workouts")
       .select("id, title")
@@ -1261,7 +1301,7 @@ export async function getRecentSessions(userId: string): Promise<RecentSession[]
 
     const titleById = new Map((workouts ?? []).map((w) => [w.id, w.title]))
 
-    return sessions.map((s) => ({
+    return unique.map((s) => ({
       id: s.id,
       title: titleById.get(s.workout_id) ?? "Treino",
       total_duration: s.total_duration ?? 0,

@@ -9,6 +9,9 @@ import { ExerciseItem } from "./exercise-item"
 type WorkoutSessionProps = {
   workout: Workout
   initialCompletedIds: string[]
+  // Already finished this weekly cycle: lock the timer and execution,
+  // student can only view the sheet.
+  isCompleted?: boolean
 }
 
 function formatDuration(seconds: number): string {
@@ -19,7 +22,7 @@ function formatDuration(seconds: number): string {
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
-export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionProps) {
+export function WorkoutSession({ workout, initialCompletedIds, isCompleted = false }: WorkoutSessionProps) {
   const exercises = workout.exercises ?? []
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [completedIds, setCompletedIds] = useState<string[]>(initialCompletedIds)
@@ -31,13 +34,15 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
+    // Locked workout: never run the timer, it's view-only.
+    if (isCompleted) return
     timerRef.current = setInterval(() => {
       setElapsed((prev) => prev + 1)
     }, 1000)
     return () => {
       if (timerRef.current) clearInterval(timerRef.current)
     }
-  }, [])
+  }, [isCompleted])
 
   const progress = useMemo(
     () => exercises.length > 0 ? (completedIds.length / exercises.length) * 100 : 0,
@@ -45,9 +50,11 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
   )
 
   function toggleComplete(exerciseId: string) {
-    const isCompleted = completedIds.includes(exerciseId)
+    if (isCompleted) return // locked: no execution on a finished workout
 
-    if (isCompleted) {
+    const isDone = completedIds.includes(exerciseId)
+
+    if (isDone) {
       setCompletedIds(completedIds.filter((id) => id !== exerciseId))
     } else {
       setCompletedIds([...completedIds, exerciseId])
@@ -81,25 +88,35 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
           {workout.title}
         </h1>
 
-        {/* Timer + Progress */}
-        <div className="mt-6 bg-zinc-900 p-3 rounded-xl border border-zinc-800">
-          <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
-            <span className="text-zinc-400">Progresso do Treino</span>
-            <div className="flex items-center gap-3">
-              <span className="flex items-center gap-1 text-zinc-400">
-                <Timer size={10} />
-                {formatDuration(elapsed)}
-              </span>
-              <span className="text-red-500">{Math.round(progress)}%</span>
+        {/* Completed this cycle: locked banner instead of the live timer */}
+        {isCompleted ? (
+          <button
+            disabled
+            className="mt-6 w-full bg-green-600/15 border border-green-600/40 text-green-500 font-black italic uppercase text-base py-3.5 rounded-xl flex items-center justify-center gap-2 cursor-default"
+          >
+            <CheckCircle2 size={20} /> Treino Concluído
+          </button>
+        ) : (
+          /* Timer + Progress */
+          <div className="mt-6 bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+            <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
+              <span className="text-zinc-400">Progresso do Treino</span>
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1 text-zinc-400">
+                  <Timer size={10} />
+                  {formatDuration(elapsed)}
+                </span>
+                <span className="text-red-500">{Math.round(progress)}%</span>
+              </div>
+            </div>
+            <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-red-600 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
             </div>
           </div>
-          <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-red-600 transition-all duration-500"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Exercise list */}
@@ -110,6 +127,7 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
             exercise={exercise}
             isExpanded={expandedId === exercise.id}
             isCompleted={completedIds.includes(exercise.id)}
+            readOnly={isCompleted}
             onToggleExpand={() =>
               setExpandedId(expandedId === exercise.id ? null : exercise.id)
             }
@@ -118,8 +136,8 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
         ))}
       </div>
 
-      {/* Completion */}
-      {progress === 100 && (
+      {/* Completion — never shown on a locked (already finished) workout */}
+      {!isCompleted && progress === 100 && (
         <div className="pt-6 animate-in slide-in-from-bottom-4">
           {finished ? (
             <div className="w-full bg-green-600 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2">
