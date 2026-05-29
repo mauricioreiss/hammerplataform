@@ -4,7 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp } from "lucide-react"
+import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp, AlertTriangle } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
 import { registerPayment, blockStudent, unblockStudent, deleteStudent } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
@@ -13,6 +13,14 @@ import { WorkoutBuilder } from "./workout-builder"
 import { AddAvaliacaoModal } from "./add-avaliacao-modal"
 import { ResetPasswordModal } from "./reset-password-modal"
 import { AnamneseModal } from "./anamnese-modal"
+
+const PAR_Q_LABELS = [
+  "Problema cardíaco diagnosticado",
+  "Dor no peito durante atividade física",
+  "Problema ósseo, articular ou muscular",
+  "Medicamentos para pressão/coração",
+  "Diabetes, hipertensão ou colesterol elevado",
+]
 
 type StudentProfileProps = {
   student: UserProfile
@@ -306,9 +314,17 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               </div>
               {anamnesis.par_q_data && Object.values(anamnesis.par_q_data).some(Boolean) && (
                 <div className="col-span-2">
-                  <p className="text-zinc-600 text-[9px] font-bold uppercase mb-1">PAR-Q (Alertas)</p>
-                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-2.5">
-                    <p className="text-red-400 text-xs font-bold">Respondeu SIM em {Object.values(anamnesis.par_q_data).filter(Boolean).length} pergunta(s) do PAR-Q</p>
+                  <p className="text-zinc-600 text-[9px] font-bold uppercase mb-1 flex items-center gap-1">
+                    <AlertTriangle size={10} className="text-yellow-500" />
+                    PAR-Q (Alertas)
+                  </p>
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 space-y-1.5">
+                    {PAR_Q_LABELS.filter((_, i) => anamnesis.par_q_data?.[`q${i}`]).map((label, i) => (
+                      <p key={i} className="text-red-400 text-xs font-bold flex items-start gap-1.5">
+                        <AlertTriangle size={10} className="shrink-0 mt-0.5" />
+                        {label}
+                      </p>
+                    ))}
                   </div>
                 </div>
               )}
