@@ -28,12 +28,15 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
   const [finishing, setFinishing] = useState(false)
   const [finished, setFinished] = useState(false)
   const sessionStartedAt = useRef(new Date().toISOString())
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setElapsed((prev) => prev + 1)
     }, 1000)
-    return () => clearInterval(interval)
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
   }, [])
 
   const progress = useMemo(
@@ -64,6 +67,7 @@ export function WorkoutSession({ workout, initialCompletedIds }: WorkoutSessionP
     setFinishing(true)
     const result = await finishWorkoutSession(workout.id, sessionStartedAt.current)
     if (result.success) {
+      if (timerRef.current) clearInterval(timerRef.current)
       setFinished(true)
     }
     setFinishing(false)

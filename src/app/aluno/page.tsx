@@ -1,19 +1,28 @@
 import Link from "next/link"
 import { Scale, ChevronDown } from "lucide-react"
-import { getCurrentUser, getWorkoutsDoAluno } from "@/app/actions"
+import { getCurrentUser, getWorkoutsDoAluno, getLastFinishedWorkoutId } from "@/app/actions"
 import { PaymentAlert } from "@/components/aluno/payment-alert"
 import { WorkoutDayCard } from "@/components/aluno/workout-day-card"
 import { InstallPrompt } from "@/components/aluno/install-prompt"
 
 export default async function AlunoPage() {
-  const [user, workouts] = await Promise.all([
+  const [user, workouts, lastFinishedId] = await Promise.all([
     getCurrentUser(),
     getWorkoutsDoAluno(),
+    getLastFinishedWorkoutId(),
   ])
 
   const firstName = user?.full_name.split(" ")[0] ?? "Aluno"
   const hasAlert = user?.plan_status === "vencendo" || user?.plan_status === "atrasado"
-  const latestWorkout = workouts[0] ?? null
+
+  // Carousel: find next workout after the last finished one (alphabetical loop)
+  let nextWorkout = workouts[0] ?? null
+  if (lastFinishedId && workouts.length > 1) {
+    const lastIndex = workouts.findIndex((w) => w.id === lastFinishedId)
+    if (lastIndex !== -1) {
+      nextWorkout = workouts[(lastIndex + 1) % workouts.length]
+    }
+  }
 
   return (
     <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
@@ -40,8 +49,8 @@ export default async function AlunoPage() {
           <h3 className="text-zinc-500 font-bold uppercase text-xs mb-3 tracking-wider">
             Treino de Hoje
           </h3>
-          {latestWorkout ? (
-            <WorkoutDayCard workout={latestWorkout} />
+          {nextWorkout ? (
+            <WorkoutDayCard workout={nextWorkout} />
           ) : (
             <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-center">
               <p className="text-zinc-500 text-sm">Nenhum treino disponivel.</p>

@@ -482,13 +482,13 @@ export async function getWorkoutsDoAluno(): Promise<Workout[]> {
 
     const admin = createAdminClient()
 
-    // Only show published workouts to students
+    // Show published workouts in alphabetical order (A, B, C, D)
     const { data: workouts, error } = await admin
       .from("workouts")
       .select("id, user_id, title, icon, is_ai_draft, status, created_at")
       .eq("user_id", user.id)
       .in("status", ["published", "approved"])
-      .order("created_at", { ascending: false })
+      .order("title", { ascending: true })
 
     if (error || !workouts || workouts.length === 0) return []
 
@@ -904,6 +904,26 @@ export async function toggleExerciseLog(
 }
 
 // --- Workout Sessions ---
+
+export async function getLastFinishedWorkoutId(): Promise<string | null> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return null
+
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from("workout_sessions")
+      .select("workout_id")
+      .eq("user_id", user.id)
+      .order("completed_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    return data?.workout_id ?? null
+  } catch {
+    return null
+  }
+}
 
 export async function finishWorkoutSession(
   workoutId: string,

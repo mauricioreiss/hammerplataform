@@ -11,7 +11,9 @@ import {
   BrainCircuit,
   Loader2,
 } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { registerFromLanding } from "@/app/actions"
+import { createClient } from "@/lib/supabase/client"
 import type { Plan } from "@/lib/types"
 
 type FunnelFormProps = {
@@ -42,6 +44,7 @@ const CYCLE_LABELS: Record<string, string> = {
 }
 
 export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
+  const router = useRouter()
   const [step, setStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -98,14 +101,29 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
       par_q_data: parqData,
     })
 
-    setSaving(false)
-
     if (!result.success) {
+      setSaving(false)
       setError(result.error ?? "Erro ao salvar cadastro.")
       return
     }
 
-    onComplete(formData.objetivo)
+    // Establish browser session with the credentials just created
+    const supabase = createClient()
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: formData.email,
+      password: formData.senha,
+    })
+
+    setSaving(false)
+
+    if (signInError) {
+      // Registration succeeded but sign-in failed - send to login
+      router.push("/login")
+      return
+    }
+
+    // Redirect to /aluno - paywall guard will send to /aluno/assinatura
+    router.push("/aluno")
   }
 
   return (
