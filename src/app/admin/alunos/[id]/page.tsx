@@ -5,6 +5,7 @@ import {
   getTreinosComExercicios,
   getLibraryExercises,
   getStudentQuickStatus,
+  getRecentSessions,
   getAnamneseByUserId,
 } from "@/app/actions"
 import { StudentProfile } from "@/components/admin/student-profile"
@@ -20,11 +21,12 @@ export default async function StudentPage({
 
   if (!student) notFound()
 
-  const [avaliacoes, workouts, libraryExercises, quickStatus, anamnesis] = await Promise.all([
+  const [avaliacoes, workouts, libraryExercises, quickStatus, recentSessions, anamnesis] = await Promise.all([
     getAvaliacoes(student.id),
     getTreinosComExercicios(student.id),
     getLibraryExercises(),
     getStudentQuickStatus(student.id),
+    getRecentSessions(student.id),
     getAnamneseByUserId(student.id),
   ])
 
@@ -37,6 +39,7 @@ export default async function StudentPage({
         workouts={workouts}
         libraryExercises={libraryExercises}
         quickStatus={quickStatus}
+        recentSessions={recentSessions}
         anamnesis={anamnesis}
       />
     </>

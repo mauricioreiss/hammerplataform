@@ -40,6 +40,18 @@ export function RealtimeProfileListener({ userId }: Props) {
           router.refresh()
         },
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "workout_sessions",
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          router.refresh()
+        },
+      )
       .subscribe()
 
     return () => {

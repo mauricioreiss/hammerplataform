@@ -32,7 +32,10 @@ export default async function TreinoDetalhePage({ params }: Props) {
   }
 
   return (
+    // key forces a fresh mount per workout so the timer/start time never
+    // carry over from a previous session (Treino A -> Treino B).
     <WorkoutSession
+      key={workout.id}
       workout={workout}
       initialCompletedIds={completedIds}
     />

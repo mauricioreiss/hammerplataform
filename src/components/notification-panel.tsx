@@ -38,6 +38,14 @@ export function NotificationPanel({ unreadCount }: NotificationPanelProps) {
     const data = await getNotifications()
     setNotifications(data)
     setLoading(false)
+
+    // Auto-mark everything as read on open so the red badge clears instantly.
+    // The unread dots in the list stay (local state) so the user still sees
+    // what was new in this session.
+    if (data.some((n) => !n.is_read)) {
+      await markNotificationsRead()
+      router.refresh()
+    }
   }
 
   async function handleMarkRead() {

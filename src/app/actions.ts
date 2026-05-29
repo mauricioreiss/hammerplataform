@@ -1167,24 +1167,33 @@ export async function updateInitialPassword(
 
 // --- Student Quick Status ---
 
-export async function getStudentQuickStatus(
-  userId: string,
-): Promise<{
+// Monday 00:00 (local) of the current week. Used to reset the weekly
+// frequency counter every Monday.
+function getWeekStart(): Date {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  const day = d.getDay() // 0 = Sunday, 1 = Monday, ...
+  const daysSinceMonday = day === 0 ? 6 : day - 1
+  d.setDate(d.getDate() - daysSinceMonday)
+  return d
+}
+
+export type QuickStatus = {
   lastEvalDate: string | null
   completedExercises: number
-  monthlyWorkouts: number
-  avgDuration: number
-}> {
+  weeklyWorkouts: number
+  weeklyDuration: number
+}
+
+export async function getStudentQuickStatus(userId: string): Promise<QuickStatus> {
+  const empty: QuickStatus = { lastEvalDate: null, completedExercises: 0, weeklyWorkouts: 0, weeklyDuration: 0 }
   try {
     await requireAuth("admin")
     const parsed = uuidSchema.safeParse(userId)
-    if (!parsed.success) return { lastEvalDate: null, completedExercises: 0, monthlyWorkouts: 0, avgDuration: 0 }
+    if (!parsed.success) return empty
 
     const admin = createAdminClient()
-
-    const monthStart = new Date()
-    monthStart.setDate(1)
-    monthStart.setHours(0, 0, 0, 0)
+    const weekStart = getWeekStart()
 
     const [evalResult, logsResult, sessionsResult] = await Promise.all([
       admin
@@ -1202,23 +1211,64 @@ export async function getStudentQuickStatus(
         .from("workout_sessions")
         .select("total_duration")
         .eq("user_id", parsed.data)
-        .gte("completed_at", monthStart.toISOString()),
+        .gte("completed_at", weekStart.toISOString()),
     ])
 
     const sessions = sessionsResult.data ?? []
-    const monthlyWorkouts = sessions.length
-    const avgDuration = monthlyWorkouts > 0
-      ? Math.round(sessions.reduce((sum, s) => sum + (s.total_duration ?? 0), 0) / monthlyWorkouts)
-      : 0
+    const weeklyWorkouts = sessions.length
+    const weeklyDuration = sessions.reduce((sum, s) => sum + (s.total_duration ?? 0), 0)
 
     return {
       lastEvalDate: evalResult.data?.date ?? null,
       completedExercises: logsResult.count ?? 0,
-      monthlyWorkouts,
-      avgDuration,
+      weeklyWorkouts,
+      weeklyDuration,
     }
   } catch {
-    return { lastEvalDate: null, completedExercises: 0, monthlyWorkouts: 0, avgDuration: 0 }
+    return empty
+  }
+}
+
+export type RecentSession = {
+  id: string
+  title: string
+  total_duration: number
+  completed_at: string
+}
+
+export async function getRecentSessions(userId: string): Promise<RecentSession[]> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return []
+
+    const admin = createAdminClient()
+    const { data: sessions, error } = await admin
+      .from("workout_sessions")
+      .select("id, workout_id, total_duration, completed_at")
+      .eq("user_id", parsed.data)
+      .order("completed_at", { ascending: false })
+      .limit(8)
+
+    if (error || !sessions || sessions.length === 0) return []
+
+    // Resolve workout titles in one batch (no N+1).
+    const workoutIds = [...new Set(sessions.map((s) => s.workout_id).filter(Boolean))]
+    const { data: workouts } = await admin
+      .from("workouts")
+      .select("id, title")
+      .in("id", workoutIds)
+
+    const titleById = new Map((workouts ?? []).map((w) => [w.id, w.title]))
+
+    return sessions.map((s) => ({
+      id: s.id,
+      title: titleById.get(s.workout_id) ?? "Treino",
+      total_duration: s.total_duration ?? 0,
+      completed_at: s.completed_at,
+    }))
+  } catch {
+    return []
   }
 }
 

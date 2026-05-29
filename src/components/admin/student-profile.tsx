@@ -7,6 +7,7 @@ import Link from "next/link"
 import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp, AlertTriangle } from "lucide-react"
 import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
 import { registerPayment, blockStudent, unblockStudent, deleteStudent } from "@/app/actions"
+import type { QuickStatus, RecentSession } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
 import { ComparativoView } from "./comparativo-view"
 import { WorkoutBuilder } from "./workout-builder"
@@ -22,21 +23,39 @@ const PAR_Q_LABELS = [
   "Diabetes, hipertensão ou colesterol elevado",
 ]
 
+// total_duration is stored in seconds.
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return "< 1 min"
+  const h = Math.floor(seconds / 3600)
+  const m = Math.round((seconds % 3600) / 60)
+  if (h > 0) return m > 0 ? `${h}h ${m}min` : `${h}h`
+  return `${m} min`
+}
+
+function relativeDay(dateStr: string): string {
+  const date = new Date(dateStr)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = new Date(date)
+  day.setHours(0, 0, 0, 0)
+  const diffDays = Math.round((today.getTime() - day.getTime()) / 86400000)
+  if (diffDays === 0) return "Hoje"
+  if (diffDays === 1) return "Ontem"
+  if (diffDays < 7) return `${diffDays} dias atrás`
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
+}
+
 type StudentProfileProps = {
   student: UserProfile
   avaliacoes: Evaluation[]
   workouts: Workout[]
   libraryExercises: Exercise[]
-  quickStatus: {
-    lastEvalDate: string | null
-    completedExercises: number
-    monthlyWorkouts: number
-    avgDuration: number
-  }
+  quickStatus: QuickStatus
+  recentSessions: RecentSession[]
   anamnesis: Anamnesis | null
 }
 
-export function StudentProfile({ student, avaliacoes, workouts, libraryExercises, quickStatus, anamnesis }: StudentProfileProps) {
+export function StudentProfile({ student, avaliacoes, workouts, libraryExercises, quickStatus, recentSessions, anamnesis }: StudentProfileProps) {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">("avaliacoes")
   const [showComparativo, setShowComparativo] = useState(false)
@@ -356,19 +375,48 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
               <TrendingUp size={14} className="text-red-500" />
             </div>
             <div>
-              <p className="text-zinc-500 text-[9px] font-bold uppercase">Frequência (Mês)</p>
+              <p className="text-zinc-500 text-[9px] font-bold uppercase">Frequência da Semana</p>
               <p className="text-white text-xs font-bold">
-                {quickStatus.monthlyWorkouts} treino{quickStatus.monthlyWorkouts !== 1 ? "s" : ""}
-                {quickStatus.avgDuration > 0 && (
-                  <span className="text-zinc-500 font-bold ml-1">
-                    ({Math.round(quickStatus.avgDuration / 60)}min)
-                  </span>
-                )}
+                {quickStatus.weeklyWorkouts} treino{quickStatus.weeklyWorkouts !== 1 ? "s" : ""}
               </p>
+              {quickStatus.weeklyDuration > 0 && (
+                <p className="text-zinc-500 text-[10px] font-bold">
+                  {formatDuration(quickStatus.weeklyDuration)} no total
+                </p>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Workout history */}
+      {recentSessions.length > 0 && (
+        <div className="bg-zinc-950 border-b border-zinc-800 px-4 md:px-8 py-3">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity size={14} className="text-zinc-500" />
+              <p className="text-zinc-500 text-[9px] font-bold uppercase tracking-widest">Últimos Treinos</p>
+            </div>
+            <div className="space-y-2">
+              {recentSessions.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-white text-xs font-bold truncate">{s.title}</p>
+                    <p className="text-zinc-600 text-[10px] font-bold uppercase">{relativeDay(s.completed_at)}</p>
+                  </div>
+                  <span className="flex items-center gap-1 text-zinc-400 text-[10px] font-bold shrink-0 ml-3">
+                    <Timer size={11} />
+                    {formatDuration(s.total_duration)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-zinc-800 bg-zinc-950 px-4">
