@@ -17,6 +17,8 @@ import {
   Save,
   Pencil,
   MoreVertical,
+  AlertTriangle,
+  ExternalLink,
 } from "lucide-react"
 import type { Workout, Exercise } from "@/lib/types"
 import {
@@ -67,6 +69,7 @@ export function WorkoutBuilder({
     workouts[0]?.id ?? null,
   )
   const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<{ message: string; code?: string } | null>(null)
   const router = useRouter()
 
   // Popup "Revisar Ficha" -> abre o editor da ficha rascunho indicada.
@@ -79,15 +82,16 @@ export function WorkoutBuilder({
 
   async function handleGenerateAI() {
     setAiLoading(true)
+    setAiError(null)
     try {
       const result = await draftWorkoutForUser(studentId)
       if (!result.success) {
-        alert(result.error ?? "Erro ao gerar treino com IA.")
+        setAiError({ message: result.error ?? "Erro ao gerar treino com IA.", code: result.code })
         return
       }
       router.refresh()
     } catch {
-      alert("Erro de conexao ao gerar treino.")
+      setAiError({ message: "Erro de conexao ao gerar treino." })
     } finally {
       setAiLoading(false)
     }
@@ -125,6 +129,44 @@ export function WorkoutBuilder({
           onClose={() => { setShowModal(false); setEditingWorkout(null) }}
           editWorkout={editingWorkout ?? undefined}
         />
+      )}
+
+      {/* AI generation error popup (ex: sem creditos na OpenAI) */}
+      {aiError && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => setAiError(null)} />
+          <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${aiError.code === "no_credits" ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
+              <AlertTriangle size={20} className={aiError.code === "no_credits" ? "text-yellow-500" : "text-red-500"} />
+            </div>
+            <h3 className="text-white font-black uppercase text-center text-sm mb-2">
+              {aiError.code === "no_credits" ? "Sem créditos na OpenAI" : "Erro ao gerar treino"}
+            </h3>
+            <p className="text-zinc-400 text-xs text-center leading-relaxed mb-6">
+              {aiError.code === "no_credits"
+                ? "A conta da OpenAI está sem créditos. Adicione créditos para o Copiloto voltar a gerar treinos."
+                : aiError.message}
+            </p>
+            <div className="grid grid-cols-1 gap-2">
+              {aiError.code === "no_credits" && (
+                <a
+                  href="https://platform.openai.com/settings/organization/billing/overview"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3 rounded-xl text-xs flex items-center justify-center gap-2 active:scale-95 transition-all"
+                >
+                  <ExternalLink size={14} /> Adicionar Créditos
+                </a>
+              )}
+              <button
+                onClick={() => setAiError(null)}
+                className="border border-zinc-700 text-zinc-300 font-bold uppercase py-3 rounded-xl text-xs hover:bg-zinc-800 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Existing Workouts */}

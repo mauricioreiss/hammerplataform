@@ -399,6 +399,7 @@ export async function getAnamneseByUserId(userId: string) {
       .from("anamnesis")
       .select("*")
       .eq("user_id", parsed.data)
+      .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -768,7 +769,7 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
 // Copiloto de Treino: gera o rascunho sob demanda (botao do admin).
 export async function draftWorkoutForUser(
   userId: string,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; code?: "no_key" | "no_credits" }> {
   try {
     await requireAuth("admin")
     const parsed = uuidSchema.safeParse(userId)
@@ -780,8 +781,15 @@ export async function draftWorkoutForUser(
     return { success: true }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erro ao gerar treino."
-    if (message.includes("OPENAI_API_KEY")) {
-      return { success: false, error: "Chave da OpenAI nao configurada no .env." }
+    const lower = message.toLowerCase()
+    const status = (err as { status?: number })?.status
+
+    if (lower.includes("openai_api_key")) {
+      return { success: false, code: "no_key", error: "Chave da OpenAI nao configurada." }
+    }
+    // 429 insufficient_quota = conta da OpenAI sem creditos/limite estourado.
+    if (status === 429 || lower.includes("quota") || lower.includes("billing")) {
+      return { success: false, code: "no_credits", error: "A conta da OpenAI esta sem creditos." }
     }
     return { success: false, error: message }
   }
