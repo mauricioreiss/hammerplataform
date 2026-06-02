@@ -19,6 +19,7 @@ const anamneseSchema = z.object({
   injuries: z.string().max(2000).trim().optional(),
   days_per_week: z.number().int().min(1).max(7).optional(),
   par_q_data: z.record(z.string(), z.boolean()).optional(),
+  birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data invalida").optional(),
 })
 
 // --- Auth ---
@@ -424,6 +425,7 @@ export async function upsertAnamnesis(
     injuries?: string
     days_per_week?: number
     par_q_data?: Record<string, boolean>
+    birth_date?: string
   },
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -453,6 +455,7 @@ export async function upsertAnamnesis(
       injuries: parsed.data.injuries ?? null,
       days_per_week: parsed.data.days_per_week ?? null,
       par_q_data: parsed.data.par_q_data ?? null,
+      birth_date: parsed.data.birth_date ?? null,
     }
 
     console.log("--- DEBUG ANAMNESE UPSERT ---", { userId: parsedId.data, existingId: existing?.id ?? null, payload })
@@ -703,6 +706,33 @@ export async function createWorkoutWithExercises(
   }
 }
 
+// Rotulos do PAR-Q na ordem q0..q4 (mesmas perguntas do formulario de anamnese).
+const PARQ_LABELS = [
+  "problema cardiaco diagnosticado",
+  "dor no peito durante atividade fisica",
+  "problema osseo, articular ou muscular que pode piorar com exercicio",
+  "uso continuo de medicamento para pressao/coracao",
+  "diabetes, hipertensao ou colesterol elevado",
+]
+
+// Converte par_q_data ({q0:true,...}) numa lista legivel das restricoes assinaladas.
+function formatParQ(parq: Record<string, boolean> | null): string {
+  if (!parq) return ""
+  return PARQ_LABELS.filter((_, i) => parq[`q${i}`]).join("; ")
+}
+
+// Calcula idade a partir de uma data de nascimento (YYYY-MM-DD).
+function calcAge(birthDate: string | null): number | null {
+  if (!birthDate) return null
+  const b = new Date(birthDate)
+  if (isNaN(b.getTime())) return null
+  const now = new Date()
+  let age = now.getFullYear() - b.getFullYear()
+  const m = now.getMonth() - b.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--
+  return age >= 0 && age < 120 ? age : null
+}
+
 // Copiloto de Treino (core): gera a divisao com IA e persiste como rascunho
 // (is_ai_draft + status 'draft' + ai_notes). Server-only, sem auth guard —
 // chamado pelo cadastro da LP (background) e pela action admin abaixo.
@@ -720,7 +750,7 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
 
   const { data: anamnese } = await admin
     .from("anamnesis")
-    .select("weight, height, injuries, days_per_week")
+    .select("weight, height, injuries, days_per_week, par_q_data, birth_date")
     .eq("user_id", userId)
     .order("id", { ascending: false })
     .limit(1)
@@ -739,6 +769,8 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
     height: anamnese?.height ?? null,
     injuries: anamnese?.injuries ?? null,
     daysPerWeek: anamnese?.days_per_week ?? 3,
+    age: calcAge(anamnese?.birth_date ?? null),
+    parQ: formatParQ(anamnese?.par_q_data ?? null),
     libraryExercises: (libraryExercises ?? []).map(
       (e) => `${e.name} (${e.muscle_group ?? "Geral"})`,
     ),

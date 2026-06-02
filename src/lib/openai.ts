@@ -52,6 +52,8 @@ export type WorkoutDraftInput = {
   height: number | null
   injuries: string | null
   daysPerWeek: number
+  age: number | null
+  parQ: string // restricoes do PAR-Q ja formatadas ("" se nenhuma)
   libraryExercises: string[] // "Nome (Grupo muscular)"
 }
 
@@ -103,7 +105,9 @@ REGRAS:
 - Cada exercicio tem name, muscleGroup, sets, reps, rest (descanso em segundos) e note (use "" se vazio).
 - Distribua os grupos musculares de forma equilibrada ao longo da semana, 5 a 8 exercicios por ficha.
 - Priorize exercicios da biblioteca fornecida quando fizer sentido.
-- Se o aluno relatar dor em uma articulacao, substitua imediatamente pesos livres por maquinas na regiao afetada e justifique isso no ai_notes.`
+- Se o aluno relatar dor em uma articulacao, substitua imediatamente pesos livres por maquinas na regiao afetada e justifique isso no ai_notes.
+- Atencao aos dados do PAR-Q e a Idade. Se o PAR-Q indicar qualquer risco cardiaco, tontura ou limitacao ossea/articular grave, adapte o treino para intensidade leve a moderada e adicione OBRIGATORIAMENTE um aviso no campo ai_notes alertando o Head Coach sobre o risco relatado no PAR-Q.
+- O campo ai_notes deve ser um texto direto, tecnico, sem emojis e sem linguagem informal. Nao use emojis em nenhum campo.`
 
   // Injeta os dados reais da anamnese num template explicito. Usa || para que
   // campo vazio (null ou "") caia no fallback e a IA tenha contexto sem ambiguidade.
@@ -113,11 +117,12 @@ REGRAS:
   const userPrompt = `Por favor, monte o treino para o seguinte perfil:
 
 Aluno: ${input.studentName}
-Idade: nao informada (sem campo de idade no cadastro)
+Idade do Aluno: ${input.age ?? "nao informada"} anos
 Peso: ${input.weight ?? "nao informado"} kg
 Altura: ${input.height ?? "nao informada"} cm
 Frequencia na semana: ${input.daysPerWeek} dias
 Historico de Lesoes/Dores: ${injuries}
+Respostas do PAR-Q (Risco Cardiaco/Fisico): ${input.parQ || "Nenhuma restricao assinalada"}
 Objetivo Principal: ${objective}
 
 Biblioteca de exercicios disponivel (priorize estes):

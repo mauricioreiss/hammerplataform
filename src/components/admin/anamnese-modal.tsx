@@ -25,6 +25,7 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
+  const [birthDate, setBirthDate] = useState(anamnesis?.birth_date ?? "")
   const [weight, setWeight] = useState(anamnesis?.weight?.toString() ?? "")
   const [height, setHeight] = useState(anamnesis?.height?.toString() ?? "")
   const [injuries, setInjuries] = useState(anamnesis?.injuries ?? "")
@@ -50,6 +51,7 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
     }
 
     const payload = {
+      birth_date: birthDate || undefined,
       weight: weight ? Number(weight) : undefined,
       height: height ? Number(height) : undefined,
       injuries: injuries.trim() || undefined,
@@ -88,6 +90,19 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          <div>
+            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-1.5">
+              Data de Nascimento
+            </label>
+            <input
+              type="date"
+              value={birthDate}
+              onChange={(e) => setBirthDate(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-1.5">
