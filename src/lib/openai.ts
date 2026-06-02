@@ -105,16 +105,25 @@ REGRAS:
 - Priorize exercicios da biblioteca fornecida quando fizer sentido.
 - Se o aluno relatar dor em uma articulacao, substitua imediatamente pesos livres por maquinas na regiao afetada e justifique isso no ai_notes.`
 
-  const anamneseInfo = `Peso: ${input.weight ?? "N/I"}kg, Altura: ${input.height ?? "N/I"}cm, Lesoes/dores: ${input.injuries ?? "Nenhuma"}, Dias por semana: ${input.daysPerWeek}`
+  // Injeta os dados reais da anamnese num template explicito. Usa || para que
+  // campo vazio (null ou "") caia no fallback e a IA tenha contexto sem ambiguidade.
+  const injuries = input.injuries?.trim() || "Nenhuma relatada"
+  const objective = input.objective?.trim() || "Nao especificado"
 
-  const userPrompt = `Aluno: ${input.studentName}
-Objetivo: ${input.objective ?? "Nao informado"}
-Dados de anamnese: ${anamneseInfo}
+  const userPrompt = `Por favor, monte o treino para o seguinte perfil:
 
-Biblioteca de exercicios disponivel:
-${input.libraryExercises.join(", ") || "Sem biblioteca cadastrada."}
+Aluno: ${input.studentName}
+Idade: nao informada (sem campo de idade no cadastro)
+Peso: ${input.weight ?? "nao informado"} kg
+Altura: ${input.height ?? "nao informada"} cm
+Frequencia na semana: ${input.daysPerWeek} dias
+Historico de Lesoes/Dores: ${injuries}
+Objetivo Principal: ${objective}
 
-Gere a divisao de treinos personalizada para este aluno.`
+Biblioteca de exercicios disponivel (priorize estes):
+${input.libraryExercises.join(", ") || "Sem biblioteca cadastrada."}`
+
+  console.log("--- ENVIANDO PARA IA ---", userPrompt)
 
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
