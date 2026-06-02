@@ -33,6 +33,7 @@ export type Workout = {
   icon: string | null
   is_ai_draft: boolean
   status: string | null
+  ai_notes: string | null
   created_at: string
   exercises?: Exercise[]
 }

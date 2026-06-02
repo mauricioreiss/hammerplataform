@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useTransition } from "react"
+import { useState, useRef, useEffect, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import {
   Plus,
@@ -12,7 +12,7 @@ import {
   FileText,
   Dumbbell,
   X,
-  BrainCircuit,
+  Sparkles,
   GripVertical,
   Save,
   Pencil,
@@ -27,6 +27,8 @@ import {
   updateWorkoutStatus,
   updateWorkoutTitle,
   deleteWorkout,
+  draftWorkoutForUser,
+  publishWorkout,
 } from "@/app/actions"
 
 // --- Types ---
@@ -46,6 +48,8 @@ type WorkoutBuilderProps = {
   studentId: string
   workouts: Workout[]
   libraryExercises: Exercise[]
+  reviewWorkoutId?: string | null
+  onReviewConsumed?: () => void
 }
 
 // --- Main Component ---
@@ -54,6 +58,8 @@ export function WorkoutBuilder({
   studentId,
   workouts,
   libraryExercises,
+  reviewWorkoutId,
+  onReviewConsumed,
 }: WorkoutBuilderProps) {
   const [showModal, setShowModal] = useState(false)
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null)
@@ -63,20 +69,23 @@ export function WorkoutBuilder({
   const [aiLoading, setAiLoading] = useState(false)
   const router = useRouter()
 
+  // Popup "Revisar Ficha" -> abre o editor da ficha rascunho indicada.
+  useEffect(() => {
+    if (!reviewWorkoutId) return
+    const target = workouts.find((w) => w.id === reviewWorkoutId)
+    if (target) setEditingWorkout(target)
+    onReviewConsumed?.()
+  }, [reviewWorkoutId, workouts, onReviewConsumed])
+
   async function handleGenerateAI() {
     setAiLoading(true)
     try {
-      const res = await fetch("/api/generate-workout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: studentId }),
-      })
-      const data = await res.json()
-      if (!data.success) {
-        alert(data.error ?? "Erro ao gerar treino com IA.")
-      } else {
-        router.refresh()
+      const result = await draftWorkoutForUser(studentId)
+      if (!result.success) {
+        alert(result.error ?? "Erro ao gerar treino com IA.")
+        return
       }
+      router.refresh()
     } catch {
       alert("Erro de conexao ao gerar treino.")
     } finally {
@@ -102,9 +111,9 @@ export function WorkoutBuilder({
           {aiLoading ? (
             <Loader2 size={18} className="animate-spin text-purple-400" />
           ) : (
-            <BrainCircuit size={18} className="text-purple-400" />
+            <Sparkles size={18} className="text-purple-400" />
           )}
-          <span className="hidden sm:inline">{aiLoading ? "Gerando..." : "Gerar com IA"}</span>
+          <span className="hidden sm:inline">{aiLoading ? "Pensando..." : "Gerar Treino com IA"}</span>
         </button>
       </div>
 
@@ -162,6 +171,8 @@ function WorkoutCreatorModal({
 }) {
   const router = useRouter()
   const isEdit = !!editWorkout
+  // Ficha rascunho gerada pela IA, aguardando aprovacao do admin.
+  const isAiDraftReview = !!editWorkout?.is_ai_draft && editWorkout?.status === "draft"
 
   const initialExercises: ExerciseDraft[] = editWorkout?.exercises?.length
     ? editWorkout.exercises.map((ex, i) => ({
@@ -226,6 +237,13 @@ function WorkoutCreatorModal({
       : await createWorkoutWithExercises(studentId, title, mapped, icon.trim() || undefined)
 
     if (!result.success) { setError(result.error ?? "Erro ao salvar ficha."); setLoading(false); return }
+
+    // Aprovar rascunho da IA: publica a ficha (fica visivel para o aluno).
+    if (isAiDraftReview) {
+      const pub = await publishWorkout(editWorkout!.id)
+      if (!pub.success) { setError(pub.error ?? "Erro ao publicar ficha."); setLoading(false); return }
+    }
+
     setLoading(false)
     router.refresh()
     onClose()
@@ -235,8 +253,10 @@ function WorkoutCreatorModal({
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
       <div className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <Dumbbell size={20} className="text-red-500" />
-          <h2 className="text-base font-black text-white uppercase tracking-tight">{isEdit ? "Editar Ficha" : "Construtor de Treino"}</h2>
+          {isAiDraftReview ? <Sparkles size={20} className="text-purple-400" /> : <Dumbbell size={20} className="text-red-500" />}
+          <h2 className="text-base font-black text-white uppercase tracking-tight">
+            {isAiDraftReview ? "Revisar Treino IA" : isEdit ? "Editar Ficha" : "Construtor de Treino"}
+          </h2>
         </div>
         <button onClick={onClose} className="text-zinc-500 hover:text-white p-1"><X size={22} /></button>
       </div>
@@ -288,7 +308,7 @@ function WorkoutCreatorModal({
         <button onClick={handleSave} disabled={loading}
           className="flex-[2] bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(220,38,38,0.25)]">
           {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {loading ? "Salvando..." : isEdit ? "Salvar Alteracoes" : "Salvar Ficha Completa"}
+          {loading ? "Salvando..." : isAiDraftReview ? "Salvar e Aprovar Treino" : isEdit ? "Salvar Alteracoes" : "Salvar Ficha Completa"}
         </button>
       </div>
     </div>

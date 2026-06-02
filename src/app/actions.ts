@@ -2,9 +2,11 @@
 
 import { z } from "zod"
 import { revalidatePath } from "next/cache"
+import { after } from "next/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import type { UserProfile, Evaluation, Workout, Exercise, Kpis, Plan, Notification } from "@/lib/types"
+import { generateWorkoutDraft } from "@/lib/openai"
 
 // --- Validation ---
 
@@ -604,7 +606,7 @@ export async function getTreinosComExercicios(userId: string): Promise<Workout[]
     const admin = createAdminClient()
     const { data: workouts, error } = await admin
       .from("workouts")
-      .select("id, user_id, title, icon, is_ai_draft, status, created_at")
+      .select("id, user_id, title, icon, is_ai_draft, status, ai_notes, created_at")
       .eq("user_id", parsed.data)
       .order("created_at", { ascending: false })
 
@@ -689,6 +691,108 @@ export async function createWorkoutWithExercises(
   } catch {
     return { success: false, error: "Erro de conexao." }
   }
+}
+
+// Copiloto de Treino (core): gera a divisao com IA e persiste como rascunho
+// (is_ai_draft + status 'draft' + ai_notes). Server-only, sem auth guard —
+// chamado pelo cadastro da LP (background) e pela action admin abaixo.
+// NAO e exportado de proposito: nao deve virar endpoint de Server Action.
+async function createAiWorkoutDraft(userId: string): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: student } = await admin
+    .from("users")
+    .select("full_name, objective")
+    .eq("id", userId)
+    .single()
+
+  if (!student) throw new Error("Aluno nao encontrado.")
+
+  const { data: anamnese } = await admin
+    .from("anamnesis")
+    .select("weight, height, injuries, days_per_week")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { data: libraryExercises } = await admin
+    .from("exercises")
+    .select("name, muscle_group")
+    .is("workout_id", null)
+    .order("name")
+
+  const { aiNotes, workouts } = await generateWorkoutDraft({
+    studentName: student.full_name,
+    objective: student.objective,
+    weight: anamnese?.weight ?? null,
+    height: anamnese?.height ?? null,
+    injuries: anamnese?.injuries ?? null,
+    daysPerWeek: anamnese?.days_per_week ?? 3,
+    libraryExercises: (libraryExercises ?? []).map(
+      (e) => `${e.name} (${e.muscle_group ?? "Geral"})`,
+    ),
+  })
+
+  for (const w of workouts) {
+    const title = `Treino ${w.workoutName}${w.focus ? ` - ${w.focus}` : ""}`
+    const { data: workout, error: wErr } = await admin
+      .from("workouts")
+      .insert({
+        user_id: userId,
+        title,
+        is_ai_draft: true,
+        status: "draft",
+        ai_notes: aiNotes,
+      })
+      .select("id")
+      .single()
+
+    if (wErr || !workout) continue
+
+    const rows = w.exercises.map((ex) => ({
+      workout_id: workout.id,
+      name: ex.name,
+      muscle_group: ex.muscleGroup,
+      sets: ex.sets,
+      reps: ex.reps,
+      rest: ex.rest,
+      note: ex.note || null,
+      illustration_url: null,
+    }))
+
+    await admin.from("exercises").insert(rows)
+  }
+}
+
+// Copiloto de Treino: gera o rascunho sob demanda (botao do admin).
+export async function draftWorkoutForUser(
+  userId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await requireAuth("admin")
+    const parsed = uuidSchema.safeParse(userId)
+    if (!parsed.success) return { success: false, error: "ID invalido." }
+
+    await createAiWorkoutDraft(parsed.data)
+
+    revalidatePath(`/admin/alunos/${parsed.data}`)
+    return { success: true }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Erro ao gerar treino."
+    if (message.includes("OPENAI_API_KEY")) {
+      return { success: false, error: "Chave da OpenAI nao configurada no .env." }
+    }
+    return { success: false, error: message }
+  }
+}
+
+// Aprova um rascunho da IA: publica (status 'published') e notifica o aluno.
+// Reusa updateWorkoutStatus para nao duplicar a logica de publicacao.
+export async function publishWorkout(
+  workoutId: string,
+): Promise<{ success: boolean; error?: string }> {
+  return updateWorkoutStatus(workoutId, "published")
 }
 
 export async function updateWorkoutTitle(
@@ -1556,6 +1660,17 @@ export async function registerFromLanding(
         `${name} se cadastrou pela landing page e aguarda liberacao.`,
       )
     }
+
+    // Copiloto de Treino: gera o rascunho da IA APOS a resposta, sem travar o
+    // redirect do aluno. after() roda no fim do request (confiavel na Vercel).
+    // Falha aqui nao quebra o cadastro: loga e deixa o admin criar manualmente.
+    after(async () => {
+      try {
+        await createAiWorkoutDraft(userId)
+      } catch (err) {
+        console.error("Copiloto: falha ao gerar rascunho de treino:", err)
+      }
+    })
 
     return { success: true }
   } catch (err) {
