@@ -82,7 +82,6 @@ export type Anamnesis = {
   injuries: string | null
   days_per_week: number | null
   par_q_data: Record<string, boolean> | null
-  created_at: string
 }
 
 export type WorkoutSession = {

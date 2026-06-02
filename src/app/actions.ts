@@ -399,11 +399,11 @@ export async function getAnamneseByUserId(userId: string) {
       .from("anamnesis")
       .select("*")
       .eq("user_id", parsed.data)
-      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    console.log("[getAnamneseByUserId]", { userId: parsed.data, data, error: error ?? null })
+    console.log("--- DEBUG ANAMNESE FETCH ---", { idBuscado: parsed.data, data, error: error ?? null })
 
     if (error) {
       console.error("[getAnamneseByUserId] query error:", error)
@@ -443,7 +443,7 @@ export async function upsertAnamnesis(
       .from("anamnesis")
       .select("id")
       .eq("user_id", parsedId.data)
-      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
       .limit(1)
       .maybeSingle()
 
@@ -455,23 +455,32 @@ export async function upsertAnamnesis(
       par_q_data: parsed.data.par_q_data ?? null,
     }
 
+    console.log("--- DEBUG ANAMNESE UPSERT ---", { userId: parsedId.data, existingId: existing?.id ?? null, payload })
+
     if (existing) {
       const { error } = await admin
         .from("anamnesis")
         .update(payload)
         .eq("id", existing.id)
-      if (error) return { success: false, error: error.message }
+      if (error) {
+        console.error("[upsertAnamnesis] update error:", error)
+        return { success: false, error: error.message }
+      }
     } else {
       const { error } = await admin
         .from("anamnesis")
         .insert({ user_id: parsedId.data, ...payload })
-      if (error) return { success: false, error: error.message }
+      if (error) {
+        console.error("[upsertAnamnesis] insert error:", error)
+        return { success: false, error: error.message }
+      }
     }
 
     revalidatePath(`/admin/alunos/${parsedId.data}`)
     return { success: true }
-  } catch {
-    return { success: false, error: "Erro de conexão." }
+  } catch (err) {
+    console.error("[upsertAnamnesis] unexpected error:", err)
+    return { success: false, error: err instanceof Error ? err.message : "Erro de conexao." }
   }
 }
 
@@ -713,7 +722,7 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
     .from("anamnesis")
     .select("weight, height, injuries, days_per_week")
     .eq("user_id", userId)
-    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(1)
     .maybeSingle()
 
