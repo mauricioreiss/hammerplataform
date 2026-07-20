@@ -5,6 +5,8 @@ import { AlertTriangle, CheckCircle2, Clock, Loader2, Timer } from "lucide-react
 import type { Workout } from "@/lib/types"
 import { finishWorkoutSession, type ExerciseLogInput } from "@/app/actions"
 import { ExerciseItem } from "./exercise-item"
+import { RestTimerModal } from "./rest-timer-modal"
+import { parseRestTimeToSeconds } from "@/lib/rest-timer-utils"
 
 const WEIGHT_REQUIRED_MSG = "Preencha a carga utilizada nesta série."
 
@@ -43,6 +45,11 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
   // Exercise whose weight input should flash red after a failed check.
   const [errorId, setErrorId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [restTimer, setRestTimer] = useState<{
+    duration: number
+    nextExerciseId: string | null
+    nextExerciseName: string | null
+  } | null>(null)
   const sessionStartedAt = useRef(new Date().toISOString())
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -78,6 +85,15 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
     toastRef.current = setTimeout(() => setToast(null), 2500)
   }
 
+  function closeRestTimer() {
+    if (!restTimer) return
+    const nextId = restTimer.nextExerciseId
+    setRestTimer(null)
+    if (nextId) {
+      setExpandedId(nextId)
+    }
+  }
+
   function toggleComplete(exerciseId: string) {
     if (isCompleted) return // locked: no execution on a finished workout
 
@@ -98,12 +114,22 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
     }
 
     setErrorId(null)
-    setCompletedIds([...completedIds, exerciseId])
+    const newCompleted = [...completedIds, exerciseId]
+    setCompletedIds(newCompleted)
+
+    const currentExercise = exercises.find((e) => e.id === exerciseId)
     const currentIndex = exercises.findIndex((e) => e.id === exerciseId)
-    const nextExercise = exercises.find(
-      (e, i) => i > currentIndex && !completedIds.includes(e.id),
-    )
-    setExpandedId(nextExercise?.id ?? null)
+    const nextExercise =
+      exercises.find((e, i) => i > currentIndex && !newCompleted.includes(e.id)) ??
+      exercises.find((e) => !newCompleted.includes(e.id))
+
+    const restDuration = parseRestTimeToSeconds(currentExercise?.rest)
+
+    setRestTimer({
+      duration: restDuration,
+      nextExerciseId: nextExercise?.id ?? null,
+      nextExerciseName: nextExercise?.name ?? null,
+    })
   }
 
   function setWeight(exerciseId: string, value: string) {
@@ -237,6 +263,16 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
             {toast}
           </div>
         </div>
+      )}
+
+      {/* Rest Timer Modal */}
+      {restTimer && (
+        <RestTimerModal
+          totalSeconds={restTimer.duration}
+          nextExerciseName={restTimer.nextExerciseName}
+          onComplete={closeRestTimer}
+          onSkip={closeRestTimer}
+        />
       )}
     </div>
   )
