@@ -3,12 +3,14 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
+import { Eye, EyeOff } from "lucide-react"
 import { login } from "@/app/auth/actions"
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -25,7 +27,14 @@ export default function LoginPage() {
       return
     }
 
-    router.push(result.role === "admin" ? "/admin" : "/aluno")
+    if (result.role === "admin") {
+      router.push("/admin")
+    } else if (result.mustChangePassword) {
+      // Student was password-reset by the trainer: force update before app access.
+      router.push("/aluno/trocar-senha")
+    } else {
+      router.push("/aluno")
+    }
   }
 
   return (
@@ -57,14 +66,24 @@ export default function LoginPage() {
               required
               className="w-full bg-zinc-950/80 border border-zinc-800/50 rounded-xl p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
             />
-            <input
-              type="password"
-              placeholder="Senha"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full bg-zinc-950/80 border border-zinc-800/50 rounded-xl p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Senha"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-zinc-950/80 border border-zinc-800/50 rounded-xl p-4 pr-12 text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             {error && (
               <p className="text-red-500 text-sm font-bold">{error}</p>
@@ -83,3 +102,4 @@ export default function LoginPage() {
     </div>
   )
 }
+

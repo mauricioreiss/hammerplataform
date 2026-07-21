@@ -1386,11 +1386,18 @@ export async function resetStudentPassword(
     if (error) return { success: false, error: error.message }
 
     // Force student to change password on next login
-    await admin
+    const { error: flagError } = await admin
       .from("users")
       .update({ is_first_login: true })
       .eq("id", parsed.data)
 
+    // Silently tolerate flag failure — auth password was already changed.
+    // Log for visibility without blocking the success response.
+    if (flagError) {
+      console.error("[resetStudentPassword] failed to set is_first_login:", flagError.message)
+    }
+
+    revalidatePath(`/admin/alunos/${parsed.data}`)
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }

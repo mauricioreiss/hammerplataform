@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/admin"
 
 export type LoginResult =
-  | { success: true; role: "admin" | "student" }
+  | { success: true; role: "admin" | "student"; mustChangePassword: boolean }
   | { success: false; error: string }
 
 export async function login(
@@ -31,7 +31,7 @@ export async function login(
     const admin = createAdminClient()
     const { data: profile, error: profileError } = await admin
       .from("users")
-      .select("role")
+      .select("role, is_first_login")
       .eq("id", data.user.id)
       .single()
 
@@ -43,7 +43,12 @@ export async function login(
       }
     }
 
-    return { success: true, role: profile.role as "admin" | "student" }
+    return {
+      success: true,
+      role: profile.role as "admin" | "student",
+      // Only students can be forced to change their password.
+      mustChangePassword: profile.role === "student" && profile.is_first_login === true,
+    }
   } catch {
     return { success: false, error: "Erro de conexão. Tente novamente." }
   }
