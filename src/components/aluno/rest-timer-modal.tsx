@@ -117,7 +117,7 @@ export function RestTimerModal({
               fill="transparent"
             />
 
-            {/* Draining progress arc — starts at 12 o'clock via rotate(-90) */}
+            {/* Draining arc — variable dasharray so it shrinks clockwise from 12 */}
             <circle
               cx={cx}
               cy={cy}
@@ -126,8 +126,8 @@ export function RestTimerModal({
                 isWarning ? "stroke-red-500" : "stroke-red-600"
               }`}
               strokeWidth={strokeWidth}
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
+              strokeDasharray={`${circumference * remainingRatio} ${circumference}`}
+              strokeDashoffset={0}
               strokeLinecap="round"
               fill="transparent"
               transform={`rotate(-90 ${cx} ${cy})`}
@@ -165,14 +165,7 @@ export function RestTimerModal({
               strokeLinecap="round"
               style={{ transition: "x2 1s linear, y2 1s linear" }}
             />
-            {/* Hand tip dot */}
-            <circle
-              cx={handX2}
-              cy={handY2}
-              r={4}
-              fill="white"
-              style={{ transition: "cx 1s linear, cy 1s linear" }}
-            />
+
             {/* Center pivot knob */}
             <circle
               cx={cx}
