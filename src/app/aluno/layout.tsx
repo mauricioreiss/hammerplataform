@@ -41,7 +41,7 @@ export default async function AlunoLayout({
         unreadCount={unreadCount}
       />
       <AlunoDesktopNav hasPaymentAlert={hasAlert} />
-      <main className="flex-1 overflow-y-auto bg-black pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto bg-black pb-28 md:pb-0">
         <div className="w-full max-w-5xl mx-auto px-4 md:px-8">
           <FirstLoginGuard user={user}>
             <PaywallGuard user={user}>

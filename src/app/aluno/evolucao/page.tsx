@@ -7,7 +7,7 @@ export default async function EvolucaoPage() {
 
   if (avaliacoes.length < 2) {
     return (
-      <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
+      <div className="py-6 space-y-6 pb-32 md:pb-10 animate-in fade-in duration-300">
         <div className="text-center pt-16">
           <Scale size={48} className="mx-auto mb-4 text-zinc-700" />
           <p className="text-zinc-500 text-sm font-bold uppercase">
@@ -34,7 +34,7 @@ export default async function EvolucaoPage() {
     new Date(d).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
 
   return (
-    <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
+    <div className="py-6 space-y-6 pb-32 md:pb-10 animate-in fade-in duration-300">
       <div className="text-center mb-6 pt-2">
         <h2 className="text-3xl font-black italic text-red-600 uppercase tracking-tighter">
           Seus Resultados
