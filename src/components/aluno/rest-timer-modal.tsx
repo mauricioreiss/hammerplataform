@@ -7,6 +7,8 @@ import { formatTimerSeconds } from "@/lib/rest-timer-utils"
 type RestTimerModalProps = {
   totalSeconds: number
   nextExerciseName?: string | null
+  /** e.g. "Série 2 de 4" or null when the exercise changed */
+  setContext?: string | null
   onComplete: () => void
   onSkip: () => void
 }
@@ -14,6 +16,7 @@ type RestTimerModalProps = {
 export function RestTimerModal({
   totalSeconds,
   nextExerciseName,
+  setContext,
   onComplete,
   onSkip,
 }: RestTimerModalProps) {
@@ -202,20 +205,35 @@ export function RestTimerModal({
           </div>
         </div>
 
-        {/* Next Exercise Preview */}
+        {/* Next step preview */}
         <div className="w-full mt-4 mb-6 bg-zinc-900/80 border border-zinc-800 rounded-2xl p-3 flex items-center gap-3 text-left">
           <div className="w-9 h-9 rounded-xl bg-red-600/15 border border-red-600/30 flex items-center justify-center shrink-0 text-red-500">
             <Dumbbell size={18} />
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-[10px] uppercase font-bold text-zinc-500 block leading-none">
-              Próximo Exercício
-            </span>
-            <p className="text-white font-black uppercase text-xs truncate mt-0.5">
-              {nextExerciseName ?? "Final do Treino!"}
-            </p>
+            {setContext ? (
+              // Same exercise — show set transition.
+              <>
+                <span className="text-[10px] uppercase font-bold text-zinc-500 block leading-none">
+                  Próxima
+                </span>
+                <p className="text-white font-black uppercase text-xs mt-0.5">
+                  {setContext}
+                </p>
+              </>
+            ) : (
+              // Moving to a different exercise.
+              <>
+                <span className="text-[10px] uppercase font-bold text-zinc-500 block leading-none">
+                  Próximo Exercício
+                </span>
+                <p className="text-white font-black uppercase text-xs truncate mt-0.5">
+                  {nextExerciseName ?? "Final do Treino!"}
+                </p>
+              </>
+            )}
           </div>
-          {nextExerciseName && <Zap size={14} className="text-red-500 shrink-0" />}
+          <Zap size={14} className="text-red-500 shrink-0" />
         </div>
 
         {/* Controls */}

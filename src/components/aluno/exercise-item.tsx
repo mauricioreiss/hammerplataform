@@ -12,17 +12,22 @@ import {
 } from "lucide-react"
 import type { Exercise } from "@/lib/types"
 import { ExerciseHistoryModal } from "./exercise-history-modal"
+import { parseSetsCount } from "@/lib/workout-storage-utils"
 
 type ExerciseItemProps = {
   exercise: Exercise
   isExpanded: boolean
+  /** All sets of this exercise are done. */
   isCompleted: boolean
+  /** 0-based indices of sets already completed. */
+  completedSets: number[]
   weight: string
-  // Whether the recorded load is valid (> 0). Gates marking the exercise done.
+  // Whether the recorded load is valid (> 0). Gates marking a set done.
   weightValid: boolean
   onWeightChange: (value: string) => void
   onToggleExpand: () => void
-  onToggleComplete: () => void
+  /** Called when the student taps a set chip to mark it as done. */
+  onCompleteSet: (setIndex: number) => void
   // View-only: workout already finished this cycle, no toggling allowed.
   readOnly?: boolean
   // Tried to check the exercise without a valid load: flash the input red.
@@ -33,22 +38,26 @@ export function ExerciseItem({
   exercise,
   isExpanded,
   isCompleted,
+  completedSets,
   weight,
   weightValid,
   onWeightChange,
   onToggleExpand,
-  onToggleComplete,
+  onCompleteSet,
   readOnly = false,
   hasError = false,
 }: ExerciseItemProps) {
   const [showHistory, setShowHistory] = useState(false)
-  // Can't mark a not-yet-done exercise without a valid load. Unchecking an
-  // already-done one stays allowed.
-  const completeDisabled = readOnly || (!isCompleted && !weightValid)
+  const totalSets = parseSetsCount(exercise.sets)
+  // The next set to be completed is the first one not yet in completedSets.
+  const nextSetIndex = Array.from({ length: totalSets }).findIndex(
+    (_, i) => !completedSets.includes(i),
+  )
+  const allSetsCompleted = completedSets.length >= totalSets
 
   return (
     <div
-      className={`border ${isCompleted ? "border-green-600/30 bg-green-950/10" : isExpanded ? "border-red-600 bg-zinc-900" : "border-zinc-800 bg-zinc-950"} rounded-2xl overflow-hidden transition-all duration-300`}
+      className={`border ${allSetsCompleted ? "border-green-600/30 bg-green-950/10" : isExpanded ? "border-red-600 bg-zinc-900" : "border-zinc-800 bg-zinc-950"} rounded-2xl overflow-hidden transition-all duration-300`}
     >
       {/* Header */}
       <div
@@ -56,23 +65,25 @@ export function ExerciseItem({
         onClick={onToggleExpand}
       >
         <div className="flex items-center gap-3 w-full">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              if (!completeDisabled) onToggleComplete()
-            }}
-            disabled={completeDisabled}
-            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${
-              isCompleted
+          {/* Completion indicator — shows total progress as fraction */}
+          <div
+            className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+              allSetsCompleted
                 ? "bg-green-600 border-green-600 text-white"
-                : "border-zinc-600 text-transparent"
-            } ${completeDisabled && !isCompleted ? "opacity-40 cursor-not-allowed" : ""} ${readOnly ? "cursor-default" : ""}`}
+                : "border-zinc-600 text-zinc-600"
+            }`}
           >
-            <CheckCircle2 size={18} />
-          </button>
-          <div className="flex-1">
+            {allSetsCompleted ? (
+              <CheckCircle2 size={18} />
+            ) : (
+              <span className="text-[10px] font-black leading-none">
+                {completedSets.length}/{totalSets}
+              </span>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
             <h3
-              className={`font-black uppercase tracking-wide text-sm leading-tight ${isCompleted ? "text-zinc-500 line-through" : "text-white"}`}
+              className={`font-black uppercase tracking-wide text-sm leading-tight ${allSetsCompleted ? "text-zinc-500 line-through" : "text-white"}`}
             >
               {exercise.name}
             </h3>
@@ -90,7 +101,7 @@ export function ExerciseItem({
 
       {/* Expanded details */}
       <div
-        className={`transition-all duration-300 overflow-hidden ${isExpanded ? "max-h-[800px] opacity-100 border-t border-zinc-800/50" : "max-h-0 opacity-0"}`}
+        className={`transition-all duration-300 overflow-hidden ${isExpanded ? "max-h-[900px] opacity-100 border-t border-zinc-800/50" : "max-h-0 opacity-0"}`}
       >
         <div className="p-4 space-y-4">
           {/* Exercise illustration */}
@@ -149,29 +160,55 @@ export function ExerciseItem({
             </div>
           </div>
 
-          {/* Evolução — own load history for this movement */}
+          {/* ── Series chips ── */}
+          {!readOnly && (
+            <div>
+              <p className="text-[9px] uppercase font-bold text-zinc-500 mb-2 tracking-wider">
+                Séries — toque para concluir
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: totalSets }).map((_, i) => {
+                  const isDone = completedSets.includes(i)
+                  const isNext = i === nextSetIndex && !allSetsCompleted
+                  return (
+                    <button
+                      key={i}
+                      disabled={
+                        // Can only complete the next sequential set, not random ones.
+                        // Already-done sets are not re-clickable; future sets are locked.
+                        isDone || (!isNext) || !weightValid
+                      }
+                      aria-label={`Série ${i + 1}${isDone ? " (concluída)" : ""}`}
+                      onClick={() => onCompleteSet(i)}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-black uppercase tracking-wide transition-all active:scale-95 border
+                        ${isDone
+                          ? "bg-green-600/20 border-green-600/40 text-green-400 cursor-default"
+                          : isNext && weightValid
+                          ? "bg-red-600 border-red-600 text-white shadow-[0_0_12px_rgba(220,38,38,0.4)]"
+                          : "bg-zinc-950 border-zinc-800 text-zinc-600 cursor-not-allowed opacity-50"
+                        }`}
+                    >
+                      {isDone && <CheckCircle2 size={12} />}
+                      Série {i + 1}
+                    </button>
+                  )
+                })}
+              </div>
+              {!weightValid && !allSetsCompleted && (
+                <p className="text-[9px] text-red-500 font-bold uppercase mt-2">
+                  Preencha a carga antes de marcar a série.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Evolução */}
           <button
             onClick={() => setShowHistory(true)}
             className="w-full py-2.5 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 font-bold uppercase text-xs flex items-center justify-center gap-2 transition-colors"
           >
             <LineChart size={14} /> Evolução
           </button>
-
-          {/* Complete button — hidden in read-only (workout already finished) */}
-          {!readOnly && (
-            <button
-              onClick={onToggleComplete}
-              disabled={completeDisabled}
-              className={`w-full py-3 rounded-xl font-black italic uppercase text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                isCompleted
-                  ? "bg-zinc-800 text-zinc-400"
-                  : "bg-red-600 text-white"
-              }`}
-            >
-              <CheckCircle2 size={18} />
-              {isCompleted ? "Desmarcar" : !weightValid ? "Preencha a carga" : "Concluir Exercício"}
-            </button>
-          )}
         </div>
       </div>
 

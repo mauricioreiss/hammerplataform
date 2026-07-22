@@ -1,12 +1,19 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import { AlertTriangle, CheckCircle2, Clock, Loader2, Timer } from "lucide-react"
 import type { Workout } from "@/lib/types"
 import { finishWorkoutSession, type ExerciseLogInput } from "@/app/actions"
 import { ExerciseItem } from "./exercise-item"
 import { RestTimerModal } from "./rest-timer-modal"
 import { parseRestTimeToSeconds } from "@/lib/rest-timer-utils"
+import {
+  parseSetsCount,
+  saveSession,
+  loadSession,
+  clearSession,
+  type PersistedSession,
+} from "@/lib/workout-storage-utils"
 
 const WEIGHT_REQUIRED_MSG = "Preencha a carga utilizada nesta série."
 
@@ -25,37 +32,58 @@ function formatDuration(seconds: number): string {
   return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`
 }
 
-// Load is mandatory: must be a number greater than 0. Empty, null,
-// non-numeric or <= 0 all count as missing.
+// Load is mandatory: must be a number greater than 0.
 function isValidWeight(raw: string | undefined): boolean {
   if (raw == null || raw.trim() === "") return false
   const n = Number(raw)
   return Number.isFinite(n) && n > 0
 }
 
+type RestTimerState = {
+  duration: number
+  /** Set-within-exercise context, e.g. "Série 2 de 4". Null when moving to a new exercise. */
+  setContext: string | null
+  nextExerciseId: string | null
+  nextExerciseName: string | null
+}
+
 export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionProps) {
   const exercises = workout.exercises ?? []
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [completedIds, setCompletedIds] = useState<string[]>([])
-  // Per-exercise load (kg), kept in memory until the workout is finished.
-  const [weights, setWeights] = useState<Record<string, string>>({})
-  const [elapsed, setElapsed] = useState(0)
+
+  // ─── Hydrate state from localStorage on first render ────────────────────────
+  const savedSession = useMemo<PersistedSession | null>(() => {
+    if (isCompleted) return null
+    return loadSession(workout.id)
+  }, [workout.id, isCompleted])
+
+  const [expandedId, setExpandedId] = useState<string | null>(
+    savedSession?.expandedId ?? null,
+  )
+  /**
+   * completedSets: { [exerciseId]: number[] }
+   * Each array holds the 0-based set indices already finished.
+   */
+  const [completedSets, setCompletedSets] = useState<Record<string, number[]>>(
+    savedSession?.completedSets ?? {},
+  )
+  // Per-exercise load (kg).
+  const [weights, setWeights] = useState<Record<string, string>>(
+    savedSession?.weights ?? {},
+  )
+  const [elapsed, setElapsed] = useState(savedSession?.elapsed ?? 0)
   const [finishing, setFinishing] = useState(false)
   const [finished, setFinished] = useState(false)
   // Exercise whose weight input should flash red after a failed check.
   const [errorId, setErrorId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
-  const [restTimer, setRestTimer] = useState<{
-    duration: number
-    nextExerciseId: string | null
-    nextExerciseName: string | null
-  } | null>(null)
-  const sessionStartedAt = useRef(new Date().toISOString())
+  const [restTimer, setRestTimer] = useState<RestTimerState | null>(null)
+
+  const sessionStartedAt = useRef(savedSession?.startedAt ?? new Date().toISOString())
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const toastRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // ─── Workout stopwatch ───────────────────────────────────────────────────────
   useEffect(() => {
-    // Locked workout: never run the timer, it's view-only.
     if (isCompleted) return
     timerRef.current = setInterval(() => {
       setElapsed((prev) => prev + 1)
@@ -71,14 +99,66 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
     }
   }, [])
 
+  // ─── Auto-save to localStorage whenever key state changes ───────────────────
+  // Using a ref for elapsed to avoid including it in the dependency array
+  // (it changes every second and would make this effect extremely noisy).
+  const elapsedRef = useRef(elapsed)
+  useEffect(() => {
+    elapsedRef.current = elapsed
+  }, [elapsed])
+
+  const persistState = useCallback(() => {
+    if (isCompleted) return
+    saveSession({
+      workoutId: workout.id,
+      startedAt: sessionStartedAt.current,
+      savedAt: Date.now(),
+      elapsed: elapsedRef.current,
+      completedSets,
+      weights,
+      expandedId,
+    })
+  }, [workout.id, completedSets, weights, expandedId, isCompleted])
+
+  // Save on every meaningful state mutation.
+  useEffect(() => {
+    persistState()
+  }, [persistState])
+
+  // Save when the user navigates away or the tab goes to background.
+  useEffect(() => {
+    if (isCompleted) return
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") persistState()
+    }
+    const handlePageHide = () => persistState()
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("pagehide", handlePageHide)
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("pagehide", handlePageHide)
+    }
+  }, [isCompleted, persistState])
+
+  // ─── Derived state ───────────────────────────────────────────────────────────
+  // An exercise is "fully done" when all its sets are completed.
+  const completedExerciseIds = useMemo(() => {
+    return exercises
+      .filter((ex) => {
+        const total = parseSetsCount(ex.sets)
+        return (completedSets[ex.id]?.length ?? 0) >= total
+      })
+      .map((ex) => ex.id)
+  }, [exercises, completedSets])
+
   const progress = useMemo(
-    () => exercises.length > 0 ? (completedIds.length / exercises.length) * 100 : 0,
-    [completedIds.length, exercises.length],
+    () => (exercises.length > 0 ? (completedExerciseIds.length / exercises.length) * 100 : 0),
+    [completedExerciseIds.length, exercises.length],
   )
 
-  // Fallback gate: every completed exercise must carry a valid load.
-  const allCompletedHaveWeight = completedIds.every((id) => isValidWeight(weights[id]))
+  const allCompletedHaveWeight = completedExerciseIds.every((id) => isValidWeight(weights[id]))
 
+  // ─── Helpers ─────────────────────────────────────────────────────────────────
   function showToast(message: string) {
     setToast(message)
     if (toastRef.current) clearTimeout(toastRef.current)
@@ -89,23 +169,14 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
     if (!restTimer) return
     const nextId = restTimer.nextExerciseId
     setRestTimer(null)
-    if (nextId) {
-      setExpandedId(nextId)
-    }
+    if (nextId) setExpandedId(nextId)
   }
 
-  function toggleComplete(exerciseId: string) {
-    if (isCompleted) return // locked: no execution on a finished workout
+  // ─── Core: complete a single set ─────────────────────────────────────────────
+  function handleCompleteSet(exerciseId: string, setIndex: number) {
+    if (isCompleted) return
 
-    const isDone = completedIds.includes(exerciseId)
-
-    // Unmarking is always allowed.
-    if (isDone) {
-      setCompletedIds(completedIds.filter((id) => id !== exerciseId))
-      return
-    }
-
-    // Guard: can't mark an exercise done without recording its load.
+    // Guard: load is required before marking any set.
     if (!isValidWeight(weights[exerciseId])) {
       setErrorId(exerciseId)
       setExpandedId(exerciseId)
@@ -114,34 +185,63 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
     }
 
     setErrorId(null)
-    const newCompleted = [...completedIds, exerciseId]
-    setCompletedIds(newCompleted)
 
-    const currentExercise = exercises.find((e) => e.id === exerciseId)
-    const currentIndex = exercises.findIndex((e) => e.id === exerciseId)
-    const nextExercise =
-      exercises.find((e, i) => i > currentIndex && !newCompleted.includes(e.id)) ??
-      exercises.find((e) => !newCompleted.includes(e.id))
+    const exercise = exercises.find((e) => e.id === exerciseId)
+    if (!exercise) return
 
-    const restDuration = parseRestTimeToSeconds(currentExercise?.rest)
+    const totalSets = parseSetsCount(exercise.sets)
+    const prevDone = completedSets[exerciseId] ?? []
 
-    setRestTimer({
-      duration: restDuration,
-      nextExerciseId: nextExercise?.id ?? null,
-      nextExerciseName: nextExercise?.name ?? null,
-    })
+    // Guard: don't double-add the same set index.
+    if (prevDone.includes(setIndex)) return
+
+    const newDone = [...prevDone, setIndex]
+    const newCompletedSets = { ...completedSets, [exerciseId]: newDone }
+    setCompletedSets(newCompletedSets)
+
+    const restDuration = parseRestTimeToSeconds(exercise.rest)
+    const isLastSetOfExercise = newDone.length >= totalSets
+    const exerciseIndex = exercises.findIndex((e) => e.id === exerciseId)
+
+    if (!isLastSetOfExercise) {
+      // Still more sets in this exercise.
+      const nextSetNumber = setIndex + 2 // 1-based for display
+      setRestTimer({
+        duration: restDuration,
+        setContext: `Série ${nextSetNumber} de ${totalSets}`,
+        nextExerciseId: exerciseId,   // stay on same exercise
+        nextExerciseName: null,
+      })
+    } else {
+      // All sets done — find the next incomplete exercise.
+      const newCompletedExerciseIds = exercises
+        .filter((ex) => {
+          const total = parseSetsCount(ex.sets)
+          return (newCompletedSets[ex.id]?.length ?? 0) >= total
+        })
+        .map((ex) => ex.id)
+
+      const nextExercise =
+        exercises.find(
+          (e, i) => i > exerciseIndex && !newCompletedExerciseIds.includes(e.id),
+        ) ?? exercises.find((e) => !newCompletedExerciseIds.includes(e.id))
+
+      setRestTimer({
+        duration: restDuration,
+        setContext: null,
+        nextExerciseId: nextExercise?.id ?? null,
+        nextExerciseName: nextExercise?.name ?? null,
+      })
+    }
   }
 
   function setWeight(exerciseId: string, value: string) {
     setWeights((prev) => ({ ...prev, [exerciseId]: value }))
-    // Clear the error as soon as the student types a valid value.
     if (errorId === exerciseId && isValidWeight(value)) setErrorId(null)
   }
 
   async function handleFinish() {
-    // Hard guard: block the Supabase submit if any completed exercise is
-    // missing a valid load. First line of the handler, before anything else.
-    const invalid = completedIds.find((id) => !isValidWeight(weights[id]))
+    const invalid = completedExerciseIds.find((id) => !isValidWeight(weights[id]))
     if (invalid) {
       setErrorId(invalid)
       setExpandedId(invalid)
@@ -150,28 +250,28 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
     }
 
     setFinishing(true)
-    // One log per completed exercise, with the load the student recorded.
-    const logs: ExerciseLogInput[] = completedIds.map((id) => ({
+    const logs: ExerciseLogInput[] = completedExerciseIds.map((id) => ({
       exerciseId: id,
       weight: Number(weights[id]),
     }))
     const result = await finishWorkoutSession(workout.id, sessionStartedAt.current, logs)
     if (result.success) {
       if (timerRef.current) clearInterval(timerRef.current)
+      clearSession(workout.id)
       setFinished(true)
     }
     setFinishing(false)
   }
 
+  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="py-6 space-y-4 pb-24 md:pb-6 animate-in fade-in duration-300">
+    <div className="py-6 space-y-4 pb-32 md:pb-10 animate-in fade-in duration-300">
       {/* Workout header */}
       <div className="text-center mb-6 pt-2">
         <h1 className="text-4xl font-black italic text-red-600 uppercase tracking-tighter leading-none">
           {workout.title}
         </h1>
 
-        {/* Completed this cycle: locked banner instead of the live timer */}
         {isCompleted ? (
           <button
             disabled
@@ -180,7 +280,6 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
             <CheckCircle2 size={20} /> Treino Concluído
           </button>
         ) : (
-          /* Timer + Progress */
           <div className="mt-6 bg-zinc-900 p-3 rounded-xl border border-zinc-800">
             <div className="flex justify-between text-[10px] font-bold uppercase mb-2">
               <span className="text-zinc-400">Progresso do Treino</span>
@@ -209,7 +308,8 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
             key={exercise.id}
             exercise={exercise}
             isExpanded={expandedId === exercise.id}
-            isCompleted={completedIds.includes(exercise.id)}
+            isCompleted={completedExerciseIds.includes(exercise.id)}
+            completedSets={completedSets[exercise.id] ?? []}
             readOnly={isCompleted}
             weight={weights[exercise.id] ?? ""}
             weightValid={isValidWeight(weights[exercise.id])}
@@ -218,12 +318,12 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
             onToggleExpand={() =>
               setExpandedId(expandedId === exercise.id ? null : exercise.id)
             }
-            onToggleComplete={() => toggleComplete(exercise.id)}
+            onCompleteSet={(setIndex) => handleCompleteSet(exercise.id, setIndex)}
           />
         ))}
       </div>
 
-      {/* Completion — never shown on a locked (already finished) workout */}
+      {/* Completion */}
       {!isCompleted && progress === 100 && (
         <div className="pt-6 animate-in slide-in-from-bottom-4">
           {finished ? (
@@ -236,11 +336,7 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
               disabled={finishing || !allCompletedHaveWeight}
               className="w-full bg-green-600 hover:bg-green-700 text-white font-black italic uppercase text-xl py-4 rounded-xl shadow-[0_0_20px_rgba(22,163,74,0.3)] flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {finishing ? (
-                <Loader2 size={24} className="animate-spin" />
-              ) : (
-                <CheckCircle2 size={24} />
-              )}
+              {finishing ? <Loader2 size={24} className="animate-spin" /> : <CheckCircle2 size={24} />}
               {finishing ? "Salvando..." : "Finalizar Treino"}
             </button>
           )}
@@ -269,6 +365,7 @@ export function WorkoutSession({ workout, isCompleted = false }: WorkoutSessionP
       {restTimer && (
         <RestTimerModal
           totalSeconds={restTimer.duration}
+          setContext={restTimer.setContext}
           nextExerciseName={restTimer.nextExerciseName}
           onComplete={closeRestTimer}
           onSkip={closeRestTimer}
