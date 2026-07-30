@@ -3,8 +3,8 @@
 import { useState, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { Camera, Loader2, Save, CheckCircle2 } from "lucide-react"
-import { updateAdminProfile, uploadAvatarPhoto } from "@/app/actions"
+import { Camera, Loader2, Save, CheckCircle2, Trash2 } from "lucide-react"
+import { updateAdminProfile, uploadAvatarPhoto, removeAvatarPhoto } from "@/app/actions"
 import type { UserProfile } from "@/lib/types"
 
 type AdminSettingsFormProps = {
@@ -46,6 +46,21 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
 
     setUploading(false)
     if (fileInputRef.current) fileInputRef.current.value = ""
+  }
+
+  async function handleRemovePhoto() {
+    setUploading(true)
+    setError("")
+
+    const result = await removeAvatarPhoto()
+    if (result.success) {
+      setCurrentAvatar(null)
+      router.refresh()
+    } else {
+      setError(result.error ?? "Erro ao remover foto.")
+    }
+
+    setUploading(false)
   }
 
   async function handleSave() {
@@ -108,18 +123,32 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
               <span className="text-white font-bold text-xl">{initials}</span>
             )}
           </div>
-          <label className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase py-2.5 px-4 rounded-xl flex items-center gap-2 cursor-pointer active:scale-95 transition-transform text-xs">
-            <Camera size={14} />
-            {uploading ? "Enviando..." : "Alterar Foto"}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,image/gif,image/webp"
-              onChange={handlePhotoUpload}
-              className="hidden"
-              disabled={uploading}
-            />
-          </label>
+          <div className="flex items-center gap-2">
+            <label className="bg-zinc-800 hover:bg-zinc-700 text-white font-bold uppercase py-2.5 px-4 rounded-xl flex items-center gap-2 cursor-pointer active:scale-95 transition-transform text-xs">
+              <Camera size={14} />
+              {uploading ? "Enviando..." : "Alterar Foto"}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/gif,image/webp"
+                onChange={handlePhotoUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+            </label>
+
+            {currentAvatar && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                disabled={uploading}
+                className="bg-zinc-800/80 hover:bg-red-600/20 hover:text-red-400 text-zinc-400 font-bold uppercase py-2.5 px-3 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all text-xs border border-zinc-700/50"
+              >
+                <Trash2 size={14} />
+                Remover Foto
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

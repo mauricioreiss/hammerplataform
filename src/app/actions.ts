@@ -1337,13 +1337,36 @@ export async function updateAvatarUrl(
     const admin = createAdminClient()
     const { error } = await admin
       .from("users")
-      .update({ avatar_url: url })
+      .update({ avatar_url: url || null })
       .eq("id", user.id)
 
     if (error) return { success: false, error: error.message }
 
     revalidatePath("/aluno")
     revalidatePath("/admin")
+    return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function removeAvatarPhoto(): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from("users")
+      .update({ avatar_url: null })
+      .eq("id", user.id)
+
+    if (error) return { success: false, error: error.message }
+
+    revalidatePath("/admin")
+    revalidatePath("/admin/configuracoes")
+    revalidatePath("/aluno")
+
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }
