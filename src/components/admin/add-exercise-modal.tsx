@@ -1,25 +1,42 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, X, Loader2 } from "lucide-react"
-import { createExercise } from "@/app/actions"
+import { createExercise, getMuscleGroups } from "@/app/actions"
 
 export function AddExerciseModal() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [muscleGroups, setMuscleGroups] = useState<string[]>([])
+  const [isCustomGroup, setIsCustomGroup] = useState(false)
+  const [customGroup, setCustomGroup] = useState("")
   const [form, setForm] = useState({ name: "", muscleGroup: "", illustrationUrl: "" })
+
+  useEffect(() => {
+    if (open) {
+      getMuscleGroups().then(setMuscleGroups)
+    }
+  }, [open])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError("")
 
+    const finalMuscleGroup = isCustomGroup ? customGroup.trim() : form.muscleGroup.trim()
+
+    if (!finalMuscleGroup) {
+      setError("Informe o grupo muscular.")
+      setLoading(false)
+      return
+    }
+
     const result = await createExercise({
       name: form.name,
-      muscleGroup: form.muscleGroup,
+      muscleGroup: finalMuscleGroup,
       illustrationUrl: form.illustrationUrl || undefined,
     })
 
@@ -30,6 +47,8 @@ export function AddExerciseModal() {
     }
 
     setForm({ name: "", muscleGroup: "", illustrationUrl: "" })
+    setCustomGroup("")
+    setIsCustomGroup(false)
     setOpen(false)
     setLoading(false)
     router.refresh()
@@ -67,23 +86,40 @@ export function AddExerciseModal() {
             required
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
           />
+
           <select
-            value={form.muscleGroup}
-            onChange={(e) => setForm({ ...form, muscleGroup: e.target.value })}
-            required
+            value={isCustomGroup ? "__new__" : form.muscleGroup}
+            onChange={(e) => {
+              if (e.target.value === "__new__") {
+                setIsCustomGroup(true)
+                setForm({ ...form, muscleGroup: "" })
+              } else {
+                setIsCustomGroup(false)
+                setForm({ ...form, muscleGroup: e.target.value })
+              }
+            }}
+            required={!isCustomGroup}
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
           >
             <option value="">Grupo Muscular</option>
-            <option value="Peito">Peito</option>
-            <option value="Costas">Costas</option>
-            <option value="Ombros">Ombros</option>
-            <option value="Biceps">Bíceps</option>
-            <option value="Triceps">Tríceps</option>
-            <option value="Pernas">Pernas</option>
-            <option value="Posterior">Posterior</option>
-            <option value="Gluteos">Glúteos</option>
-            <option value="Abdomen">Abdômen</option>
+            {muscleGroups.map((g) => (
+              <option key={g} value={g}>{g}</option>
+            ))}
+            <option value="__new__">+ Novo Grupo Muscular...</option>
           </select>
+
+          {isCustomGroup && (
+            <input
+              type="text"
+              placeholder="Digite o novo grupo muscular"
+              value={customGroup}
+              onChange={(e) => setCustomGroup(e.target.value)}
+              required
+              autoFocus
+              className="w-full bg-zinc-950 border border-red-600/50 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+            />
+          )}
+
           <input
             type="url"
             placeholder="URL da Imagem (opcional)"
@@ -107,3 +143,4 @@ export function AddExerciseModal() {
     </div>
   )
 }
+

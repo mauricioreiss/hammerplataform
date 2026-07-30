@@ -180,6 +180,8 @@ export async function getKpis(): Promise<Kpis> {
 
 const CYCLE_DAYS: Record<string, number> = {
   mensal: 30,
+  bimestral: 60,
+  trimestral: 90,
   semestral: 180,
   anual: 365,
 }
@@ -206,7 +208,7 @@ export async function createAluno(data: {
       if (parsed.success) {
         const { data: plan } = await admin
           .from("plans")
-          .select("name, price, cycle")
+          .select("name, price, cycle, duration_days")
           .eq("id", parsed.data)
           .single()
 
@@ -214,6 +216,10 @@ export async function createAluno(data: {
           planName = plan.name
           planValue = plan.price
           planCycle = plan.cycle
+          // duration_days do banco tem precedência; CYCLE_DAYS é fallback para ciclos pré-definidos
+          if (plan.duration_days && plan.duration_days > 0) {
+            Object.assign(CYCLE_DAYS, { [plan.cycle]: plan.duration_days })
+          }
         }
       }
     }
@@ -1744,7 +1750,7 @@ export async function getPlans(): Promise<Plan[]> {
 
     const { data, error } = await admin
       .from("plans")
-      .select("id, name, price, cycle, created_at")
+      .select("id, name, price, cycle, duration_days, created_at")
       .order("price", { ascending: true })
 
     if (error || !data) return []
@@ -1759,7 +1765,7 @@ export async function getPublicPlans(): Promise<Plan[]> {
     const admin = createAdminClient()
     const { data, error } = await admin
       .from("plans")
-      .select("id, name, price, cycle, created_at")
+      .select("id, name, price, cycle, duration_days, created_at")
       .order("price", { ascending: true })
 
     if (error || !data) return []
@@ -1769,10 +1775,45 @@ export async function getPublicPlans(): Promise<Plan[]> {
   }
 }
 
+const DEFAULT_MUSCLE_GROUPS = [
+  "Abdômen",
+  "Bíceps",
+  "Costas",
+  "Glúteos",
+  "Ombros",
+  "Pernas",
+  "Peito",
+  "Posterior",
+  "Tríceps",
+]
+
+export async function getMuscleGroups(): Promise<string[]> {
+  try {
+    await requireAuth("admin")
+    const admin = createAdminClient()
+
+    const { data } = await admin
+      .from("exercises")
+      .select("muscle_group")
+      .not("muscle_group", "is", null)
+
+    const fromDb: string[] = (data ?? [])
+      .map((row: { muscle_group: string | null }) => row.muscle_group ?? "")
+      .filter(Boolean)
+
+    const merged = Array.from(new Set([...DEFAULT_MUSCLE_GROUPS, ...fromDb]))
+    merged.sort((a, b) => a.localeCompare(b, "pt-BR"))
+    return merged
+  } catch {
+    return DEFAULT_MUSCLE_GROUPS.slice().sort((a, b) => a.localeCompare(b, "pt-BR"))
+  }
+}
+
 export async function createPlan(data: {
   name: string
   price: number
   cycle: string
+  duration_days: number
 }): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")
@@ -1782,6 +1823,7 @@ export async function createPlan(data: {
       name: data.name,
       price: data.price,
       cycle: data.cycle,
+      duration_days: data.duration_days,
     })
 
     if (error) return { success: false, error: error.message }
@@ -1795,7 +1837,7 @@ export async function createPlan(data: {
 
 export async function updatePlan(
   id: string,
-  data: { name: string; price: number; cycle: string },
+  data: { name: string; price: number; cycle: string; duration_days: number },
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await requireAuth("admin")
@@ -1806,7 +1848,7 @@ export async function updatePlan(
 
     const { error } = await admin
       .from("plans")
-      .update({ name: data.name, price: data.price, cycle: data.cycle })
+      .update({ name: data.name, price: data.price, cycle: data.cycle, duration_days: data.duration_days })
       .eq("id", parsed.data)
 
     if (error) return { success: false, error: error.message }

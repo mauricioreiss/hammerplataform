@@ -12,8 +12,19 @@ type PlanManagerProps = {
 
 const CYCLE_LABELS: Record<string, string> = {
   mensal: "Mensal",
+  bimestral: "Bimestral",
+  trimestral: "Trimestral",
   semestral: "Semestral",
   anual: "Anual",
+  custom: "Personalizado",
+}
+
+const PRESET_DAYS: Record<string, string> = {
+  mensal: "30",
+  bimestral: "60",
+  trimestral: "90",
+  semestral: "180",
+  anual: "365",
 }
 
 export function PlanManager({ initialPlans }: PlanManagerProps) {
@@ -27,11 +38,13 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
   const [name, setName] = useState("")
   const [price, setPrice] = useState("")
   const [cycle, setCycle] = useState("mensal")
+  const [durationDays, setDurationDays] = useState("30")
 
   function resetForm() {
     setName("")
     setPrice("")
     setCycle("mensal")
+    setDurationDays("30")
     setEditingId(null)
     setShowForm(false)
     setError("")
@@ -41,6 +54,7 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
     setName(plan.name)
     setPrice(String(plan.price))
     setCycle(plan.cycle)
+    setDurationDays(String(plan.duration_days ?? PRESET_DAYS[plan.cycle] ?? 30))
     setEditingId(plan.id)
     setShowForm(true)
     setError("")
@@ -60,7 +74,19 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
       return
     }
 
-    const payload = { name: name.trim(), price: priceNum, cycle }
+    const durationNum = parseInt(durationDays, 10)
+    if (isNaN(durationNum) || durationNum <= 0) {
+      setError("Duração em dias inválida.")
+      setLoading(false)
+      return
+    }
+
+    const payload = {
+      name: name.trim(),
+      price: priceNum,
+      cycle,
+      duration_days: durationNum,
+    }
 
     const result = editingId
       ? await updatePlan(editingId, payload)
@@ -73,9 +99,14 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
     }
 
     if (editingId) {
-      setPlans(plans.map((p) => p.id === editingId ? { ...p, name: payload.name, price: payload.price, cycle: payload.cycle as Plan["cycle"] } : p))
+      setPlans(
+        plans.map((p) =>
+          p.id === editingId
+            ? { ...p, name: payload.name, price: payload.price, cycle: payload.cycle, duration_days: payload.duration_days }
+            : p
+        )
+      )
     } else {
-      // Refresh to get the new plan with its generated ID
       router.refresh()
     }
 
@@ -124,7 +155,7 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
           <div>
             <p className="text-white font-bold text-sm">{plan.name}</p>
             <p className="text-zinc-500 text-xs">
-              R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {CYCLE_LABELS[plan.cycle] ?? plan.cycle}
+              R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {CYCLE_LABELS[plan.cycle] ?? plan.cycle} ({plan.duration_days ?? PRESET_DAYS[plan.cycle] ?? 30} dias)
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -160,7 +191,7 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
           <form onSubmit={handleSubmit} className="space-y-3">
             <input
               type="text"
-              placeholder="Nome do plano (ex: Mensal)"
+              placeholder="Nome do plano (ex: Mensal VIP)"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -178,13 +209,34 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
             />
             <select
               value={cycle}
-              onChange={(e) => setCycle(e.target.value)}
+              onChange={(e) => {
+                const selected = e.target.value
+                setCycle(selected)
+                if (PRESET_DAYS[selected]) {
+                  setDurationDays(PRESET_DAYS[selected])
+                }
+              }}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
             >
               <option value="mensal">Mensal (30 dias)</option>
+              <option value="bimestral">Bimestral (60 dias)</option>
+              <option value="trimestral">Trimestral (90 dias)</option>
               <option value="semestral">Semestral (180 dias)</option>
               <option value="anual">Anual (365 dias)</option>
+              <option value="custom">Personalizado (Dias livres)</option>
             </select>
+
+            {cycle === "custom" && (
+              <input
+                type="number"
+                placeholder="Duração em dias (ex: 45)"
+                value={durationDays}
+                onChange={(e) => setDurationDays(e.target.value)}
+                required
+                min="1"
+                className="w-full bg-zinc-950 border border-red-600/50 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+              />
+            )}
 
             {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
 
@@ -202,3 +254,4 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
     </div>
   )
 }
+

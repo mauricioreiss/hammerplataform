@@ -70,7 +70,9 @@ export type Plan = {
   id: string
   name: string
   price: number
-  cycle: "mensal" | "semestral" | "anual"
+  cycle: string
+  // Duração em dias salva no banco. Quando presente, sobrepõe o mapa CYCLE_DAYS.
+  duration_days?: number
   created_at: string
 }
 
