@@ -379,9 +379,17 @@ export async function uploadAvaliacaoPhoto(
     const path = `avaliacoes/${userId}/${Date.now()}.${ext}`
     const buf = await file.arrayBuffer()
 
-    const { error: upErr } = await admin.storage
+    let { error: upErr } = await admin.storage
       .from("avaliacoes")
       .upload(path, buf, { contentType: file.type, upsert: false })
+
+    if (upErr && (upErr.message.toLowerCase().includes("not found") || upErr.message.toLowerCase().includes("bucket"))) {
+      await admin.storage.createBucket("avaliacoes", { public: true })
+      const retry = await admin.storage
+        .from("avaliacoes")
+        .upload(path, buf, { contentType: file.type, upsert: false })
+      upErr = retry.error
+    }
 
     if (upErr) return { success: false, error: upErr.message }
 
@@ -1361,9 +1369,17 @@ export async function uploadAvatarPhoto(
     const path = `${user.id}.${ext}`
     const buf = await file.arrayBuffer()
 
-    const { error: upErr } = await admin.storage
+    let { error: upErr } = await admin.storage
       .from("avatars")
       .upload(path, buf, { contentType: file.type, upsert: true })
+
+    if (upErr && (upErr.message.toLowerCase().includes("not found") || upErr.message.toLowerCase().includes("bucket"))) {
+      await admin.storage.createBucket("avatars", { public: true })
+      const retry = await admin.storage
+        .from("avatars")
+        .upload(path, buf, { contentType: file.type, upsert: true })
+      upErr = retry.error
+    }
 
     if (upErr) return { success: false, error: upErr.message }
 
