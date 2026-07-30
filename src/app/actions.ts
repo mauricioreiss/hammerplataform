@@ -1335,7 +1335,48 @@ export async function updateAvatarUrl(
     if (error) return { success: false, error: error.message }
 
     revalidatePath("/aluno")
+    revalidatePath("/admin")
     return { success: true }
+  } catch {
+    return { success: false, error: "Erro de conexao." }
+  }
+}
+
+export async function uploadAvatarPhoto(
+  formData: FormData,
+): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const file = formData.get("file") as File | null
+    if (!file || file.size === 0) return { success: false, error: "Nenhum arquivo enviado." }
+
+    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"]
+    if (!allowed.includes(file.type)) return { success: false, error: "Formato invalido. Use PNG, JPG, GIF ou WEBP." }
+    if (file.size > 5 * 1024 * 1024) return { success: false, error: "Maximo 5MB." }
+
+    const admin = createAdminClient()
+    const ext = file.name.split(".").pop() ?? "jpg"
+    const path = `${user.id}.${ext}`
+    const buf = await file.arrayBuffer()
+
+    const { error: upErr } = await admin.storage
+      .from("avatars")
+      .upload(path, buf, { contentType: file.type, upsert: true })
+
+    if (upErr) return { success: false, error: upErr.message }
+
+    const { data: urlData } = admin.storage.from("avatars").getPublicUrl(path)
+    const publicUrl = urlData.publicUrl + "?t=" + Date.now()
+
+    await admin.from("users").update({ avatar_url: publicUrl }).eq("id", user.id)
+
+    revalidatePath("/admin")
+    revalidatePath("/admin/configuracoes")
+    revalidatePath("/aluno")
+
+    return { success: true, url: publicUrl }
   } catch {
     return { success: false, error: "Erro de conexao." }
   }

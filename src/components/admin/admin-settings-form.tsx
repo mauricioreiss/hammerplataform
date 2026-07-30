@@ -4,8 +4,7 @@ import { useState, useRef } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { Camera, Loader2, Save, CheckCircle2 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
-import { updateAdminProfile } from "@/app/actions"
+import { updateAdminProfile, uploadAvatarPhoto } from "@/app/actions"
 import type { UserProfile } from "@/lib/types"
 
 type AdminSettingsFormProps = {
@@ -27,40 +26,20 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"]
-    if (!allowed.includes(file.type)) {
-      setError("Formato invalido. Use PNG, JPG, GIF ou WEBP.")
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Maximo 5MB.")
-      return
-    }
-
     setUploading(true)
     setError("")
 
     try {
-      const supabase = createClient()
-      const ext = file.name.split(".").pop() ?? "jpg"
-      const path = `${user.id}.${ext}`
+      const fd = new FormData()
+      fd.append("file", file)
 
-      const { error: upErr } = await supabase.storage
-        .from("avatars")
-        .upload(path, file, { contentType: file.type, upsert: true })
-
-      if (upErr) {
-        setError(upErr.message)
-        setUploading(false)
-        return
+      const result = await uploadAvatarPhoto(fd)
+      if (!result.success) {
+        setError(result.error ?? "Erro ao enviar foto.")
+      } else if (result.url) {
+        setCurrentAvatar(result.url)
+        router.refresh()
       }
-
-      const { data: urlData } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(path)
-
-      const publicUrl = urlData.publicUrl + "?t=" + Date.now()
-      setCurrentAvatar(publicUrl)
     } catch {
       setError("Erro ao enviar foto.")
     }

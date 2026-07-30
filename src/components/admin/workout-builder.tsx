@@ -373,15 +373,18 @@ function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary
         (ex.muscle_group ?? "").toLowerCase().includes(draft.name.toLowerCase()))
     : []
 
-  const [muscleGroups, setMuscleGroups] = useState<string[]>([])
-  const [isCustomGroup, setIsCustomGroup] = useState(false)
-
-  useEffect(() => {
-    getMuscleGroups().then(setMuscleGroups)
-  }, [])
-
-  // Se o draft.muscleGroup atual não estiver na lista (ex: grupo customizado vindo de IA ou banco), incluí-lo
-  const allGroups = Array.from(new Set([...muscleGroups, draft.muscleGroup].filter(Boolean))).sort((a, b) => a.localeCompare(b, "pt-BR"))
+  const muscleGroupsList = [
+    "Peito",
+    "Costas",
+    "Ombros",
+    "Biceps",
+    "Triceps",
+    "Ante-braço",
+    "Pernas",
+    "Posterior",
+    "Gluteos",
+    "Abdomen",
+  ]
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
@@ -419,35 +422,15 @@ function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary
       </div>
 
       <select
-        value={isCustomGroup ? "__new__" : draft.muscleGroup}
-        onChange={(e) => {
-          if (e.target.value === "__new__") {
-            setIsCustomGroup(true)
-            onUpdate("muscleGroup", "")
-          } else {
-            setIsCustomGroup(false)
-            onUpdate("muscleGroup", e.target.value)
-          }
-        }}
+        value={draft.muscleGroup}
+        onChange={(e) => onUpdate("muscleGroup", e.target.value)}
         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-xs text-zinc-400 focus:outline-none focus:border-red-600"
       >
-        <option value="">Grupo Muscular</option>
-        {allGroups.map((g) => (
+        <option value="" disabled>Grupo Muscular</option>
+        {muscleGroupsList.map((g) => (
           <option key={g} value={g}>{g}</option>
         ))}
-        <option value="__new__">+ Novo Grupo Muscular...</option>
       </select>
-
-      {isCustomGroup && (
-        <input
-          type="text"
-          placeholder="Digite o novo grupo muscular"
-          value={draft.muscleGroup}
-          onChange={(e) => onUpdate("muscleGroup", e.target.value)}
-          autoFocus
-          className="w-full bg-zinc-950 border border-red-600/50 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
-        />
-      )}
 
       <div className="grid grid-cols-3 gap-2">
         {[
