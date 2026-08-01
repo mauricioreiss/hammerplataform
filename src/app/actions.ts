@@ -1911,10 +1911,13 @@ export async function createPlan(data: {
     await requireAuth("admin")
     const admin = createAdminClient()
 
+    const validCycles = ["mensal", "semestral", "anual"]
+    const dbCycle = validCycles.includes(data.cycle) ? data.cycle : "mensal"
+
     let { error } = await admin.from("plans").insert({
       name: data.name,
       price: data.price,
-      cycle: data.cycle,
+      cycle: dbCycle,
       duration_days: data.duration_days,
     })
 
@@ -1922,7 +1925,7 @@ export async function createPlan(data: {
       const fallback = await admin.from("plans").insert({
         name: data.name,
         price: data.price,
-        cycle: data.cycle,
+        cycle: dbCycle,
       })
       error = fallback.error
     }
@@ -1947,15 +1950,18 @@ export async function updatePlan(
 
     const admin = createAdminClient()
 
+    const validCycles = ["mensal", "semestral", "anual"]
+    const dbCycle = validCycles.includes(data.cycle) ? data.cycle : "mensal"
+
     let { error } = await admin
       .from("plans")
-      .update({ name: data.name, price: data.price, cycle: data.cycle, duration_days: data.duration_days })
+      .update({ name: data.name, price: data.price, cycle: dbCycle, duration_days: data.duration_days })
       .eq("id", parsed.data)
 
     if (error && (error.message.includes("duration_days") || error.code === "PGRST204" || error.code === "42703")) {
       const fallback = await admin
         .from("plans")
-        .update({ name: data.name, price: data.price, cycle: data.cycle })
+        .update({ name: data.name, price: data.price, cycle: dbCycle })
         .eq("id", parsed.data)
       error = fallback.error
     }
