@@ -111,16 +111,11 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
           >
             <option value="">Plano (opcional)</option>
-            {plans.map((plan) => {
-              const days = plan.duration_days ?? (plan.cycle === "semestral" ? 180 : plan.cycle === "anual" ? 365 : plan.cycle === "trimestral" ? 90 : plan.cycle === "bimestral" ? 60 : 30)
-              const months = Math.max(1, Math.round(days / 30))
-              const totalValue = plan.price * months
-              return (
-                <option key={plan.id} value={plan.id}>
-                  {plan.name} - Total R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} ({months > 1 ? `${months} meses` : "1 mês"})
-                </option>
-              )
-            })}
+            {plans.map((plan) => (
+              <option key={plan.id} value={plan.id}>
+                {plan.name} - R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {plan.cycle}
+              </option>
+            ))}
           </select>
 
           {/* Payment toggle */}
@@ -129,14 +124,12 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
             <button
               type="button"
               onClick={() => setForm({ ...form, paymentReceived: !form.paymentReceived })}
-              className={`relative w-11 h-6 rounded-full transition-colors ${
-                form.paymentReceived ? "bg-green-600" : "bg-zinc-700"
-              }`}
+              className={`relative w-11 h-6 rounded-full transition-colors ${form.paymentReceived ? "bg-green-600" : "bg-zinc-700"
+                }`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                  form.paymentReceived ? "translate-x-5" : ""
-                }`}
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${form.paymentReceived ? "translate-x-5" : ""
+                  }`}
               />
             </button>
           </div>

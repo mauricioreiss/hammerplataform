@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { CreditCard, Copy, ShieldAlert, Clock, AlertTriangle, Hourglass, Loader2, AlertCircle } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { notifyPaymentMade } from "@/app/actions"
-import { type UserProfile, formatCleanDate } from "@/lib/types"
+import type { UserProfile } from "@/lib/types"
 
 type PaymentManagerProps = {
   user: UserProfile
@@ -29,11 +29,11 @@ export function PaymentManager({ user, pixKey: rawPixKey }: PaymentManagerProps)
 
   const statusLabel =
     isBlocked ? "Bloqueado" :
-    isReview ? "Em Análise" :
-    isPending ? "Pendente" :
-    isExpired ? "Expirado" :
-    user.plan_status === "atrasado" ? "Atrasado" :
-    user.plan_status === "vencendo" ? "Vencendo" : "Ativo"
+      isReview ? "Em Análise" :
+        isPending ? "Pendente" :
+          isExpired ? "Expirado" :
+            user.plan_status === "atrasado" ? "Atrasado" :
+              user.plan_status === "vencendo" ? "Vencendo" : "Ativo"
 
   const statusColor =
     isBlocked || isExpired || user.plan_status === "atrasado"
@@ -42,19 +42,21 @@ export function PaymentManager({ user, pixKey: rawPixKey }: PaymentManagerProps)
         ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
         : "bg-green-500/20 text-green-500 border-green-500/30"
 
-  const expireLabel = formatCleanDate(user.expire_date)
+  const expireLabel = user.expire_date
+    ? new Date(user.expire_date).toLocaleDateString("pt-BR")
+    : "—"
 
   const pageTitle =
     isBlocked ? "Acesso Bloqueado" :
-    isReview ? "Pagamento em Análise" :
-    isPending ? "Pagamento Pendente" :
-    isExpired ? "Plano Expirado" : "Sua Assinatura"
+      isReview ? "Pagamento em Análise" :
+        isPending ? "Pagamento Pendente" :
+          isExpired ? "Plano Expirado" : "Sua Assinatura"
 
   const PageIcon =
     isBlocked ? ShieldAlert :
-    isReview ? Hourglass :
-    isPending ? Clock :
-    isExpired ? AlertTriangle : CreditCard
+      isReview ? Hourglass :
+        isPending ? Clock :
+          isExpired ? AlertTriangle : CreditCard
 
   function handleCopy() {
     navigator.clipboard.writeText(pixKey)
@@ -203,11 +205,10 @@ export function PaymentManager({ user, pixKey: rawPixKey }: PaymentManagerProps)
   return (
     <div className="py-6 space-y-6 pb-24 md:pb-6 animate-in fade-in duration-300">
       <div className="text-center mb-8 pt-2">
-        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 border ${
-          isPaywalled
+        <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 border ${isPaywalled
             ? "bg-red-500/10 border-red-500/30"
             : "bg-zinc-900 border-zinc-800"
-        }`}>
+          }`}>
           <PageIcon size={24} className={isPaywalled ? "text-red-500" : "text-zinc-400"} />
         </div>
         <h2 className="text-2xl font-black italic text-white uppercase tracking-tight">
