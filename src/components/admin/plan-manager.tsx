@@ -53,7 +53,8 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
   function startEdit(plan: Plan) {
     setName(plan.name)
     setPrice(String(plan.price))
-    setCycle(plan.cycle)
+    const knownCycle = PRESET_DAYS[plan.cycle] ? plan.cycle : "custom"
+    setCycle(knownCycle)
     setDurationDays(String(plan.duration_days ?? PRESET_DAYS[plan.cycle] ?? 30))
     setEditingId(plan.id)
     setShowForm(true)
@@ -93,7 +94,7 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
       : await createPlan(payload)
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao salvar.")
+      setError(result.error ?? "Erro ao salvar plano.")
       setLoading(false)
       return
     }
@@ -189,54 +190,82 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
-            <input
-              type="text"
-              placeholder="Nome do plano (ex: Mensal VIP)"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
-            />
-            <input
-              type="number"
-              placeholder="Valor (ex: 150)"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              required
-              min="1"
-              step="0.01"
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
-            />
-            <select
-              value={cycle}
-              onChange={(e) => {
-                const selected = e.target.value
-                setCycle(selected)
-                if (PRESET_DAYS[selected]) {
-                  setDurationDays(PRESET_DAYS[selected])
-                }
-              }}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
-            >
-              <option value="mensal">Mensal (30 dias)</option>
-              <option value="bimestral">Bimestral (60 dias)</option>
-              <option value="trimestral">Trimestral (90 dias)</option>
-              <option value="semestral">Semestral (180 dias)</option>
-              <option value="anual">Anual (365 dias)</option>
-              <option value="custom">Personalizado (Dias livres)</option>
-            </select>
+            <div>
+              <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block mb-1">
+                Nome do Plano
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Mensal VIP"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+              />
+            </div>
 
-            {cycle === "custom" && (
+            <div>
+              <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block mb-1">
+                Valor (R$)
+              </label>
               <input
                 type="number"
-                placeholder="Duração em dias (ex: 45)"
-                value={durationDays}
-                onChange={(e) => setDurationDays(e.target.value)}
+                placeholder="Ex: 150"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
                 required
                 min="1"
-                className="w-full bg-zinc-950 border border-red-600/50 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+                step="0.01"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
               />
-            )}
+            </div>
+
+            <div>
+              <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block mb-1">
+                Ciclo / Frequência
+              </label>
+              <select
+                value={cycle}
+                onChange={(e) => {
+                  const selected = e.target.value
+                  setCycle(selected)
+                  if (PRESET_DAYS[selected]) {
+                    setDurationDays(PRESET_DAYS[selected])
+                  }
+                }}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
+              >
+                <option value="mensal">Mensal (30 dias)</option>
+                <option value="bimestral">Bimestral (60 dias)</option>
+                <option value="trimestral">Trimestral (90 dias)</option>
+                <option value="semestral">Semestral (180 dias)</option>
+                <option value="anual">Anual (365 dias)</option>
+                <option value="custom">Personalizado (Dias livres)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block mb-1">
+                Duração em Dias
+              </label>
+              <input
+                type="number"
+                placeholder="Ex: 30"
+                value={durationDays}
+                onChange={(e) => {
+                  setDurationDays(e.target.value)
+                  const matchingPreset = Object.entries(PRESET_DAYS).find(([, d]) => d === e.target.value)
+                  if (matchingPreset) {
+                    setCycle(matchingPreset[0])
+                  } else {
+                    setCycle("custom")
+                  }
+                }}
+                required
+                min="1"
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+              />
+            </div>
 
             {error && <p className="text-red-500 text-xs font-bold">{error}</p>}
 
@@ -254,4 +283,5 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
     </div>
   )
 }
+
 

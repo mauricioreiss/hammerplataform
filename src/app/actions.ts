@@ -1833,8 +1833,14 @@ export async function getPlans(): Promise<Plan[]> {
       .select("id, name, price, cycle, duration_days, created_at")
       .order("price", { ascending: true })
 
-    if (error || !data) return []
-    return data as Plan[]
+    if (error) {
+      const { data: fbData } = await admin
+        .from("plans")
+        .select("id, name, price, cycle, created_at")
+        .order("price", { ascending: true })
+      return (fbData ?? []) as Plan[]
+    }
+    return (data ?? []) as Plan[]
   } catch {
     return []
   }
@@ -1848,8 +1854,14 @@ export async function getPublicPlans(): Promise<Plan[]> {
       .select("id, name, price, cycle, duration_days, created_at")
       .order("price", { ascending: true })
 
-    if (error || !data) return []
-    return data as Plan[]
+    if (error) {
+      const { data: fbData } = await admin
+        .from("plans")
+        .select("id, name, price, cycle, created_at")
+        .order("price", { ascending: true })
+      return (fbData ?? []) as Plan[]
+    }
+    return (data ?? []) as Plan[]
   } catch {
     return []
   }
@@ -1899,12 +1911,21 @@ export async function createPlan(data: {
     await requireAuth("admin")
     const admin = createAdminClient()
 
-    const { error } = await admin.from("plans").insert({
+    let { error } = await admin.from("plans").insert({
       name: data.name,
       price: data.price,
       cycle: data.cycle,
       duration_days: data.duration_days,
     })
+
+    if (error && (error.message.includes("duration_days") || error.code === "PGRST204" || error.code === "42703")) {
+      const fallback = await admin.from("plans").insert({
+        name: data.name,
+        price: data.price,
+        cycle: data.cycle,
+      })
+      error = fallback.error
+    }
 
     if (error) return { success: false, error: error.message }
 
@@ -1926,10 +1947,18 @@ export async function updatePlan(
 
     const admin = createAdminClient()
 
-    const { error } = await admin
+    let { error } = await admin
       .from("plans")
       .update({ name: data.name, price: data.price, cycle: data.cycle, duration_days: data.duration_days })
       .eq("id", parsed.data)
+
+    if (error && (error.message.includes("duration_days") || error.code === "PGRST204" || error.code === "42703")) {
+      const fallback = await admin
+        .from("plans")
+        .update({ name: data.name, price: data.price, cycle: data.cycle })
+        .eq("id", parsed.data)
+      error = fallback.error
+    }
 
     if (error) return { success: false, error: error.message }
 
