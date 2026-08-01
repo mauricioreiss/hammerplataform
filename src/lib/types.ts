@@ -105,3 +105,19 @@ export type Notification = {
   is_read: boolean
   created_at: string
 }
+
+export function formatCleanDate(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—"
+  const cleanStr = String(dateStr).split("T")[0]
+  const parts = cleanStr.split("-")
+  if (parts.length === 3) {
+    const [year, month, day] = parts
+    return `${day.padStart(2, "0")}/${month.padStart(2, "0")}/${year}`
+  }
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return "—"
+  const day = String(d.getUTCDate()).padStart(2, "0")
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0")
+  const year = d.getUTCFullYear()
+  return `${day}/${month}/${year}`
+}

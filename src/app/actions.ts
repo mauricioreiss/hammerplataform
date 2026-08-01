@@ -214,11 +214,12 @@ export async function createAluno(data: {
 
         if (plan) {
           planName = plan.name
-          planValue = plan.price
           planCycle = plan.cycle
-          // duration_days do banco tem precedência; CYCLE_DAYS é fallback para ciclos pré-definidos
-          if (plan.duration_days && plan.duration_days > 0) {
-            Object.assign(CYCLE_DAYS, { [plan.cycle]: plan.duration_days })
+          const days = plan.duration_days ?? CYCLE_DAYS[plan.cycle] ?? 30
+          const months = Math.max(1, Math.round(days / 30))
+          planValue = plan.price * months
+          if (days > 0) {
+            Object.assign(CYCLE_DAYS, { [plan.cycle]: days })
           }
         }
       }
@@ -1721,7 +1722,7 @@ export async function registerFromLanding(
     // 1. Look up selected plan
     const { data: plan, error: planError } = await admin
       .from("plans")
-      .select("name, price")
+      .select("name, price, cycle, duration_days")
       .eq("id", plan_id)
       .single()
 
@@ -1729,6 +1730,10 @@ export async function registerFromLanding(
       console.error("registerFromLanding plan lookup error:", planError)
       return { success: false, error: "Plano selecionado nao encontrado." }
     }
+
+    const days = plan.duration_days ?? CYCLE_DAYS[plan.cycle] ?? 30
+    const months = Math.max(1, Math.round(days / 30))
+    const totalPlanValue = plan.price * months
 
     // 2. Create auth user
     const { data: authUser, error: authError } = await admin.auth.admin.createUser({
@@ -1759,7 +1764,7 @@ export async function registerFromLanding(
       objective: objective || null,
       plan_status: "pending",
       plan_name: plan.name,
-      plan_value: plan.price,
+      plan_value: totalPlanValue,
       is_first_login: false,
     })
 
@@ -2015,8 +2020,10 @@ export async function registerPayment(studentId: string): Promise<{ success: boo
 
     if (fetchErr || !student) return { success: false, error: "Aluno nao encontrado." }
 
-    const cycleName = (student.plan_name ?? "Mensal").toLowerCase()
-    const days = CYCLE_DAYS[cycleName] ?? 30
+    const { data: plans } = await admin.from("plans").select("name, cycle, duration_days")
+    const matchedPlan = plans?.find((p) => p.name.toLowerCase() === (student.plan_name ?? "").toLowerCase())
+    const cycleName = (matchedPlan?.cycle ?? student.plan_name ?? "mensal").toLowerCase()
+    const days = matchedPlan?.duration_days ?? CYCLE_DAYS[cycleName] ?? 30
     const expireDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
 
     const { error } = await admin

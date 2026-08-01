@@ -111,11 +111,16 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
           >
             <option value="">Plano (opcional)</option>
-            {plans.map((plan) => (
-              <option key={plan.id} value={plan.id}>
-                {plan.name} - R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {plan.cycle}
-              </option>
-            ))}
+            {plans.map((plan) => {
+              const days = plan.duration_days ?? (plan.cycle === "semestral" ? 180 : plan.cycle === "anual" ? 365 : plan.cycle === "trimestral" ? 90 : plan.cycle === "bimestral" ? 60 : 30)
+              const months = Math.max(1, Math.round(days / 30))
+              const totalValue = plan.price * months
+              return (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} - Total R$ {totalValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} ({months > 1 ? `${months} meses` : "1 mês"})
+                </option>
+              )
+            })}
           </select>
 
           {/* Payment toggle */}

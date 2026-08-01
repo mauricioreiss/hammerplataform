@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Plus, Activity, Calendar, CheckCircle2, MoreVertical, Key, CreditCard, ShieldOff, ShieldCheck, Loader2, ClipboardList, Trash2, Pencil, Timer, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, AlertTriangle, Sparkles, X } from "lucide-react"
-import type { UserProfile, Evaluation, Workout, Exercise, Anamnesis } from "@/lib/types"
+import { type UserProfile, type Evaluation, type Workout, type Exercise, type Anamnesis, formatCleanDate } from "@/lib/types"
 import { registerPayment, blockStudent, unblockStudent, deleteStudent, getSessionDetail } from "@/app/actions"
 import type { QuickStatus, RecentSession, SessionExercise } from "@/app/actions"
 import { AvaliacaoCard } from "./avaliacao-card"
@@ -281,9 +281,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
             <div>
               <p className="text-zinc-600 text-[9px] font-bold uppercase">Vencimento</p>
               <p className={`text-sm font-bold ${isExpired ? "text-red-500" : "text-white"}`}>
-                {student.expire_date
-                  ? new Date(student.expire_date).toLocaleDateString("pt-BR")
-                  : "—"}
+                {formatCleanDate(student.expire_date)}
               </p>
             </div>
           </div>

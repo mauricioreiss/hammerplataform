@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { CreditCard, Copy, ShieldAlert, Clock, AlertTriangle, Hourglass, Loader2, AlertCircle } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
 import { notifyPaymentMade } from "@/app/actions"
-import type { UserProfile } from "@/lib/types"
+import { type UserProfile, formatCleanDate } from "@/lib/types"
 
 type PaymentManagerProps = {
   user: UserProfile
@@ -42,9 +42,7 @@ export function PaymentManager({ user, pixKey: rawPixKey }: PaymentManagerProps)
         ? "bg-yellow-500/20 text-yellow-500 border-yellow-500/30"
         : "bg-green-500/20 text-green-500 border-green-500/30"
 
-  const expireLabel = user.expire_date
-    ? new Date(user.expire_date).toLocaleDateString("pt-BR")
-    : "—"
+  const expireLabel = formatCleanDate(user.expire_date)
 
   const pageTitle =
     isBlocked ? "Acesso Bloqueado" :
