@@ -1906,7 +1906,7 @@ export async function createPlan(data: {
   price: number
   cycle: string
   duration_days: number
-}): Promise<{ success: boolean; error?: string }> {
+}): Promise<{ success: boolean; plan?: Plan; error?: string }> {
   try {
     await requireAuth("admin")
     const admin = createAdminClient()
@@ -1914,26 +1914,36 @@ export async function createPlan(data: {
     const validCycles = ["mensal", "semestral", "anual"]
     const dbCycle = validCycles.includes(data.cycle) ? data.cycle : "mensal"
 
-    let { error } = await admin.from("plans").insert({
-      name: data.name,
-      price: data.price,
-      cycle: dbCycle,
-      duration_days: data.duration_days,
-    })
-
-    if (error && (error.message.includes("duration_days") || error.code === "PGRST204" || error.code === "42703")) {
-      const fallback = await admin.from("plans").insert({
+    let { data: inserted, error } = await admin
+      .from("plans")
+      .insert({
         name: data.name,
         price: data.price,
         cycle: dbCycle,
+        duration_days: data.duration_days,
       })
+      .select()
+      .single()
+
+    if (error && (error.message.includes("duration_days") || error.code === "PGRST204" || error.code === "42703")) {
+      const fallback = await admin
+        .from("plans")
+        .insert({
+          name: data.name,
+          price: data.price,
+          cycle: dbCycle,
+        })
+        .select()
+        .single()
+      inserted = fallback.data
       error = fallback.error
     }
 
-    if (error) return { success: false, error: error.message }
+    if (error || !inserted) return { success: false, error: error?.message ?? "Erro ao criar plano." }
 
     revalidatePath("/admin/configuracoes")
-    return { success: true }
+    revalidatePath("/admin/alunos")
+    return { success: true, plan: inserted as Plan }
   } catch {
     return { success: false, error: "Erro de conexao." }
   }
@@ -1942,7 +1952,7 @@ export async function createPlan(data: {
 export async function updatePlan(
   id: string,
   data: { name: string; price: number; cycle: string; duration_days: number },
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; plan?: Plan; error?: string }> {
   try {
     await requireAuth("admin")
     const parsed = uuidSchema.safeParse(id)

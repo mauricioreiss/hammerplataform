@@ -107,9 +107,10 @@ export function PlanManager({ initialPlans }: PlanManagerProps) {
             : p
         )
       )
-    } else {
-      router.refresh()
+    } else if (result.plan) {
+      setPlans((prev) => [...prev, result.plan!])
     }
+    router.refresh()
 
     resetForm()
     setLoading(false)
