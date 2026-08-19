@@ -1121,6 +1121,30 @@ export async function finishWorkoutSession(
       }
     }
 
+    // Fire and Forget notification
+    try {
+      const [{ data: profile }, { data: workout }, { data: adminUser }] = await Promise.all([
+        admin.from("users").select("full_name").eq("id", user.id).single(),
+        admin.from("workouts").select("title").eq("id", parsed.data).single(),
+        admin.from("users").select("id").eq("role", "admin").limit(1).single()
+      ])
+
+      if (adminUser?.id) {
+        const studentName = profile?.full_name || "Aluno Desconhecido"
+        const workoutTitle = workout?.title || "Treino"
+        
+        const { error: notifErr } = await admin.from("notifications").insert({
+          user_id: adminUser.id,
+          title: "Treino Finalizado",
+          message: `O aluno ${studentName} acabou de finalizar o treino: ${workoutTitle}`
+        })
+        
+        if (notifErr) console.error("[finishWorkoutSession] notification insert failed:", notifErr)
+      }
+    } catch (notifErr) {
+      console.error("[finishWorkoutSession] unexpected notification error:", notifErr)
+    }
+
     revalidatePath("/aluno/treino")
     return { success: true }
   } catch (err) {

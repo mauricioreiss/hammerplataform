@@ -1,32 +1,20 @@
-# Plano Técnico: Reset de Senha por Notificação
+# Plano Técnico (Plan) - Notificação de Treino Finalizado
 
 ## 1. Arquitetura e Decisões
-- **Frontend (Login)**: 
-  - Adicionar um estado visual no componente `src/app/login/page.tsx` para alternar entre "Formulário de Login" e "Formulário de Esqueci a Senha".
-  - O form de Esqueci a Senha pedirá apenas o E-mail e usará uma Server Action assíncrona.
-- **Backend (Server Actions)**: 
-  - Criar a action `requestPasswordReset(email: string)` em `src/app/auth/actions.ts`.
-  - Esta action fará uso do Supabase Admin Client (`supabase.auth.admin.listUsers` ou buscar o id via lookup) para encontrar o ID do Auth User associado ao e-mail informado.
-  - Com o ID em mãos, busca os dados básicos do usuário (nome) na tabela `users`.
-  - Busca o `id` do Treinador (usuário com `role = 'admin'`).
-  - Insere uma nova linha na tabela `notifications` usando a função existente `insertNotification`.
-- **Segurança (Blast Radius)**:
-  - Risco Baixo. Nenhuma operação destrutiva será feita. Trata-se apenas de inserção de notificação e manipulação de estado na UI.
-  - Para evitar vazamento de dados, a action deve retornar `success: true` para o Frontend independentemente de ter encontrado o e-mail no banco de dados.
+- **Serviço**: A lógica principal ocorrerá no Server Action `finishWorkoutSession` dentro de `src/app/actions.ts`.
+- **Tratamento de Exceções**: A notificação é um processo não vital para o treino (o treino deve ser salvo mesmo que a notificação falhe). A query de notificação deve ser envolvida em um `try-catch` sem estourar erro pro fluxo principal.
+- **Consultas (Queries)**:
+  - O nome do aluno virá da tabela `users` baseada no `user.id`.
+  - O título do treino pode precisar de consulta na tabela `workouts` baseada em `workoutId`.
+  - O ID do admin será obtido com a query `role = 'admin'` na tabela `users`.
 
-## 2. Mudanças de Código Esperadas
+## 2. Superfície de Ataque e Riscos (Blast Radius)
+- **Risco**: LOW (Baixo). Apenas inserimos uma string informativa em `notifications`. 
+- **Verificações**: Nenhuma entrada direta de texto livre pelo usuário que seja propensa a Injection ou XSS severo. Os nomes já estão salvos e higienizados no BD.
+- **N+1 Queries**: Faremos requisições isoladas, limitadas a 1 resultado `.single()`. Não causará gargalo.
 
-### [FRONTEND]
-- Modificar `src/app/login/page.tsx` para incluir o toggle de "Esqueci a Senha".
-- Criar a marcação (HTML/Tailwind) para a entrada do E-mail e botão de envio, mantendo a identidade visual premium.
-
-### [BACKEND]
-- Modificar `src/app/auth/actions.ts` para adicionar e exportar a função `requestPasswordReset(email: string)`.
-- A função instanciará o `adminClient`, buscará os usuários para ver se há match de e-mail usando `admin.auth.admin.listUsers()`, pegará os dados da tabela `users` do aluno e o `id` do admin, e então chamará `admin.from('notifications').insert(...)`.
-
-## 3. Revisão de Riscos (Obrigatório)
-- **High / Medium / Low**: LOW
-- **Mitigação**: O endpoint não altera estado sensível de dados (apenas insere log de notificação). A resposta visual é padronizada para evitar Account Enumeration.
-
-> **ALERTA PARA O EXECUTOR:**
-> Não realizar commits diretos sem que o usuário visualize a alteração e valide o fluxo de UI na tela de login.
+## 3. Implementação
+**[BACKEND]**:
+- No final da função `finishWorkoutSession` (após a inserção bem-sucedida em `exercise_logs`), disparar a criação da notificação.
+- Utilizar `createAdminClient` já instanciado no escopo da função.
+- Capturar possíveis erros via `console.error` em vez de retornar o erro pro Client.
