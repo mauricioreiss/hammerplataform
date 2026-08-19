@@ -187,7 +187,7 @@ export function AnalysisView({ anamnese }: AnalysisViewProps) {
               </p>
             </div>
 
-            <div className="bg-zinc-800 border border-purple-500/50 p-5 md:p-6 rounded-xl prose prose-invert prose-sm max-w-none prose-headings:text-purple-400 prose-headings:uppercase prose-headings:tracking-tight prose-strong:text-white prose-li:text-white prose-li:font-bold prose-p:text-white prose-p:font-bold shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+            <div className="bg-white border border-purple-500 p-5 md:p-6 rounded-xl prose prose-sm max-w-none text-black">
               <div
                 dangerouslySetInnerHTML={{
                   __html: formatMarkdown(analysis),
