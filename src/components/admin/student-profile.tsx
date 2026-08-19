@@ -82,15 +82,7 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
 
   // Copiloto de Treino: rascunho da IA aguardando revisao do admin.
   const aiDraft = workouts.find((w) => w.is_ai_draft && w.status === "draft" && w.ai_notes)
-  const [showAiPopup, setShowAiPopup] = useState(() => !!aiDraft)
   const [reviewWorkoutId, setReviewWorkoutId] = useState<string | null>(null)
-
-  function handleReviewDraft() {
-    if (!aiDraft) return
-    setShowAiPopup(false)
-    setActiveTab("treinos")
-    setReviewWorkoutId(aiDraft.id)
-  }
 
   async function handleToggleSession(sessionId: string) {
     if (expandedSessionId === sessionId) {
@@ -593,49 +585,6 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
           anamnesis={anamnesis}
           onClose={() => setShowAnamneseModal(false)}
         />
-      )}
-
-      {/* Copiloto de Treino: popup de revisao do rascunho da IA */}
-      {showAiPopup && aiDraft && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70"
-            onClick={() => setShowAiPopup(false)}
-          />
-          <div className="relative bg-zinc-900 border border-purple-500/30 rounded-2xl p-6 max-w-md w-full animate-in fade-in zoom-in-95 duration-200 shadow-[0_0_40px_rgba(168,85,247,0.15)]">
-            <button
-              onClick={() => setShowAiPopup(false)}
-              className="absolute top-4 right-4 text-zinc-500 hover:text-white"
-            >
-              <X size={18} />
-            </button>
-            <div className="w-12 h-12 rounded-full bg-purple-500/10 border border-purple-500/30 flex items-center justify-center mb-4">
-              <Sparkles size={20} className="text-purple-400" />
-            </div>
-            <h3 className="text-white font-black uppercase text-sm mb-3">
-              ✨ Novo Treino Gerado por IA
-            </h3>
-            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 mb-5 max-h-60 overflow-y-auto">
-              <p className="text-white text-sm font-medium leading-relaxed whitespace-pre-line">
-                {aiDraft.ai_notes}
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => setShowAiPopup(false)}
-                className="border border-zinc-700 text-zinc-300 font-bold uppercase py-3 rounded-xl text-xs hover:bg-zinc-800 transition-colors"
-              >
-                Depois
-              </button>
-              <button
-                onClick={handleReviewDraft}
-                className="bg-purple-600 hover:bg-purple-700 text-white font-black uppercase py-3 rounded-xl text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)]"
-              >
-                <Sparkles size={14} /> Revisar Ficha
-              </button>
-            </div>
-          </div>
-        </div>
       )}
 
       {showDeleteConfirm && (
