@@ -98,6 +98,8 @@ export function WorkoutBuilder({
     }
   }
 
+  const latestAiNote = workouts.find((w) => w.is_ai_draft && w.ai_notes)?.ai_notes
+
   return (
     <div className="space-y-4 animate-in fade-in">
       {/* Action Buttons */}
@@ -121,6 +123,21 @@ export function WorkoutBuilder({
           <span className="hidden sm:inline">{aiLoading ? "Pensando..." : "Gerar Treino com IA"}</span>
         </button>
       </div>
+
+      {/* Latest AI Analysis (Permanent) */}
+      {latestAiNote && (
+        <div className="bg-zinc-900 border border-purple-500/30 rounded-xl p-4 md:p-5 shadow-[0_0_15px_rgba(168,85,247,0.05)]">
+          <div className="flex items-center gap-2 mb-3">
+            <Sparkles size={16} className="text-purple-400" />
+            <h3 className="text-white text-xs font-black uppercase tracking-widest">
+              Análise Clínica da IA
+            </h3>
+          </div>
+          <p className="text-zinc-300 text-sm font-medium leading-relaxed whitespace-pre-line">
+            {latestAiNote}
+          </p>
+        </div>
+      )}
 
       {/* Modal (create or edit) */}
       {(showModal || editingWorkout) && (
