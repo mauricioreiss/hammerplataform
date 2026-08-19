@@ -1,8 +1,7 @@
 # Escopo Ativo (Tarefas)
 
-## [BACKEND]
-- `[x]` Em `src/app/actions.ts`: Na função `finishWorkoutSession`, após a inserção bem-sucedida do treino em `workout_sessions` e `exercise_logs`, adicionar bloco `try-catch` para notificação.
-- `[x]` Buscar o nome completo do aluno (`full_name`) na tabela `users` baseado no `user.id`.
-- `[x]` Buscar o título do treino (`title`) na tabela `workouts` baseado no `workoutId`.
-- `[x]` Buscar o ID do admin (usuário com `role = 'admin'`).
-- `[x]` Inserir na tabela `notifications` direcionado ao admin com a mensagem "O aluno [Nome do Aluno] acabou de finalizar o treino: [Título do Treino]". Falhas nesta etapa devem fazer log apenas no console e não afetar a finalização do treino.
+## [FRONTEND]
+- `[x]` Em `src/components/aluno/rest-timer-modal.tsx`: Localizar o componente `<circle>` que renderiza a barra de progresso (linha ~124, sob o comentário `// Draining arc`).
+- `[x]` Modificar a propriedade `strokeDasharray` para usar o valor total fixo: `strokeDasharray={circumference}`.
+- `[x]` Modificar a propriedade `strokeDashoffset` para que a barra diminua no sentido horário. Utilize a fórmula: `strokeDashoffset={circumference * (1 - remainingRatio)}`. (Substituindo a antiga lógica que alterava o strokeDasharray dinamicamente).
+- `[x]` Com essa mudança, ao passar o tempo, a parte vazia crescerá a partir do meio-dia (12h) no sentido horário, acompanhando o ponteiro do relógio em vez de ir na contramão.

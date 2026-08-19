@@ -129,8 +129,8 @@ export function RestTimerModal({
                 isWarning ? "stroke-red-500" : "stroke-red-600"
               }`}
               strokeWidth={strokeWidth}
-              strokeDasharray={`${circumference * remainingRatio} ${circumference}`}
-              strokeDashoffset={0}
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - remainingRatio)}
               strokeLinecap="round"
               fill="transparent"
               transform={`rotate(-90 ${cx} ${cy})`}
