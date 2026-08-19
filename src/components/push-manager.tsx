@@ -103,8 +103,8 @@ export function PushManager() {
       onClick={isSubscribed ? unsubscribeFromPush : subscribeToPush}
       disabled={isLoading}
       className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${isSubscribed
-          ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
-          : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
+        ? "bg-purple-500/20 text-purple-400 hover:bg-purple-500/30"
+        : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-white"
         }`}
       title={isSubscribed ? "Notificacoes ativadas" : "Ativar notificacoes"}
     >
