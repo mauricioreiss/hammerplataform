@@ -59,3 +59,65 @@ export async function logout(): Promise<void> {
   await supabase.auth.signOut()
   redirect("/login")
 }
+
+export async function requestPasswordReset(email: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const admin = createAdminClient()
+    
+    // Em alta escala usaríamos um RPC, mas para o contexto atual pegamos os usuários.
+    const { data, error: usersError } = await admin.auth.admin.listUsers()
+    
+    if (usersError) {
+      console.error("[requestPasswordReset] Falha ao listar usuários do auth:", usersError)
+      return { success: true } // Always return success to prevent enumeration
+    }
+    
+    const user = data?.users?.find((u) => u.email === email)
+    
+    if (!user) {
+      return { success: true }
+    }
+      
+    // Busca o nome do aluno
+    const { data: profile, error: profileError } = await admin
+      .from("users")
+      .select("full_name")
+      .eq("id", user.id)
+      .single()
+      
+    if (profileError) {
+      console.error(`[requestPasswordReset] Falha ao buscar perfil do usuário ${user.id}:`, profileError)
+    }
+      
+    const studentName = profile?.full_name || "Desconhecido"
+    
+    // Busca o admin
+    const { data: adminUser, error: adminError } = await admin
+      .from("users")
+      .select("id")
+      .eq("role", "admin")
+      .limit(1)
+      .single()
+      
+    if (adminError || !adminUser) {
+      console.error("[requestPasswordReset] Admin não encontrado:", adminError)
+      return { success: true }
+    }
+      
+    // Insere a notificação
+    const { error: insertError } = await admin.from("notifications").insert({
+      user_id: adminUser.id,
+      title: "Solicitação de Reset de Senha",
+      message: `O aluno ${studentName} (${email}) solicitou redefinição de senha. Acesse o perfil do aluno para redefinir a senha.`
+    })
+    
+    if (insertError) {
+      console.error("[requestPasswordReset] Falha ao inserir notificação:", insertError)
+    }
+    
+    return { success: true }
+  } catch (err) {
+    console.error("[requestPasswordReset] Falha fatal não tratada:", err)
+    return { success: false, error: "Erro interno ao processar a solicitação." }
+  }
+}
