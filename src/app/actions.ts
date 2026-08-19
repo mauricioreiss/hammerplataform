@@ -342,7 +342,7 @@ export async function getAvaliacoes(userId: string): Promise<Evaluation[]> {
       .from("evaluations")
       .select("*")
       .eq("user_id", parsed.data)
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false });
 
     if (error || !data) return [];
     return data as Evaluation[];
@@ -361,7 +361,7 @@ export async function getEvolucaoAluno(): Promise<Evaluation[]> {
       .from("evaluations")
       .select("*")
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("date", { ascending: false });
 
     if (error || !data) return [];
     return data as Evaluation[];
@@ -2792,5 +2792,47 @@ export async function removePushSubscription(
     return { success: true };
   } catch (err) {
     return { success: false, error: "Erro ao remover inscricao push." };
+  }
+}
+
+export type TreinoEvolutionEntry = {
+  workoutTitle: string;
+  exerciseName: string;
+  muscleGroup: string;
+  weight: number;
+  date: string;
+};
+
+export async function getTreinoEvolution(): Promise<TreinoEvolutionEntry[]> {
+  try {
+    const user = await getAuthUser();
+    if (!user) return [];
+
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("exercise_logs")
+      .select(`
+        weight_used,
+        completed_at,
+        exercise:exercises(name, muscle_group),
+        workout:workouts(title)
+      `)
+      .eq("user_id", user.id)
+      .not("weight_used", "is", null)
+      .order("completed_at", { ascending: true });
+
+    if (error || !data) return [];
+    
+    // Flatten the result
+    return data.map((log: any) => ({
+      workoutTitle: log.workout?.title || "Outro Treino",
+      exerciseName: log.exercise?.name || "Outro Exercício",
+      muscleGroup: log.exercise?.muscle_group || "Diversos",
+      weight: log.weight_used,
+      date: log.completed_at
+    })) as TreinoEvolutionEntry[];
+  } catch (err) {
+    console.error(err);
+    return [];
   }
 }
