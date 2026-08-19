@@ -2238,13 +2238,60 @@ export async function deleteStudent(studentId: string): Promise<{ success: boole
   }
 }
 
+import webpush from "web-push"
+
 // --- Notifications ---
 
 async function insertNotification(userId: string, title: string, message: string) {
   try {
     const admin = createAdminClient()
     await admin.from("notifications").insert({ user_id: userId, title, message })
-  } catch {
+
+    // Web Push
+    const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    const vapidPrivate = process.env.VAPID_PRIVATE_KEY
+    const vapidSubject = process.env.VAPID_SUBJECT
+
+    if (vapidPublic && vapidPrivate && vapidSubject) {
+      webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
+
+      const { data: subs } = await admin
+        .from("push_subscriptions")
+        .select("endpoint, p256dh, auth")
+        .eq("user_id", userId)
+
+      if (subs && subs.length > 0) {
+        const payload = JSON.stringify({
+          title,
+          body: message,
+          url: "/",
+        })
+
+        await Promise.allSettled(
+          subs.map(async (sub) => {
+            try {
+              await webpush.sendNotification(
+                {
+                  endpoint: sub.endpoint,
+                  keys: {
+                    p256dh: sub.p256dh,
+                    auth: sub.auth,
+                  },
+                },
+                payload
+              )
+            } catch (err) {
+              if (err && typeof err === 'object' && 'statusCode' in err && err.statusCode === 410) {
+                // Subscription has expired or is no longer valid, remove it
+                await admin.from("push_subscriptions").delete().eq("endpoint", sub.endpoint)
+              }
+            }
+          })
+        )
+      }
+    }
+  } catch (err) {
+    console.error("Erro ao enviar notificacao push:", err)
     // Non-blocking: notification failure should not break the main operation
   }
 }
@@ -2364,5 +2411,53 @@ export async function updateWorkoutWithExercises(
     return { success: true }
   } catch {
     return { success: false, error: "Erro de conexao." }
+  }
+}
+
+// --- Web Push Notifications ---
+
+export async function savePushSubscription(
+  subscription: { endpoint: string; keys: { p256dh: string; auth: string } }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const admin = createAdminClient()
+    const { error } = await admin.from("push_subscriptions").upsert(
+      {
+        user_id: user.id,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth,
+      },
+      { onConflict: "endpoint" }
+    )
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: "Erro ao salvar inscricao push." }
+  }
+}
+
+export async function removePushSubscription(
+  endpoint: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const user = await getAuthUser()
+    if (!user) return { success: false, error: "Nao autenticado." }
+
+    const admin = createAdminClient()
+    const { error } = await admin
+      .from("push_subscriptions")
+      .delete()
+      .eq("endpoint", endpoint)
+      .eq("user_id", user.id)
+
+    if (error) return { success: false, error: error.message }
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: "Erro ao remover inscricao push." }
   }
 }

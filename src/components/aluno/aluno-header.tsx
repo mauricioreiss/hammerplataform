@@ -7,6 +7,7 @@ import { logout } from "@/app/auth/actions"
 import { updateAvatarUrl } from "@/app/actions"
 import { createClient } from "@/lib/supabase/client"
 import { NotificationPanel } from "@/components/notification-panel"
+import { PushManager } from "@/components/push-manager"
 
 type AlunoHeaderProps = {
   initials: string
@@ -74,7 +75,8 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification, unre
         <div className="flex items-center">
           <span className="text-2xl font-black italic tracking-tighter text-white select-none">FH</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <PushManager />
           <NotificationPanel unreadCount={hasNotification ? Math.max(unreadCount, 1) : unreadCount} />
 
           {/* Avatar - clicavel */}
