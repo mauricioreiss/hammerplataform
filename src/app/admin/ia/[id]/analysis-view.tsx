@@ -24,7 +24,7 @@ const PAR_Q_LABELS = [
 ]
 
 export function AnalysisView({ anamnese }: AnalysisViewProps) {
-  const [analysis, setAnalysis] = useState<string | null>(null)
+  const [analysis, setAnalysis] = useState<string | null>(anamnese.ai_analysis ?? null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 

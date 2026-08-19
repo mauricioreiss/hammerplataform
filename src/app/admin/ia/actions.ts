@@ -16,6 +16,7 @@ export type AnamneseRow = {
   days_per_week: number | null
   par_q_data: Record<string, boolean> | null
   created_at: string
+  ai_analysis?: string | null
 }
 
 export type AnamneseWithUser = AnamneseRow & {
@@ -64,7 +65,7 @@ export async function getAnamneses(): Promise<AnamneseWithUser[]> {
 
     const { data, error } = await supabase
       .from("anamnesis")
-      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
+      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at, ai_analysis")
       .order("created_at", { ascending: false })
 
     if (error || !data) return []
@@ -111,7 +112,7 @@ export async function getAnamneseById(
 
     const { data, error } = await supabase
       .from("anamnesis")
-      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at")
+      .select("id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at, ai_analysis")
       .eq("id", parsed.data)
       .single()
 
@@ -200,6 +201,13 @@ export async function analyzeAnamnese(id: string): Promise<AnalysisResult> {
     const prompt = buildPrompt(data as AnamneseRow)
 
     const analysis = await generateCompletion(prompt)
+
+    // Save the generated analysis to the database
+    await supabase
+      .from("anamnesis")
+      .update({ ai_analysis: analysis })
+      .eq("id", parsed.data)
+
     return { success: true, analysis }
   } catch (err) {
     const message =
