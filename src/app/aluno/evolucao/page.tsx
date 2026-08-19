@@ -1,9 +1,9 @@
-import Image from "next/image"
-import { Scale, TrendingDown, TrendingUp } from "lucide-react"
-import { getEvolucaoAluno } from "@/app/actions"
+import Image from "next/image";
+import { Scale, TrendingDown, TrendingUp } from "lucide-react";
+import { getEvolucaoAluno } from "@/app/actions";
 
 export default async function EvolucaoPage() {
-  const avaliacoes = await getEvolucaoAluno()
+  const avaliacoes = await getEvolucaoAluno();
 
   if (avaliacoes.length < 2) {
     return (
@@ -20,18 +20,21 @@ export default async function EvolucaoPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
-  const after = avaliacoes[0]
-  const before = avaliacoes[avaliacoes.length - 1]
+  const after = avaliacoes[0];
+  const before = avaliacoes[avaliacoes.length - 1];
 
-  const pesoDiff = (before.weight ?? 0) - (after.weight ?? 0)
-  const bfDiff = (before.body_fat ?? 0) - (after.body_fat ?? 0)
-  const magraDiff = (after.lean_mass ?? 0) - (before.lean_mass ?? 0)
+  const pesoDiff = (before.weight ?? 0) - (after.weight ?? 0);
+  const bfDiff = (before.body_fat ?? 0) - (after.body_fat ?? 0);
+  const magraDiff = (after.lean_mass ?? 0) - (before.lean_mass ?? 0);
 
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })
+    new Date(d).toLocaleDateString("pt-BR", {
+      month: "short",
+      year: "2-digit",
+    });
 
   return (
     <div className="py-6 space-y-6 pb-32 md:pb-10 animate-in fade-in duration-300">
@@ -50,14 +53,18 @@ export default async function EvolucaoPage() {
           <span className="text-[9px] text-zinc-500 font-bold uppercase">
             Início
           </span>
-          <p className="text-white font-bold text-sm">{formatDate(before.date)}</p>
+          <p className="text-white font-bold text-sm">
+            {formatDate(before.date)}
+          </p>
         </div>
         <div className="text-zinc-600">&rarr;</div>
         <div className="text-center flex-1">
           <span className="text-[9px] text-red-500 font-bold uppercase">
             Atual
           </span>
-          <p className="text-white font-bold text-sm">{formatDate(after.date)}</p>
+          <p className="text-white font-bold text-sm">
+            {formatDate(after.date)}
+          </p>
         </div>
       </div>
 
@@ -109,7 +116,9 @@ export default async function EvolucaoPage() {
           {/* Peso */}
           <div className="flex items-center justify-between p-4 border-b border-zinc-800/50">
             <div className="w-1/3">
-              <p className="text-[10px] text-zinc-400 font-bold uppercase">Peso</p>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase">
+                Peso
+              </p>
             </div>
             <div className="w-1/3 text-center">
               <p className="text-zinc-500 text-xs line-through">
@@ -120,7 +129,9 @@ export default async function EvolucaoPage() {
               </p>
             </div>
             <div className="w-1/3 flex justify-end">
-              <span className={`${pesoDiff > 0 ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"} border px-2 py-1 rounded flex items-center gap-1 font-bold text-[10px]`}>
+              <span
+                className={`${pesoDiff > 0 ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"} border px-2 py-1 rounded flex items-center gap-1 font-bold text-[10px]`}
+              >
                 <TrendingDown size={12} /> {pesoDiff.toFixed(1)} kg
               </span>
             </div>
@@ -129,7 +140,9 @@ export default async function EvolucaoPage() {
           {/* Gordura */}
           <div className="flex items-center justify-between p-4 border-b border-zinc-800/50">
             <div className="w-1/3">
-              <p className="text-[10px] text-zinc-400 font-bold uppercase">% Gordura</p>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase">
+                % Gordura
+              </p>
             </div>
             <div className="w-1/3 text-center">
               <p className="text-zinc-500 text-xs line-through">
@@ -140,7 +153,9 @@ export default async function EvolucaoPage() {
               </p>
             </div>
             <div className="w-1/3 flex justify-end">
-              <span className={`${bfDiff > 0 ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"} border px-2 py-1 rounded flex items-center gap-1 font-bold text-[10px]`}>
+              <span
+                className={`${bfDiff > 0 ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"} border px-2 py-1 rounded flex items-center gap-1 font-bold text-[10px]`}
+              >
                 <TrendingDown size={12} /> {bfDiff.toFixed(1)} %
               </span>
             </div>
@@ -149,7 +164,9 @@ export default async function EvolucaoPage() {
           {/* Massa Magra */}
           <div className="flex items-center justify-between p-4">
             <div className="w-1/3">
-              <p className="text-[10px] text-zinc-400 font-bold uppercase">M. Magra</p>
+              <p className="text-[10px] text-zinc-400 font-bold uppercase">
+                M. Magra
+              </p>
             </div>
             <div className="w-1/3 text-center">
               <p className="text-zinc-500 text-xs line-through">
@@ -160,7 +177,9 @@ export default async function EvolucaoPage() {
               </p>
             </div>
             <div className="w-1/3 flex justify-end">
-              <span className={`${magraDiff > 0 ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"} border px-2 py-1 rounded flex items-center gap-1 font-bold text-[10px]`}>
+              <span
+                className={`${magraDiff > 0 ? "bg-green-500/20 text-green-500 border-green-500/30" : "bg-red-500/20 text-red-500 border-red-500/30"} border px-2 py-1 rounded flex items-center gap-1 font-bold text-[10px]`}
+              >
                 <TrendingUp size={12} /> {magraDiff.toFixed(1)} kg
               </span>
             </div>
@@ -172,5 +191,5 @@ export default async function EvolucaoPage() {
         Avaliação inserida pelo treinador. Não editável.
       </p>
     </div>
-  )
+  );
 }

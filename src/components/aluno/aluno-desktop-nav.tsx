@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, Dumbbell, Activity, CreditCard } from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Dumbbell, Activity, CreditCard } from "lucide-react";
 
 type AlunoDesktopNavProps = {
-  hasPaymentAlert?: boolean
-}
+  hasPaymentAlert?: boolean;
+};
 
 const tabs = [
   {
@@ -33,18 +33,18 @@ const tabs = [
     label: "Assinatura",
     match: (p: string) => p.startsWith("/aluno/assinatura"),
   },
-]
+];
 
 export function AlunoDesktopNav({ hasPaymentAlert }: AlunoDesktopNavProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <nav className="hidden md:block bg-zinc-950 border-b border-zinc-800">
       <div className="max-w-5xl mx-auto px-8 flex items-center gap-1">
         {tabs.map((tab) => {
-          const isActive = tab.match(pathname)
-          const Icon = tab.icon
-          const showDot = tab.label === "Assinatura" && hasPaymentAlert
+          const isActive = tab.match(pathname);
+          const Icon = tab.icon;
+          const showDot = tab.label === "Assinatura" && hasPaymentAlert;
 
           return (
             <Link
@@ -58,13 +58,11 @@ export function AlunoDesktopNav({ hasPaymentAlert }: AlunoDesktopNavProps) {
             >
               <Icon size={16} />
               {tab.label}
-              {showDot && (
-                <span className="w-2 h-2 bg-red-600 rounded-full" />
-              )}
+              {showDot && <span className="w-2 h-2 bg-red-600 rounded-full" />}
             </Link>
-          )
+          );
         })}
       </div>
     </nav>
-  )
+  );
 }

@@ -1,29 +1,37 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { LogOut, Settings } from "lucide-react"
-import { logout } from "@/app/auth/actions"
-import { NotificationPanel } from "@/components/notification-panel"
-import { PushManager } from "@/components/push-manager"
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { LogOut, Settings } from "lucide-react";
+import { logout } from "@/app/auth/actions";
+import { NotificationPanel } from "@/components/notification-panel";
+import { PushManager } from "@/components/push-manager";
 
 type AdminHeaderProps = {
-  initials: string
-  avatarUrl: string | null
-  adminName: string
-  adminEmail: string
-  unreadCount: number
-}
+  initials: string;
+  avatarUrl: string | null;
+  adminName: string;
+  adminEmail: string;
+  unreadCount: number;
+};
 
-export function AdminHeader({ initials, avatarUrl, adminName, adminEmail, unreadCount }: AdminHeaderProps) {
-  const [showMenu, setShowMenu] = useState(false)
+export function AdminHeader({
+  initials,
+  avatarUrl,
+  adminName,
+  adminEmail,
+  unreadCount,
+}: AdminHeaderProps) {
+  const [showMenu, setShowMenu] = useState(false);
 
   return (
     <>
       <header className="bg-zinc-950 border-b border-zinc-800 px-5 md:px-8 h-16 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div className="flex items-center md:hidden">
-          <span className="text-2xl font-black italic tracking-tighter text-white select-none">FH</span>
+          <span className="text-2xl font-black italic tracking-tighter text-white select-none">
+            FH
+          </span>
         </div>
         <div className="hidden md:block">
           <p className="text-zinc-400 text-xs font-bold">
@@ -56,8 +64,12 @@ export function AdminHeader({ initials, avatarUrl, adminName, adminEmail, unread
               <div className="absolute right-0 top-12 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden w-56 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* Admin info */}
                 <div className="px-4 py-3 border-b border-zinc-800">
-                  <p className="text-white text-sm font-bold truncate">{adminName}</p>
-                  <p className="text-zinc-500 text-[11px] truncate">{adminEmail}</p>
+                  <p className="text-white text-sm font-bold truncate">
+                    {adminName}
+                  </p>
+                  <p className="text-zinc-500 text-[11px] truncate">
+                    {adminEmail}
+                  </p>
                 </div>
 
                 {/* Config link */}
@@ -95,5 +107,5 @@ export function AdminHeader({ initials, avatarUrl, adminName, adminEmail, unread
         />
       )}
     </>
-  )
+  );
 }

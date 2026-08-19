@@ -28,7 +28,10 @@ export default function EvolucaoLoading() {
       {/* Metrics skeleton */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="flex items-center justify-between p-4 border-b border-zinc-800/50 last:border-0">
+          <div
+            key={i}
+            className="flex items-center justify-between p-4 border-b border-zinc-800/50 last:border-0"
+          >
             <div className="h-3 w-16 bg-zinc-800 rounded" />
             <div className="h-5 w-16 bg-zinc-800 rounded" />
             <div className="h-5 w-16 bg-zinc-800 rounded" />
@@ -36,5 +39,5 @@ export default function EvolucaoLoading() {
         ))}
       </div>
     </div>
-  )
+  );
 }

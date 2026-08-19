@@ -1,4 +1,4 @@
-import Image from "next/image"
+import Image from "next/image";
 
 const RESULTS = [
   {
@@ -17,7 +17,7 @@ const RESULTS = [
     src: "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=400&auto=format&fit=crop",
     label: "+12kg em 6 Meses",
   },
-]
+];
 
 export function LandingResults() {
   return (
@@ -47,5 +47,5 @@ export function LandingResults() {
         ))}
       </div>
     </div>
-  )
+  );
 }

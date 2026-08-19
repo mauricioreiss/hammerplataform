@@ -1,9 +1,9 @@
-import Link from "next/link"
-import { BrainCircuit, ChevronRight, User, Calendar } from "lucide-react"
-import { getAnamneses } from "./actions"
+import Link from "next/link";
+import { BrainCircuit, ChevronRight, User, Calendar } from "lucide-react";
+import { getAnamneses } from "./actions";
 
 export default async function IAMakerPage() {
-  const anamneses = await getAnamneses()
+  const anamneses = await getAnamneses();
 
   return (
     <div className="p-4 md:p-6 space-y-6 animate-in fade-in pb-24">
@@ -24,8 +24,7 @@ export default async function IAMakerPage() {
             Nenhuma anamnese recebida
           </p>
           <p className="text-zinc-600 text-xs mt-1">
-            As anamneses aparecerão aqui quando alunos preencherem o
-            formulário.
+            As anamneses aparecerão aqui quando alunos preencherem o formulário.
           </p>
         </div>
       )}
@@ -68,5 +67,5 @@ export default async function IAMakerPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

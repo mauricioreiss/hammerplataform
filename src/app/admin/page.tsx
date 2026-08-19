@@ -1,14 +1,14 @@
-import { BrainCircuit } from "lucide-react"
-import { KpiCard } from "@/components/admin/kpi-card"
-import { TrainingQueueItem } from "@/components/admin/training-queue-item"
-import { RealtimeStudentListener } from "@/components/admin/realtime-student-listener"
-import { getKpis, getAlunosAguardando } from "@/app/actions"
+import { BrainCircuit } from "lucide-react";
+import { KpiCard } from "@/components/admin/kpi-card";
+import { TrainingQueueItem } from "@/components/admin/training-queue-item";
+import { RealtimeStudentListener } from "@/components/admin/realtime-student-listener";
+import { getKpis, getAlunosAguardando } from "@/app/actions";
 
 export default async function AdminPage() {
   const [kpis, aguardando] = await Promise.all([
     getKpis(),
     getAlunosAguardando(),
-  ])
+  ]);
 
   return (
     <div className="p-4 md:p-6 space-y-6 animate-in fade-in pb-24">
@@ -27,5 +27,5 @@ export default async function AdminPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

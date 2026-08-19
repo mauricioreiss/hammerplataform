@@ -14,15 +14,15 @@ export async function middleware(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
   // JWT-only check, no database queries
@@ -31,7 +31,8 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const isProtected = pathname.startsWith("/admin") || pathname.startsWith("/aluno");
+  const isProtected =
+    pathname.startsWith("/admin") || pathname.startsWith("/aluno");
   const isLoginRoute = pathname === "/login";
 
   // Not authenticated on protected route -> login

@@ -1,83 +1,95 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import Image from "next/image"
-import { LogOut, Camera, Loader2, X } from "lucide-react"
-import { logout } from "@/app/auth/actions"
-import { updateAvatarUrl } from "@/app/actions"
-import { createClient } from "@/lib/supabase/client"
-import { NotificationPanel } from "@/components/notification-panel"
-import { PushManager } from "@/components/push-manager"
+import { useState, useRef } from "react";
+import Image from "next/image";
+import { LogOut, Camera, Loader2, X } from "lucide-react";
+import { logout } from "@/app/auth/actions";
+import { updateAvatarUrl } from "@/app/actions";
+import { createClient } from "@/lib/supabase/client";
+import { NotificationPanel } from "@/components/notification-panel";
+import { PushManager } from "@/components/push-manager";
 
 type AlunoHeaderProps = {
-  initials: string
-  avatarUrl: string | null
-  userId: string
-  hasNotification?: boolean
-  unreadCount: number
-}
+  initials: string;
+  avatarUrl: string | null;
+  userId: string;
+  hasNotification?: boolean;
+  unreadCount: number;
+};
 
-export function AlunoHeader({ initials, avatarUrl, userId, hasNotification, unreadCount }: AlunoHeaderProps) {
-  const [showMenu, setShowMenu] = useState(false)
-  const [showUpload, setShowUpload] = useState(false)
-  const [currentAvatar, setCurrentAvatar] = useState(avatarUrl)
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+export function AlunoHeader({
+  initials,
+  avatarUrl,
+  userId,
+  hasNotification,
+  unreadCount,
+}: AlunoHeaderProps) {
+  const [showMenu, setShowMenu] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+  const [currentAvatar, setCurrentAvatar] = useState(avatarUrl);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"]
-    if (!allowed.includes(file.type)) return
+    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"];
+    if (!allowed.includes(file.type)) return;
 
-    if (file.size > 5 * 1024 * 1024) return
+    if (file.size > 5 * 1024 * 1024) return;
 
-    setUploading(true)
+    setUploading(true);
 
     try {
-      const supabase = createClient()
-      const ext = file.name.split(".").pop() ?? "jpg"
-      const path = `${userId}.${ext}`
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${userId}.${ext}`;
 
       const { error: upErr } = await supabase.storage
         .from("avatars")
-        .upload(path, file, { contentType: file.type, upsert: true })
+        .upload(path, file, { contentType: file.type, upsert: true });
 
       if (upErr) {
-        setUploading(false)
-        return
+        setUploading(false);
+        return;
       }
 
       const { data: urlData } = supabase.storage
         .from("avatars")
-        .getPublicUrl(path)
+        .getPublicUrl(path);
 
-      const publicUrl = urlData.publicUrl + "?t=" + Date.now()
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
 
-      const result = await updateAvatarUrl(publicUrl)
+      const result = await updateAvatarUrl(publicUrl);
       if (result.success) {
-        setCurrentAvatar(publicUrl)
+        setCurrentAvatar(publicUrl);
       }
     } catch {
       // silent
     }
 
-    setUploading(false)
-    setShowUpload(false)
-    setShowMenu(false)
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    setUploading(false);
+    setShowUpload(false);
+    setShowMenu(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   return (
     <>
       <header className="bg-zinc-950 border-b border-zinc-800 px-5 h-16 flex items-center justify-between shrink-0 sticky top-0 z-10">
         <div className="flex items-center">
-          <span className="text-2xl font-black italic tracking-tighter text-white select-none">FH</span>
+          <span className="text-2xl font-black italic tracking-tighter text-white select-none">
+            FH
+          </span>
         </div>
         <div className="flex items-center gap-3">
           <PushManager />
-          <NotificationPanel unreadCount={hasNotification ? Math.max(unreadCount, 1) : unreadCount} />
+          <NotificationPanel
+            unreadCount={
+              hasNotification ? Math.max(unreadCount, 1) : unreadCount
+            }
+          />
 
           {/* Avatar - clicavel */}
           <div className="relative">
@@ -107,7 +119,10 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification, unre
             {showMenu && (
               <div className="absolute right-0 top-12 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                 <button
-                  onClick={() => { setShowUpload(true); setShowMenu(false) }}
+                  onClick={() => {
+                    setShowUpload(true);
+                    setShowMenu(false);
+                  }}
                   className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 >
                   <Camera size={14} /> Editar Foto
@@ -167,7 +182,9 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification, unre
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-bold text-2xl">{initials}</span>
+                  <span className="text-white font-bold text-2xl">
+                    {initials}
+                  </span>
                 )}
               </div>
             </div>
@@ -192,5 +209,5 @@ export function AlunoHeader({ initials, avatarUrl, userId, hasNotification, unre
         </div>
       )}
     </>
-  )
+  );
 }

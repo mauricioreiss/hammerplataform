@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
+import { useState } from "react";
+import Link from "next/link";
 import {
   ArrowLeft,
   BrainCircuit,
   Loader2,
   AlertTriangle,
   CheckCircle2,
-} from "lucide-react"
-import { analyzeAnamnese, type AnamneseWithUser } from "../actions"
+} from "lucide-react";
+import { analyzeAnamnese, type AnamneseWithUser } from "../actions";
 
 type AnalysisViewProps = {
-  anamnese: AnamneseWithUser
-}
+  anamnese: AnamneseWithUser;
+};
 
 const PAR_Q_LABELS = [
   "Problema cardíaco",
@@ -21,26 +21,28 @@ const PAR_Q_LABELS = [
   "Problema ósseo/articular",
   "Medicamentos pressão/coração",
   "Diabetes/hipertensão/colesterol",
-]
+];
 
 export function AnalysisView({ anamnese }: AnalysisViewProps) {
-  const [analysis, setAnalysis] = useState<string | null>(anamnese.ai_analysis ?? null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [analysis, setAnalysis] = useState<string | null>(
+    anamnese.ai_analysis ?? null,
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function handleAnalyze() {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
-    const result = await analyzeAnamnese(anamnese.id)
+    const result = await analyzeAnamnese(anamnese.id);
 
     if (result.success) {
-      setAnalysis(result.analysis)
+      setAnalysis(result.analysis);
     } else {
-      setError(result.error)
+      setError(result.error);
     }
 
-    setLoading(false)
+    setLoading(false);
   }
 
   return (
@@ -205,7 +207,7 @@ export function AnalysisView({ anamnese }: AnalysisViewProps) {
         )}
       </div>
     </div>
-  )
+  );
 }
 
 function formatMarkdown(text: string): string {
@@ -218,5 +220,5 @@ function formatMarkdown(text: string): string {
     .replace(/^- (.+)/gm, "<li>$1</li>")
     .replace(/(<li>.*<\/li>\n?)+/g, (match) => `<ul>${match}</ul>`)
     .replace(/\n{2,}/g, "<br/><br/>")
-    .replace(/\n/g, "<br/>")
+    .replace(/\n/g, "<br/>");
 }

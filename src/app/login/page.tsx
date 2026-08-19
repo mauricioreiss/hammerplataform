@@ -1,53 +1,55 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Image from "next/image"
-import { Eye, EyeOff } from "lucide-react"
-import { login, requestPasswordReset } from "@/app/auth/actions"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Eye, EyeOff } from "lucide-react";
+import { login, requestPasswordReset } from "@/app/auth/actions";
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isForgotPassword, setIsForgotPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [successMsg, setSuccessMsg] = useState("")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
-    setSuccessMsg("")
-    setLoading(true)
+    e.preventDefault();
+    setError("");
+    setSuccessMsg("");
+    setLoading(true);
 
     if (isForgotPassword) {
-      const result = await requestPasswordReset(email)
+      const result = await requestPasswordReset(email);
       if (!result.success) {
-        setError(result.error || "Erro ao solicitar alteração.")
+        setError(result.error || "Erro ao solicitar alteração.");
       } else {
-        setSuccessMsg("Sua solicitação foi enviada. Seu treinador enviará a nova senha via WhatsApp.")
+        setSuccessMsg(
+          "Sua solicitação foi enviada. Seu treinador enviará a nova senha via WhatsApp.",
+        );
       }
-      setLoading(false)
-      return
+      setLoading(false);
+      return;
     }
 
-    const result = await login(email, password)
+    const result = await login(email, password);
 
     if (!result.success) {
-      setError(result.error)
-      setLoading(false)
-      return
+      setError(result.error);
+      setLoading(false);
+      return;
     }
 
     if (result.role === "admin") {
-      router.push("/admin")
+      router.push("/admin");
     } else if (result.mustChangePassword) {
       // Student was password-reset by the trainer: force update before app access.
-      router.push("/aluno/trocar-senha")
+      router.push("/aluno/trocar-senha");
     } else {
-      router.push("/aluno")
+      router.push("/aluno");
     }
   }
 
@@ -80,7 +82,7 @@ export default function LoginPage() {
               required
               className="w-full bg-zinc-950/80 border border-zinc-800/50 rounded-xl p-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-red-600 transition-colors"
             />
-            
+
             {!isForgotPassword && (
               <div className="relative">
                 <input
@@ -102,10 +104,8 @@ export default function LoginPage() {
               </div>
             )}
 
-            {error && (
-              <p className="text-red-500 text-sm font-bold">{error}</p>
-            )}
-            
+            {error && <p className="text-red-500 text-sm font-bold">{error}</p>}
+
             {successMsg && (
               <p className="text-green-500 text-sm font-bold">{successMsg}</p>
             )}
@@ -115,26 +115,31 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-black italic uppercase py-4 rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(220,38,38,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Processando..." : isForgotPassword ? "Solicitar Nova Senha" : "Entrar"}
+              {loading
+                ? "Processando..."
+                : isForgotPassword
+                  ? "Solicitar Nova Senha"
+                  : "Entrar"}
             </button>
-            
+
             <div className="text-center mt-4">
               <button
                 type="button"
                 onClick={() => {
-                  setIsForgotPassword(!isForgotPassword)
-                  setError("")
-                  setSuccessMsg("")
+                  setIsForgotPassword(!isForgotPassword);
+                  setError("");
+                  setSuccessMsg("");
                 }}
                 className="text-zinc-400 hover:text-white text-sm transition-colors"
               >
-                {isForgotPassword ? "Lembrei minha senha" : "Esqueci minha senha"}
+                {isForgotPassword
+                  ? "Lembrei minha senha"
+                  : "Esqueci minha senha"}
               </button>
             </div>
           </form>
         </div>
       </div>
     </div>
-  )
+  );
 }
-

@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, Users, Dumbbell, BrainCircuit, LogOut } from "lucide-react"
-import { logout } from "@/app/auth/actions"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Users, Dumbbell, BrainCircuit, LogOut } from "lucide-react";
+import { logout } from "@/app/auth/actions";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Inicio", icon: Home, exact: true },
   { href: "/admin/alunos", label: "Alunos", icon: Users },
   { href: "/admin/exercicios", label: "Exercicios", icon: Dumbbell },
   { href: "/admin/ia", label: "IA Maker", icon: BrainCircuit },
-]
+];
 
 export function AdminSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <aside className="hidden md:flex flex-col w-64 bg-zinc-950 border-r border-zinc-800 shrink-0 h-screen sticky top-0">
@@ -32,7 +32,7 @@ export function AdminSidebar() {
         {NAV_ITEMS.map((item) => {
           const isActive = item.exact
             ? pathname === item.href
-            : pathname.startsWith(item.href)
+            : pathname.startsWith(item.href);
 
           return (
             <Link
@@ -47,7 +47,7 @@ export function AdminSidebar() {
               <item.icon size={18} />
               {item.label}
             </Link>
-          )
+          );
         })}
       </nav>
 
@@ -64,5 +64,5 @@ export function AdminSidebar() {
         </form>
       </div>
     </aside>
-  )
+  );
 }

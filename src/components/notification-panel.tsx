@@ -1,59 +1,59 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Bell, Check, Loader2 } from "lucide-react"
-import { getNotifications, markNotificationsRead } from "@/app/actions"
-import type { Notification } from "@/lib/types"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Bell, Check, Loader2 } from "lucide-react";
+import { getNotifications, markNotificationsRead } from "@/app/actions";
+import type { Notification } from "@/lib/types";
 
 type NotificationPanelProps = {
-  unreadCount: number
-}
+  unreadCount: number;
+};
 
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return "agora"
-  if (mins < 60) return `${mins}min`
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h`
-  const days = Math.floor(hours / 24)
-  return `${days}d`
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "agora";
+  if (mins < 60) return `${mins}min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  return `${days}d`;
 }
 
 export function NotificationPanel({ unreadCount }: NotificationPanelProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [loading, setLoading] = useState(false)
-  const [marking, setMarking] = useState(false)
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [marking, setMarking] = useState(false);
 
   async function handleOpen() {
     if (open) {
-      setOpen(false)
-      return
+      setOpen(false);
+      return;
     }
-    setOpen(true)
-    setLoading(true)
-    const data = await getNotifications()
-    setNotifications(data)
-    setLoading(false)
+    setOpen(true);
+    setLoading(true);
+    const data = await getNotifications();
+    setNotifications(data);
+    setLoading(false);
 
     // Auto-mark everything as read on open so the red badge clears instantly.
     // The unread dots in the list stay (local state) so the user still sees
     // what was new in this session.
     if (data.some((n) => !n.is_read)) {
-      await markNotificationsRead()
-      router.refresh()
+      await markNotificationsRead();
+      router.refresh();
     }
   }
 
   async function handleMarkRead() {
-    setMarking(true)
-    await markNotificationsRead()
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })))
-    setMarking(false)
-    router.refresh()
+    setMarking(true);
+    await markNotificationsRead();
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setMarking(false);
+    router.refresh();
   }
 
   return (
@@ -78,14 +78,20 @@ export function NotificationPanel({ unreadCount }: NotificationPanelProps) {
           <div className="absolute right-0 top-10 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl w-80 z-50 animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
             {/* Header */}
             <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
-              <p className="text-white text-xs font-bold uppercase">Notificacoes</p>
+              <p className="text-white text-xs font-bold uppercase">
+                Notificacoes
+              </p>
               {notifications.some((n) => !n.is_read) && (
                 <button
                   onClick={handleMarkRead}
                   disabled={marking}
                   className="text-red-500 text-[10px] font-bold uppercase flex items-center gap-1 hover:text-red-400 disabled:opacity-50"
                 >
-                  {marking ? <Loader2 size={10} className="animate-spin" /> : <Check size={10} />}
+                  {marking ? (
+                    <Loader2 size={10} className="animate-spin" />
+                  ) : (
+                    <Check size={10} />
+                  )}
                   Marcar lidas
                 </button>
               )}
@@ -115,9 +121,15 @@ export function NotificationPanel({ unreadCount }: NotificationPanelProps) {
                         <span className="w-2 h-2 rounded-full bg-red-500 shrink-0 mt-1.5" />
                       )}
                       <div className={`min-w-0 ${n.is_read ? "pl-5" : ""}`}>
-                        <p className="text-white text-xs font-bold">{n.title}</p>
-                        <p className="text-zinc-400 text-[11px] mt-0.5">{n.message}</p>
-                        <p className="text-zinc-600 text-[10px] mt-1">{timeAgo(n.created_at)}</p>
+                        <p className="text-white text-xs font-bold">
+                          {n.title}
+                        </p>
+                        <p className="text-zinc-400 text-[11px] mt-0.5">
+                          {n.message}
+                        </p>
+                        <p className="text-zinc-600 text-[10px] mt-1">
+                          {timeAgo(n.created_at)}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -128,5 +140,5 @@ export function NotificationPanel({ unreadCount }: NotificationPanelProps) {
         </>
       )}
     </div>
-  )
+  );
 }

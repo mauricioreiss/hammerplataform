@@ -1,14 +1,11 @@
-import { getCurrentUser, getPlans } from "@/app/actions"
-import { AdminSettingsForm } from "@/components/admin/admin-settings-form"
-import { PlanManager } from "@/components/admin/plan-manager"
-import { redirect } from "next/navigation"
+import { getCurrentUser, getPlans } from "@/app/actions";
+import { AdminSettingsForm } from "@/components/admin/admin-settings-form";
+import { PlanManager } from "@/components/admin/plan-manager";
+import { redirect } from "next/navigation";
 
 export default async function ConfiguracoesPage() {
-  const [user, plans] = await Promise.all([
-    getCurrentUser(),
-    getPlans(),
-  ])
-  if (!user || user.role !== "admin") redirect("/login")
+  const [user, plans] = await Promise.all([getCurrentUser(), getPlans()]);
+  if (!user || user.role !== "admin") redirect("/login");
 
   return (
     <div className="p-4 md:p-6 pb-24 animate-in fade-in space-y-10">
@@ -23,5 +20,5 @@ export default async function ConfiguracoesPage() {
         <PlanManager initialPlans={plans} />
       </div>
     </div>
-  )
+  );
 }

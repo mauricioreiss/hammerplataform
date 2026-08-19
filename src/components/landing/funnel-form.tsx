@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -10,19 +10,19 @@ import {
   FileSignature,
   BrainCircuit,
   Loader2,
-} from "lucide-react"
-import { useRouter } from "next/navigation"
-import { registerFromLanding } from "@/app/actions"
-import { createClient } from "@/lib/supabase/client"
-import type { Plan } from "@/lib/types"
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { registerFromLanding } from "@/app/actions";
+import { createClient } from "@/lib/supabase/client";
+import type { Plan } from "@/lib/types";
 
 type FunnelFormProps = {
-  plans: Plan[]
-  onBack: () => void
-  onComplete: (objetivo: string) => void
-}
+  plans: Plan[];
+  onBack: () => void;
+  onComplete: (objetivo: string) => void;
+};
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 4;
 
 const PAR_Q_QUESTIONS = [
   "Algum médico já disse que você possui problema cardíaco?",
@@ -30,24 +30,24 @@ const PAR_Q_QUESTIONS = [
   "Possui algum problema ósseo, articular ou muscular que possa piorar com exercício?",
   "Faz uso contínuo de medicamentos para pressão arterial ou coração?",
   "Possui diabetes, hipertensão ou colesterol elevado?",
-]
+];
 
 const INPUT_CLASS =
-  "w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+  "w-full bg-zinc-950 border border-zinc-800 rounded-xl p-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600";
 
-const SELECT_CLASS = INPUT_CLASS + " text-zinc-400"
+const SELECT_CLASS = INPUT_CLASS + " text-zinc-400";
 
 const CYCLE_LABELS: Record<string, string> = {
   mensal: "Mensal",
   semestral: "Semestral",
   anual: "Anual",
-}
+};
 
 export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
-  const router = useRouter()
-  const [step, setStep] = useState(1)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -66,26 +66,26 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
     planoId: "",
     parq: {} as Record<number, boolean>,
     termo: false,
-  })
+  });
 
   function update(field: string, value: string | boolean) {
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
   function updateParq(index: number, value: boolean) {
     setFormData((prev) => ({
       ...prev,
       parq: { ...prev.parq, [index]: value },
-    }))
+    }));
   }
 
   async function handleComplete() {
-    setSaving(true)
-    setError("")
+    setSaving(true);
+    setError("");
 
-    const parqData: Record<string, boolean> = {}
+    const parqData: Record<string, boolean> = {};
     for (const [key, val] of Object.entries(formData.parq)) {
-      parqData[`q${key}`] = val
+      parqData[`q${key}`] = val;
     }
 
     const result = await registerFromLanding({
@@ -97,33 +97,35 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
       weight: formData.peso ? Number(formData.peso) : undefined,
       height: formData.altura ? Number(formData.altura) : undefined,
       injuries: formData.lesoes || undefined,
-      days_per_week: formData.diasTreino ? Number(formData.diasTreino) : undefined,
+      days_per_week: formData.diasTreino
+        ? Number(formData.diasTreino)
+        : undefined,
       par_q_data: parqData,
-    })
+    });
 
     if (!result.success) {
-      setSaving(false)
-      setError(result.error ?? "Erro ao salvar cadastro.")
-      return
+      setSaving(false);
+      setError(result.error ?? "Erro ao salvar cadastro.");
+      return;
     }
 
     // Establish browser session with the credentials just created
-    const supabase = createClient()
+    const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: formData.email,
       password: formData.senha,
-    })
+    });
 
-    setSaving(false)
+    setSaving(false);
 
     if (signInError) {
       // Registration succeeded but sign-in failed - send to login
-      router.push("/login")
-      return
+      router.push("/login");
+      return;
     }
 
     // Redirect to /aluno - paywall guard will send to /aluno/assinatura
-    router.push("/aluno")
+    router.push("/aluno");
   }
 
   return (
@@ -323,12 +325,8 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
                   className={SELECT_CLASS}
                 >
                   <option value="">Nível de Estresse / Sono</option>
-                  <option value="bom">
-                    Durmo bem (7h+) / Estresse Baixo
-                  </option>
-                  <option value="medio">
-                    Durmo OK / Estresse Moderado
-                  </option>
+                  <option value="bom">Durmo bem (7h+) / Estresse Baixo</option>
+                  <option value="medio">Durmo OK / Estresse Moderado</option>
                   <option value="ruim">Durmo mal / Estresse Alto</option>
                 </select>
               </div>
@@ -347,7 +345,9 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
 
               {/* Plan selection */}
               <div>
-                <p className="text-zinc-400 text-sm mb-3">Escolha seu plano de acompanhamento:</p>
+                <p className="text-zinc-400 text-sm mb-3">
+                  Escolha seu plano de acompanhamento:
+                </p>
                 <div className="space-y-2">
                   {plans.map((plan) => (
                     <button
@@ -362,22 +362,31 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className={`font-bold text-sm ${formData.planoId === plan.id ? "text-white" : "text-zinc-300"}`}>
+                          <p
+                            className={`font-bold text-sm ${formData.planoId === plan.id ? "text-white" : "text-zinc-300"}`}
+                          >
                             {plan.name}
                           </p>
                           <p className="text-zinc-500 text-[10px] font-bold uppercase">
                             {CYCLE_LABELS[plan.cycle] ?? plan.cycle}
                           </p>
                         </div>
-                        <p className={`text-lg font-black ${formData.planoId === plan.id ? "text-red-500" : "text-zinc-400"}`}>
-                          R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                        <p
+                          className={`text-lg font-black ${formData.planoId === plan.id ? "text-red-500" : "text-zinc-400"}`}
+                        >
+                          R${" "}
+                          {plan.price.toLocaleString("pt-BR", {
+                            minimumFractionDigits: 2,
+                          })}
                         </p>
                       </div>
                     </button>
                   ))}
                 </div>
                 {plans.length === 0 && (
-                  <p className="text-zinc-500 text-xs">Nenhum plano disponivel no momento.</p>
+                  <p className="text-zinc-500 text-xs">
+                    Nenhum plano disponivel no momento.
+                  </p>
                 )}
               </div>
 
@@ -433,9 +442,15 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
                 ? handleComplete
                 : () => setStep((s) => s + 1)
             }
-            disabled={(step === TOTAL_STEPS && (!formData.termo || !formData.planoId)) || saving}
+            disabled={
+              (step === TOTAL_STEPS &&
+                (!formData.termo || !formData.planoId)) ||
+              saving
+            }
             className={`w-full mt-8 font-black italic uppercase py-5 rounded-xl flex items-center justify-center gap-2 transition-all ${
-              (step === TOTAL_STEPS && (!formData.termo || !formData.planoId)) || saving
+              (step === TOTAL_STEPS &&
+                (!formData.termo || !formData.planoId)) ||
+              saving
                 ? "bg-zinc-800 text-zinc-600 cursor-not-allowed"
                 : "bg-red-600 hover:bg-red-700 text-white active:scale-95 shadow-[0_0_20px_rgba(220,38,38,0.3)]"
             }`}
@@ -459,5 +474,5 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

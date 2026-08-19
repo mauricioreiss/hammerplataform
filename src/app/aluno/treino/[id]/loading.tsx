@@ -10,7 +10,10 @@ export default function TreinoDetalheLoading() {
       {/* Exercise list skeleton */}
       <div className="space-y-3 px-4">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center gap-3">
+          <div
+            key={i}
+            className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center gap-3"
+          >
             <div className="w-6 h-6 rounded-md bg-zinc-800 shrink-0" />
             <div className="w-12 h-12 rounded-lg bg-zinc-800 shrink-0" />
             <div className="flex-1">
@@ -21,5 +24,5 @@ export default function TreinoDetalheLoading() {
         ))}
       </div>
     </div>
-  )
+  );
 }

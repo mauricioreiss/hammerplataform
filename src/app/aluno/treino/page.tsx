@@ -1,12 +1,12 @@
-import Link from "next/link"
-import { Dumbbell } from "lucide-react"
-import { getWorkoutsDoAluno, getLastFinishedWorkoutId } from "@/app/actions"
+import Link from "next/link";
+import { Dumbbell } from "lucide-react";
+import { getWorkoutsDoAluno, getLastFinishedWorkoutId } from "@/app/actions";
 
 export default async function TreinoPage() {
   const [workouts, lastFinishedId] = await Promise.all([
     getWorkoutsDoAluno(),
     getLastFinishedWorkoutId(),
-  ])
+  ]);
 
   if (workouts.length === 0) {
     return (
@@ -20,15 +20,15 @@ export default async function TreinoPage() {
           </p>
         </div>
       </div>
-    )
+    );
   }
 
   // Determine next workout in rotation
-  let nextIndex = 0
+  let nextIndex = 0;
   if (lastFinishedId && workouts.length > 1) {
-    const lastIdx = workouts.findIndex((w) => w.id === lastFinishedId)
+    const lastIdx = workouts.findIndex((w) => w.id === lastFinishedId);
     if (lastIdx !== -1) {
-      nextIndex = (lastIdx + 1) % workouts.length
+      nextIndex = (lastIdx + 1) % workouts.length;
     }
   }
 
@@ -42,8 +42,8 @@ export default async function TreinoPage() {
 
       <div className="space-y-3">
         {workouts.map((workout, i) => {
-          const isNext = i === nextIndex
-          const exerciseCount = workout.exercises?.length ?? 0
+          const isNext = i === nextIndex;
+          const exerciseCount = workout.exercises?.length ?? 0;
 
           return (
             <Link
@@ -57,17 +57,26 @@ export default async function TreinoPage() {
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                    isNext ? "bg-red-600/20 border border-red-600/30" : "bg-zinc-800 border border-zinc-700"
-                  }`}>
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      isNext
+                        ? "bg-red-600/20 border border-red-600/30"
+                        : "bg-zinc-800 border border-zinc-700"
+                    }`}
+                  >
                     {workout.icon ? (
                       <span className="text-lg">{workout.icon}</span>
                     ) : (
-                      <Dumbbell size={18} className={isNext ? "text-red-500" : "text-zinc-400"} />
+                      <Dumbbell
+                        size={18}
+                        className={isNext ? "text-red-500" : "text-zinc-400"}
+                      />
                     )}
                   </div>
                   <div>
-                    <p className={`font-black uppercase text-sm ${isNext ? "text-red-500" : "text-white"}`}>
+                    <p
+                      className={`font-black uppercase text-sm ${isNext ? "text-red-500" : "text-white"}`}
+                    >
                       {workout.title}
                     </p>
                     <p className="text-zinc-500 text-[10px] font-bold uppercase">
@@ -82,9 +91,9 @@ export default async function TreinoPage() {
                 )}
               </div>
             </Link>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }

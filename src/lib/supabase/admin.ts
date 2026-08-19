@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Supabase client with service_role key. Bypasses RLS.
@@ -6,13 +6,13 @@ import { createClient } from "@supabase/supabase-js"
  * Never expose this client or its key to the browser.
  */
 export function createAdminClient() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim()
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim()
+  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? "").trim();
 
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
     global: {
       fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
     },
-  })
+  });
 }

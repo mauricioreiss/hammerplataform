@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Plus, X, Loader2 } from "lucide-react"
-import { createAluno } from "@/app/actions"
-import type { Plan } from "@/lib/types"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, X, Loader2 } from "lucide-react";
+import { createAluno } from "@/app/actions";
+import type { Plan } from "@/lib/types";
 
 type AddStudentFormProps = {
-  plans: Plan[]
-}
+  plans: Plan[];
+};
 
 export function AddStudentForm({ plans }: AddStudentFormProps) {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -22,25 +22,32 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
     objective: "",
     planId: "",
     paymentReceived: false,
-  })
+  });
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    const result = await createAluno(form)
+    const result = await createAluno(form);
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao criar aluno.")
-      setLoading(false)
-      return
+      setError(result.error ?? "Erro ao criar aluno.");
+      setLoading(false);
+      return;
     }
 
-    setForm({ name: "", email: "", password: "", objective: "", planId: "", paymentReceived: false })
-    setOpen(false)
-    setLoading(false)
-    router.refresh()
+    setForm({
+      name: "",
+      email: "",
+      password: "",
+      objective: "",
+      planId: "",
+      paymentReceived: false,
+    });
+    setOpen(false);
+    setLoading(false);
+    router.refresh();
   }
 
   if (!open) {
@@ -51,7 +58,7 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
       >
         <Plus size={14} /> Novo
       </button>
-    )
+    );
   }
 
   return (
@@ -61,7 +68,10 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
           <h3 className="text-lg font-black italic text-white uppercase tracking-tight">
             Novo Aluno
           </h3>
-          <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-white">
+          <button
+            onClick={() => setOpen(false)}
+            className="text-zinc-500 hover:text-white"
+          >
             <X size={20} />
           </button>
         </div>
@@ -113,23 +123,33 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
             <option value="">Plano (opcional)</option>
             {plans.map((plan) => (
               <option key={plan.id} value={plan.id}>
-                {plan.name} - R$ {plan.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} / {plan.cycle}
+                {plan.name} - R${" "}
+                {plan.price.toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                })}{" "}
+                / {plan.cycle}
               </option>
             ))}
           </select>
 
           {/* Payment toggle */}
           <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-            <span className="text-sm text-zinc-400">Pagamento Inicial Recebido?</span>
+            <span className="text-sm text-zinc-400">
+              Pagamento Inicial Recebido?
+            </span>
             <button
               type="button"
-              onClick={() => setForm({ ...form, paymentReceived: !form.paymentReceived })}
-              className={`relative w-11 h-6 rounded-full transition-colors ${form.paymentReceived ? "bg-green-600" : "bg-zinc-700"
-                }`}
+              onClick={() =>
+                setForm({ ...form, paymentReceived: !form.paymentReceived })
+              }
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                form.paymentReceived ? "bg-green-600" : "bg-zinc-700"
+              }`}
             >
               <span
-                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${form.paymentReceived ? "translate-x-5" : ""
-                  }`}
+                className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                  form.paymentReceived ? "translate-x-5" : ""
+                }`}
               />
             </button>
           </div>
@@ -141,11 +161,15 @@ export function AddStudentForm({ plans }: AddStudentFormProps) {
             disabled={loading}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Plus size={18} />
+            )}
             {loading ? "Criando..." : "Criar Aluno"}
           </button>
         </form>
       </div>
     </div>
-  )
+  );
 }

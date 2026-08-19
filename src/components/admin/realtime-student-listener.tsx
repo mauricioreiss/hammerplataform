@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export function RealtimeStudentListener() {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createClient();
 
     const channel = supabase
       .channel("admin-students-changes")
@@ -16,15 +16,15 @@ export function RealtimeStudentListener() {
         "postgres_changes",
         { event: "*", schema: "public", table: "users" },
         () => {
-          router.refresh()
+          router.refresh();
         },
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [router])
+      supabase.removeChannel(channel);
+    };
+  }, [router]);
 
-  return null
+  return null;
 }

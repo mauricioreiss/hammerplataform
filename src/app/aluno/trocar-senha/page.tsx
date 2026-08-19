@@ -1,5 +1,5 @@
-import { Shield } from "lucide-react"
-import { ChangePasswordForm } from "@/components/aluno/change-password-form"
+import { Shield } from "lucide-react";
+import { ChangePasswordForm } from "@/components/aluno/change-password-form";
 
 export default function TrocarSenhaPage() {
   return (
@@ -19,5 +19,5 @@ export default function TrocarSenhaPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

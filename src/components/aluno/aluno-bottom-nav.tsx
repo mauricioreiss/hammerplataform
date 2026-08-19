@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, Dumbbell, Activity, CreditCard } from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Dumbbell, Activity, CreditCard } from "lucide-react";
 
 type AlunoBottomNavProps = {
-  hasPaymentAlert?: boolean
-}
+  hasPaymentAlert?: boolean;
+};
 
 const tabs = [
   {
@@ -33,18 +33,18 @@ const tabs = [
     label: "Assinatura",
     match: (p: string) => p.startsWith("/aluno/assinatura"),
   },
-]
+];
 
 export function AlunoBottomNav({ hasPaymentAlert }: AlunoBottomNavProps) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 fixed bottom-0 left-0 right-0 z-50 pb-safe">
       <div className="flex justify-around items-center h-16 px-2">
         {tabs.map((tab) => {
-          const isActive = tab.match(pathname)
-          const Icon = tab.icon
-          const showDot = tab.label === "Assinatura" && hasPaymentAlert
+          const isActive = tab.match(pathname);
+          const Icon = tab.icon;
+          const showDot = tab.label === "Assinatura" && hasPaymentAlert;
 
           return (
             <Link
@@ -65,9 +65,9 @@ export function AlunoBottomNav({ hasPaymentAlert }: AlunoBottomNavProps) {
                 <span className="absolute top-2 right-[25%] w-2 h-2 bg-red-600 rounded-full" />
               )}
             </Link>
-          )
+          );
         })}
       </div>
     </nav>
-  )
+  );
 }

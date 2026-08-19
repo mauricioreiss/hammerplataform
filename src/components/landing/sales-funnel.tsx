@@ -1,31 +1,31 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { LandingHero } from "./landing-hero"
-import { LandingResults } from "./landing-results"
-import { FunnelForm } from "./funnel-form"
-import { AILoading } from "./ai-loading"
-import { Paywall } from "./paywall"
-import type { Plan } from "@/lib/types"
+import { useState, useCallback } from "react";
+import { LandingHero } from "./landing-hero";
+import { LandingResults } from "./landing-results";
+import { FunnelForm } from "./funnel-form";
+import { AILoading } from "./ai-loading";
+import { Paywall } from "./paywall";
+import type { Plan } from "@/lib/types";
 
-type Stage = "landing" | "form" | "loading" | "paywall"
+type Stage = "landing" | "form" | "loading" | "paywall";
 
 type SalesFunnelProps = {
-  plans: Plan[]
-}
+  plans: Plan[];
+};
 
 export function SalesFunnel({ plans }: SalesFunnelProps) {
-  const [stage, setStage] = useState<Stage>("landing")
-  const [objetivo, setObjetivo] = useState("")
+  const [stage, setStage] = useState<Stage>("landing");
+  const [objetivo, setObjetivo] = useState("");
 
   const handleFormComplete = useCallback((obj: string) => {
-    setObjetivo(obj)
-    setStage("loading")
-  }, [])
+    setObjetivo(obj);
+    setStage("loading");
+  }, []);
 
   const handleLoadingComplete = useCallback(() => {
-    setStage("paywall")
-  }, [])
+    setStage("paywall");
+  }, []);
 
   return (
     <div className="bg-black min-h-screen selection:bg-red-600 selection:text-white">
@@ -46,14 +46,11 @@ export function SalesFunnel({ plans }: SalesFunnelProps) {
         )}
 
         {stage === "loading" && (
-          <AILoading
-            objetivo={objetivo}
-            onComplete={handleLoadingComplete}
-          />
+          <AILoading objetivo={objetivo} onComplete={handleLoadingComplete} />
         )}
 
         {stage === "paywall" && <Paywall />}
       </div>
     </div>
-  )
+  );
 }

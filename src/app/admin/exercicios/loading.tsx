@@ -8,7 +8,10 @@ export default function ExerciciosLoading() {
       {/* Grid skeleton */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+          <div
+            key={i}
+            className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden"
+          >
             <div className="aspect-square bg-zinc-950" />
             <div className="p-3">
               <div className="h-3 w-full bg-zinc-800 rounded mb-1" />
@@ -18,5 +21,5 @@ export default function ExerciciosLoading() {
         ))}
       </div>
     </div>
-  )
+  );
 }

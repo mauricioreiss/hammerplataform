@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { CheckCircle2, Lock, QrCode, Copy } from "lucide-react"
+import { CheckCircle2, Lock, QrCode, Copy } from "lucide-react";
 
 const BLURRED_WORKOUTS = [
   { name: "Treino A - Inferiores", count: 5 },
   { name: "Treino B - Superiores", count: 6 },
   { name: "Treino C - Full Body", count: 4 },
-]
+];
 
-const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY ?? ""
+const PIX_KEY = process.env.NEXT_PUBLIC_PIX_KEY ?? "";
 
 export function Paywall() {
   return (
@@ -102,5 +102,5 @@ export function Paywall() {
         </div>
       </div>
     </div>
-  )
+  );
 }

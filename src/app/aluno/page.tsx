@@ -1,26 +1,31 @@
-import Link from "next/link"
-import { Scale, ChevronDown } from "lucide-react"
-import { getCurrentUser, getWorkoutsDoAluno, getLastFinishedWorkoutId } from "@/app/actions"
-import { PaymentAlert } from "@/components/aluno/payment-alert"
-import { WorkoutDayCard } from "@/components/aluno/workout-day-card"
-import { InstallPrompt } from "@/components/aluno/install-prompt"
+import Link from "next/link";
+import { Scale, ChevronDown } from "lucide-react";
+import {
+  getCurrentUser,
+  getWorkoutsDoAluno,
+  getLastFinishedWorkoutId,
+} from "@/app/actions";
+import { PaymentAlert } from "@/components/aluno/payment-alert";
+import { WorkoutDayCard } from "@/components/aluno/workout-day-card";
+import { InstallPrompt } from "@/components/aluno/install-prompt";
 
 export default async function AlunoPage() {
   const [user, workouts, lastFinishedId] = await Promise.all([
     getCurrentUser(),
     getWorkoutsDoAluno(),
     getLastFinishedWorkoutId(),
-  ])
+  ]);
 
-  const firstName = user?.full_name.split(" ")[0] ?? "Aluno"
-  const hasAlert = user?.plan_status === "vencendo" || user?.plan_status === "atrasado"
+  const firstName = user?.full_name.split(" ")[0] ?? "Aluno";
+  const hasAlert =
+    user?.plan_status === "vencendo" || user?.plan_status === "atrasado";
 
   // Carousel: find next workout after the last finished one (alphabetical loop)
-  let nextWorkout = workouts[0] ?? null
+  let nextWorkout = workouts[0] ?? null;
   if (lastFinishedId && workouts.length > 1) {
-    const lastIndex = workouts.findIndex((w) => w.id === lastFinishedId)
+    const lastIndex = workouts.findIndex((w) => w.id === lastFinishedId);
     if (lastIndex !== -1) {
-      nextWorkout = workouts[(lastIndex + 1) % workouts.length]
+      nextWorkout = workouts[(lastIndex + 1) % workouts.length];
     }
   }
 
@@ -54,7 +59,9 @@ export default async function AlunoPage() {
           ) : (
             <div className="bg-zinc-900 border border-zinc-800 p-5 rounded-2xl text-center">
               <p className="text-zinc-500 text-sm">Nenhum treino disponivel.</p>
-              <p className="text-zinc-600 text-xs mt-1">Aguarde o treinador montar sua ficha.</p>
+              <p className="text-zinc-600 text-xs mt-1">
+                Aguarde o treinador montar sua ficha.
+              </p>
             </div>
           )}
         </div>
@@ -86,5 +93,5 @@ export default async function AlunoPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

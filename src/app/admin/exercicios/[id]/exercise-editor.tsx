@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import Link from "next/link"
-import Image from "next/image"
+import { useState, useRef } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   Upload,
@@ -12,51 +12,54 @@ import {
   AlertTriangle,
   ImageOff,
   Dumbbell,
-} from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+} from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import {
   updateIllustrationUrl,
   deleteIllustration,
   type ExerciseRow,
-} from "../actions"
+} from "../actions";
 
 type ExerciseEditorProps = {
-  exercise: ExerciseRow
-}
+  exercise: ExerciseRow;
+};
 
 export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
   const [illustrationUrl, setIllustrationUrl] = useState(
     exercise.illustration_url,
-  )
-  const [loading, setLoading] = useState(false)
+  );
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
-    type: "success" | "error"
-    text: string
-  } | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"]
+    const allowedTypes = ["image/png", "image/jpeg", "image/gif", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      setMessage({ type: "error", text: "Formato invalido. Use PNG, JPG, GIF ou WEBP." })
-      return
+      setMessage({
+        type: "error",
+        text: "Formato invalido. Use PNG, JPG, GIF ou WEBP.",
+      });
+      return;
     }
 
     if (file.size > 10 * 1024 * 1024) {
-      setMessage({ type: "error", text: "Arquivo muito grande. Maximo 10MB." })
-      return
+      setMessage({ type: "error", text: "Arquivo muito grande. Maximo 10MB." });
+      return;
     }
 
-    setLoading(true)
-    setMessage(null)
+    setLoading(true);
+    setMessage(null);
 
     try {
-      const supabase = createClient()
-      const ext = file.name.split(".").pop() ?? "gif"
-      const storagePath = `exercises/${exercise.id}.${ext}`
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "gif";
+      const storagePath = `exercises/${exercise.id}.${ext}`;
 
       // Upload direct to Supabase Storage from browser
       const { error: uploadError } = await supabase.storage
@@ -64,52 +67,55 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
         .upload(storagePath, file, {
           contentType: file.type,
           upsert: true,
-        })
+        });
 
       if (uploadError) {
-        setMessage({ type: "error", text: "Falha no upload: " + uploadError.message })
-        setLoading(false)
-        return
+        setMessage({
+          type: "error",
+          text: "Falha no upload: " + uploadError.message,
+        });
+        setLoading(false);
+        return;
       }
 
       const { data: urlData } = supabase.storage
         .from("exercicios-illustracoes")
-        .getPublicUrl(storagePath)
+        .getPublicUrl(storagePath);
 
       // Cache-bust: append timestamp so the browser shows the new image
-      const publicUrl = urlData.publicUrl + "?t=" + Date.now()
+      const publicUrl = urlData.publicUrl + "?t=" + Date.now();
 
       // Save URL to database via server action (small payload)
-      const result = await updateIllustrationUrl(exercise.id, publicUrl)
+      const result = await updateIllustrationUrl(exercise.id, publicUrl);
 
       if (result.success) {
-        setIllustrationUrl(publicUrl)
-        setMessage({ type: "success", text: "Ilustracao atualizada." })
+        setIllustrationUrl(publicUrl);
+        setMessage({ type: "success", text: "Ilustracao atualizada." });
       } else {
-        setMessage({ type: "error", text: result.error })
+        setMessage({ type: "error", text: result.error });
       }
     } catch {
-      setMessage({ type: "error", text: "Erro de conexao." })
+      setMessage({ type: "error", text: "Erro de conexao." });
     }
 
-    setLoading(false)
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    setLoading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleDelete() {
-    setLoading(true)
-    setMessage(null)
+    setLoading(true);
+    setMessage(null);
 
-    const result = await deleteIllustration(exercise.id)
+    const result = await deleteIllustration(exercise.id);
 
     if (result.success) {
-      setIllustrationUrl(null)
-      setMessage({ type: "success", text: "Ilustracao removida." })
+      setIllustrationUrl(null);
+      setMessage({ type: "success", text: "Ilustracao removida." });
     } else {
-      setMessage({ type: "error", text: result.error })
+      setMessage({ type: "error", text: result.error });
     }
 
-    setLoading(false)
+    setLoading(false);
   }
 
   return (
@@ -154,10 +160,7 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
             )}
             {loading && (
               <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
-                <Loader2
-                  size={32}
-                  className="text-red-600 animate-spin"
-                />
+                <Loader2 size={32} className="text-red-600 animate-spin" />
               </div>
             )}
           </div>
@@ -217,25 +220,19 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
               <p className="text-[10px] text-zinc-500 uppercase font-bold">
                 Series
               </p>
-              <p className="text-white font-bold">
-                {exercise.sets ?? "—"}
-              </p>
+              <p className="text-white font-bold">{exercise.sets ?? "—"}</p>
             </div>
             <div>
               <p className="text-[10px] text-zinc-500 uppercase font-bold">
                 Reps
               </p>
-              <p className="text-white font-bold">
-                {exercise.reps ?? "—"}
-              </p>
+              <p className="text-white font-bold">{exercise.reps ?? "—"}</p>
             </div>
             <div>
               <p className="text-[10px] text-zinc-500 uppercase font-bold">
                 Descanso
               </p>
-              <p className="text-white font-bold">
-                {exercise.rest ?? "—"}
-              </p>
+              <p className="text-white font-bold">{exercise.rest ?? "—"}</p>
             </div>
           </div>
           {exercise.note && (
@@ -249,5 +246,5 @@ export function ExerciseEditor({ exercise }: ExerciseEditorProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

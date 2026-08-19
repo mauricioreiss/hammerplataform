@@ -1,22 +1,24 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Search } from "lucide-react"
-import { StudentListItem } from "./student-list-item"
-import type { UserProfile } from "@/lib/types"
+import { useState } from "react";
+import { Search } from "lucide-react";
+import { StudentListItem } from "./student-list-item";
+import type { UserProfile } from "@/lib/types";
 
 type StudentListWithSearchProps = {
-  students: UserProfile[]
-}
+  students: UserProfile[];
+};
 
-export function StudentListWithSearch({ students }: StudentListWithSearchProps) {
-  const [searchTerm, setSearchTerm] = useState("")
+export function StudentListWithSearch({
+  students,
+}: StudentListWithSearchProps) {
+  const [searchTerm, setSearchTerm] = useState("");
 
   const filtered = searchTerm.trim()
     ? students.filter((s) =>
         s.full_name.toLowerCase().includes(searchTerm.toLowerCase()),
       )
-    : students
+    : students;
 
   return (
     <>
@@ -46,5 +48,5 @@ export function StudentListWithSearch({ students }: StudentListWithSearchProps) 
         ))}
       </div>
     </>
-  )
+  );
 }

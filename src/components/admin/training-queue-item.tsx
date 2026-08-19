@@ -1,10 +1,10 @@
-import Link from "next/link"
-import { ChevronRight } from "lucide-react"
-import type { UserProfile } from "@/lib/types"
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
+import type { UserProfile } from "@/lib/types";
 
 type TrainingQueueItemProps = {
-  student: UserProfile
-}
+  student: UserProfile;
+};
 
 export function TrainingQueueItem({ student }: TrainingQueueItemProps) {
   return (
@@ -22,7 +22,9 @@ export function TrainingQueueItem({ student }: TrainingQueueItemProps) {
           />
         </div>
         <div>
-          <p className="font-bold text-white leading-tight">{student.full_name}</p>
+          <p className="font-bold text-white leading-tight">
+            {student.full_name}
+          </p>
           <span className="text-[9px] uppercase font-bold bg-red-500/10 text-red-500 border border-red-500/20 px-1.5 py-0.5 rounded mt-1 inline-block">
             Aguardando IA
           </span>
@@ -30,5 +32,5 @@ export function TrainingQueueItem({ student }: TrainingQueueItemProps) {
       </div>
       <ChevronRight size={20} className="text-zinc-600" />
     </Link>
-  )
+  );
 }

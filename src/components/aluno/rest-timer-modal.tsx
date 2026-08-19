@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Play, Pause, SkipForward, Timer, Dumbbell, Zap } from "lucide-react"
-import { formatTimerSeconds } from "@/lib/rest-timer-utils"
+import { useState, useEffect, useRef } from "react";
+import { Play, Pause, SkipForward, Timer, Dumbbell, Zap } from "lucide-react";
+import { formatTimerSeconds } from "@/lib/rest-timer-utils";
 
 type RestTimerModalProps = {
-  totalSeconds: number
-  nextExerciseName?: string | null
+  totalSeconds: number;
+  nextExerciseName?: string | null;
   /** e.g. "Série 2 de 4" or null when the exercise changed */
-  setContext?: string | null
-  onComplete: () => void
-  onSkip: () => void
-}
+  setContext?: string | null;
+  onComplete: () => void;
+  onSkip: () => void;
+};
 
 export function RestTimerModal({
   totalSeconds,
@@ -20,76 +20,76 @@ export function RestTimerModal({
   onComplete,
   onSkip,
 }: RestTimerModalProps) {
-  const [timeLeft, setTimeLeft] = useState(totalSeconds)
-  const [isPaused, setIsPaused] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Stable ref so the interval effect never depends on the callback identity.
   // closeRestTimer in the parent is a plain function recreated on every render;
   // putting it in the dep array would restart the interval every tick.
-  const onCompleteRef = useRef(onComplete)
-  const completedRef = useRef(false)
+  const onCompleteRef = useRef(onComplete);
+  const completedRef = useRef(false);
 
   // Keep the ref current without touching the interval.
   useEffect(() => {
-    onCompleteRef.current = onComplete
-  }, [onComplete])
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   // Countdown — only restarts when isPaused changes, not on every parent render.
   useEffect(() => {
     if (isPaused) {
-      if (timerRef.current) clearInterval(timerRef.current)
-      return
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
     }
 
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timerRef.current!)
-          timerRef.current = null
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
           // Defer outside setState batch to avoid React 18 batching surprises.
           setTimeout(() => {
             if (!completedRef.current) {
-              completedRef.current = true
-              onCompleteRef.current()
+              completedRef.current = true;
+              onCompleteRef.current();
             }
-          }, 0)
-          return 0
+          }, 0);
+          return 0;
         }
-        return prev - 1
-      })
-    }, 1000)
+        return prev - 1;
+      });
+    }, 1000);
 
     return () => {
       if (timerRef.current) {
-        clearInterval(timerRef.current)
-        timerRef.current = null
+        clearInterval(timerRef.current);
+        timerRef.current = null;
       }
-    }
-  }, [isPaused]) // ← no callback in deps, intentional
+    };
+  }, [isPaused]); // ← no callback in deps, intentional
 
   // SVG dimensions
-  const size = 240
-  const strokeWidth = 10
-  const radius = (size - strokeWidth) / 2
-  const circumference = 2 * Math.PI * radius
-  const cx = size / 2
-  const cy = size / 2
+  const size = 240;
+  const strokeWidth = 10;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const cx = size / 2;
+  const cy = size / 2;
 
   // Remaining ratio: 1.0 at start → 0.0 at end.
-  const remainingRatio = totalSeconds > 0 ? timeLeft / totalSeconds : 0
+  const remainingRatio = totalSeconds > 0 ? timeLeft / totalSeconds : 0;
   // Ring drains: full at start, empty at end. Negative offset makes the gap follow the needle.
-  const strokeDashoffset = -circumference * (1 - remainingRatio)
+  const strokeDashoffset = -circumference * (1 - remainingRatio);
 
   // Hand angle: elapsed ratio drives 0→360 clockwise.
-  const elapsedRatio = 1 - remainingRatio
+  const elapsedRatio = 1 - remainingRatio;
   // SVG zero-angle is 3 o'clock; subtract 90deg so 0 elapsed = 12 o'clock.
-  const handDeg = elapsedRatio * 360 - 90
-  const handRad = (handDeg * Math.PI) / 180
-  const handLength = radius - strokeWidth - 4
-  const handX2 = cx + handLength * Math.cos(handRad)
-  const handY2 = cy + handLength * Math.sin(handRad)
+  const handDeg = elapsedRatio * 360 - 90;
+  const handRad = (handDeg * Math.PI) / 180;
+  const handLength = radius - strokeWidth - 4;
+  const handX2 = cx + handLength * Math.cos(handRad);
+  const handY2 = cy + handLength * Math.sin(handRad);
 
-  const isWarning = timeLeft <= 5 && timeLeft > 0
+  const isWarning = timeLeft <= 5 && timeLeft > 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
@@ -138,11 +138,11 @@ export function RestTimerModal({
 
             {/* Tick marks: 60 ticks total, every 5th is major */}
             {Array.from({ length: 60 }).map((_, i) => {
-              const isMajor = i % 5 === 0
-              const tickDeg = i * 6 - 90
-              const tickRad = (tickDeg * Math.PI) / 180
-              const outer = radius - strokeWidth / 2 - 2
-              const inner = outer - (isMajor ? 10 : 5)
+              const isMajor = i % 5 === 0;
+              const tickDeg = i * 6 - 90;
+              const tickRad = (tickDeg * Math.PI) / 180;
+              const outer = radius - strokeWidth / 2 - 2;
+              const inner = outer - (isMajor ? 10 : 5);
               return (
                 <line
                   key={i}
@@ -154,7 +154,7 @@ export function RestTimerModal({
                   strokeWidth={isMajor ? 2 : 1}
                   strokeLinecap="round"
                 />
-              )
+              );
             })}
 
             {/* Analog second hand — SVG line for pixel-perfect pivot and rotation */}
@@ -244,9 +244,15 @@ export function RestTimerModal({
             className="w-full py-3.5 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-white font-black italic uppercase text-xs flex items-center justify-center gap-2 transition-all active:scale-95"
           >
             {isPaused ? (
-              <><Play size={16} className="text-green-500 fill-green-500" /> Retomar</>
+              <>
+                <Play size={16} className="text-green-500 fill-green-500" />{" "}
+                Retomar
+              </>
             ) : (
-              <><Pause size={16} className="text-yellow-500 fill-yellow-500" /> Pausar</>
+              <>
+                <Pause size={16} className="text-yellow-500 fill-yellow-500" />{" "}
+                Pausar
+              </>
             )}
           </button>
 
@@ -260,5 +266,5 @@ export function RestTimerModal({
         </div>
       </div>
     </div>
-  )
+  );
 }

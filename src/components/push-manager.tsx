@@ -1,96 +1,102 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { savePushSubscription, removePushSubscription } from "@/app/actions"
-import { Bell, BellOff, Loader2 } from "lucide-react"
+import { useEffect, useState } from "react";
+import { savePushSubscription, removePushSubscription } from "@/app/actions";
+import { Bell, BellOff, Loader2 } from "lucide-react";
 
-const PUBLIC_VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+const PUBLIC_VAPID_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
 function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/")
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
+    outputArray[i] = rawData.charCodeAt(i);
   }
-  return outputArray
+  return outputArray;
 }
 
 export function PushManager() {
-  const [isSupported, setIsSupported] = useState(false)
-  const [isSubscribed, setIsSubscribed] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isSupported, setIsSupported] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if ("serviceWorker" in navigator && "PushManager" in window) {
-      setIsSupported(true)
-      checkSubscription()
+      setIsSupported(true);
+      checkSubscription();
     } else {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   async function checkSubscription() {
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js")
-      const subscription = await registration.pushManager.getSubscription()
-      setIsSubscribed(!!subscription)
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      const subscription = await registration.pushManager.getSubscription();
+      setIsSubscribed(!!subscription);
     } catch (err) {
-      console.error("Erro ao checar inscricao de push:", err)
+      console.error("Erro ao checar inscricao de push:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function subscribeToPush() {
     try {
-      setIsLoading(true)
-      const registration = await navigator.serviceWorker.ready
+      setIsLoading(true);
+      const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(PUBLIC_VAPID_KEY!),
-      })
+      });
 
-      const p256dh = subscription.getKey ? Buffer.from(subscription.getKey("p256dh")!).toString("base64") : ""
-      const auth = subscription.getKey ? Buffer.from(subscription.getKey("auth")!).toString("base64") : ""
+      const p256dh = subscription.getKey
+        ? Buffer.from(subscription.getKey("p256dh")!).toString("base64")
+        : "";
+      const auth = subscription.getKey
+        ? Buffer.from(subscription.getKey("auth")!).toString("base64")
+        : "";
 
       // Converter o PushSubscription para o formato esperado pelo backend
       const subData = {
         endpoint: subscription.endpoint,
         keys: { p256dh, auth },
-      }
+      };
 
-      await savePushSubscription(subData)
-      setIsSubscribed(true)
+      await savePushSubscription(subData);
+      setIsSubscribed(true);
     } catch (err) {
-      console.error("Falha ao assinar push:", err)
+      console.error("Falha ao assinar push:", err);
       if (err instanceof Error && err.message.includes("permission")) {
-        alert("Voce precisa permitir as notificacoes nas configuracoes do navegador.")
+        alert(
+          "Voce precisa permitir as notificacoes nas configuracoes do navegador.",
+        );
       }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function unsubscribeFromPush() {
     try {
-      setIsLoading(true)
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
+      setIsLoading(true);
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
       if (subscription) {
-        await subscription.unsubscribe()
-        await removePushSubscription(subscription.endpoint)
+        await subscription.unsubscribe();
+        await removePushSubscription(subscription.endpoint);
       }
-      setIsSubscribed(false)
+      setIsSubscribed(false);
     } catch (err) {
-      console.error("Falha ao desinscrever do push:", err)
+      console.error("Falha ao desinscrever do push:", err);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
-  if (!isSupported) return null
+  if (!isSupported) return null;
 
   return (
     <button
@@ -114,5 +120,5 @@ export function PushManager() {
         {isSubscribed ? "Notificacoes ON" : "Ativar Notificacoes"}
       </span>
     </button>
-  )
+  );
 }

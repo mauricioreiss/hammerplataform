@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { Home, Users, Dumbbell, BrainCircuit } from "lucide-react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Home, Users, Dumbbell, BrainCircuit } from "lucide-react";
 
 export function AdminBottomNav() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
-  const isHome = pathname === "/admin"
-  const isAlunos = pathname.startsWith("/admin/alunos")
-  const isExercicios = pathname.startsWith("/admin/exercicios")
-  const isIA = pathname.startsWith("/admin/ia")
+  const isHome = pathname === "/admin";
+  const isAlunos = pathname.startsWith("/admin/alunos");
+  const isExercicios = pathname.startsWith("/admin/exercicios");
+  const isIA = pathname.startsWith("/admin/ia");
 
   return (
     <nav className="bg-zinc-950/95 backdrop-blur-md border-t border-zinc-800 sticky bottom-0 left-0 right-0 z-30 pb-safe md:hidden">
@@ -76,5 +76,5 @@ export function AdminBottomNav() {
         </Link>
       </div>
     </nav>
-  )
+  );
 }

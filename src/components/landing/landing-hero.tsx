@@ -1,8 +1,8 @@
-import { ChevronRight } from "lucide-react"
+import { ChevronRight } from "lucide-react";
 
 type LandingHeroProps = {
-  onStart: () => void
-}
+  onStart: () => void;
+};
 
 export function LandingHero({ onStart }: LandingHeroProps) {
   return (
@@ -28,8 +28,7 @@ export function LandingHero({ onStart }: LandingHeroProps) {
         </h1>
         <p className="text-zinc-400 text-sm md:text-lg uppercase font-bold tracking-widest mb-10 max-w-lg">
           Disciplina. Foco. Constância.
-          <br />
-          O resultado é consequência.
+          <br />O resultado é consequência.
         </p>
 
         <button
@@ -40,5 +39,5 @@ export function LandingHero({ onStart }: LandingHeroProps) {
         </button>
       </div>
     </div>
-  )
+  );
 }

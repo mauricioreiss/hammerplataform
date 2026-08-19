@@ -1,23 +1,23 @@
-import { redirect } from "next/navigation"
-import { AlunoHeader } from "@/components/aluno/aluno-header"
-import { AlunoDesktopNav } from "@/components/aluno/aluno-desktop-nav"
-import { AlunoBottomNav } from "@/components/aluno/aluno-bottom-nav"
-import { PaywallGuard } from "@/components/aluno/paywall-guard"
-import { FirstLoginGuard } from "@/components/aluno/first-login-guard"
-import { getCurrentUser, getUnreadNotificationCount } from "@/app/actions"
+import { redirect } from "next/navigation";
+import { AlunoHeader } from "@/components/aluno/aluno-header";
+import { AlunoDesktopNav } from "@/components/aluno/aluno-desktop-nav";
+import { AlunoBottomNav } from "@/components/aluno/aluno-bottom-nav";
+import { PaywallGuard } from "@/components/aluno/paywall-guard";
+import { FirstLoginGuard } from "@/components/aluno/first-login-guard";
+import { getCurrentUser, getUnreadNotificationCount } from "@/app/actions";
 
 export default async function AlunoLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   const [user, unreadCount] = await Promise.all([
     getCurrentUser(),
     getUnreadNotificationCount(),
-  ])
+  ]);
 
   if (user?.role === "admin") {
-    redirect("/admin")
+    redirect("/admin");
   }
 
   const initials = user
@@ -27,9 +27,10 @@ export default async function AlunoLayout({
         .slice(0, 2)
         .join("")
         .toUpperCase()
-    : "?"
+    : "?";
 
-  const hasAlert = user?.plan_status === "vencendo" || user?.plan_status === "atrasado"
+  const hasAlert =
+    user?.plan_status === "vencendo" || user?.plan_status === "atrasado";
 
   return (
     <div className="h-[100dvh] w-full flex flex-col overflow-hidden bg-black selection:bg-red-600 selection:text-white">
@@ -44,9 +45,7 @@ export default async function AlunoLayout({
       <main className="flex-1 overflow-y-auto bg-black pb-28 md:pb-0">
         <div className="w-full max-w-5xl mx-auto px-4 md:px-8">
           <FirstLoginGuard user={user}>
-            <PaywallGuard user={user}>
-              {children}
-            </PaywallGuard>
+            <PaywallGuard user={user}>{children}</PaywallGuard>
           </FirstLoginGuard>
         </div>
       </main>
@@ -54,5 +53,5 @@ export default async function AlunoLayout({
         <AlunoBottomNav hasPaymentAlert={hasAlert} />
       </div>
     </div>
-  )
+  );
 }

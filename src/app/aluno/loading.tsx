@@ -30,5 +30,5 @@ export default function AlunoLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

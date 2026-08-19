@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Plus, X, Loader2 } from "lucide-react"
-import { createExercise } from "@/app/actions"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, X, Loader2 } from "lucide-react";
+import { createExercise } from "@/app/actions";
 
 const MUSCLE_GROUPS = [
   "Peito",
@@ -16,41 +16,45 @@ const MUSCLE_GROUPS = [
   "Posterior",
   "Gluteos",
   "Abdomen",
-]
+];
 
 export function AddExerciseModal() {
-  const router = useRouter()
-  const [open, setOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [form, setForm] = useState({ name: "", muscleGroup: "", illustrationUrl: "" })
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    name: "",
+    muscleGroup: "",
+    illustrationUrl: "",
+  });
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+    e.preventDefault();
     if (!form.muscleGroup) {
-      setError("Selecione um grupo muscular.")
-      return
+      setError("Selecione um grupo muscular.");
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError("");
 
     const result = await createExercise({
       name: form.name,
       muscleGroup: form.muscleGroup,
       illustrationUrl: form.illustrationUrl || undefined,
-    })
+    });
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao criar exercício.")
-      setLoading(false)
-      return
+      setError(result.error ?? "Erro ao criar exercício.");
+      setLoading(false);
+      return;
     }
 
-    setForm({ name: "", muscleGroup: "", illustrationUrl: "" })
-    setOpen(false)
-    setLoading(false)
-    router.refresh()
+    setForm({ name: "", muscleGroup: "", illustrationUrl: "" });
+    setOpen(false);
+    setLoading(false);
+    router.refresh();
   }
 
   if (!open) {
@@ -61,7 +65,7 @@ export function AddExerciseModal() {
       >
         <Plus size={14} /> Adicionar Exercício
       </button>
-    )
+    );
   }
 
   return (
@@ -71,7 +75,10 @@ export function AddExerciseModal() {
           <h3 className="text-lg font-black italic text-white uppercase tracking-tight">
             Novo Exercício
           </h3>
-          <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-white">
+          <button
+            onClick={() => setOpen(false)}
+            className="text-zinc-500 hover:text-white"
+          >
             <X size={20} />
           </button>
         </div>
@@ -92,9 +99,13 @@ export function AddExerciseModal() {
             required
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-zinc-400 focus:outline-none focus:border-red-600"
           >
-            <option value="" disabled>Grupo Muscular</option>
+            <option value="" disabled>
+              Grupo Muscular
+            </option>
             {MUSCLE_GROUPS.map((g) => (
-              <option key={g} value={g}>{g}</option>
+              <option key={g} value={g}>
+                {g}
+              </option>
             ))}
           </select>
 
@@ -102,7 +113,9 @@ export function AddExerciseModal() {
             type="url"
             placeholder="URL da Imagem (opcional)"
             value={form.illustrationUrl}
-            onChange={(e) => setForm({ ...form, illustrationUrl: e.target.value })}
+            onChange={(e) =>
+              setForm({ ...form, illustrationUrl: e.target.value })
+            }
             className="w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
           />
 
@@ -113,12 +126,15 @@ export function AddExerciseModal() {
             disabled={loading}
             className="w-full bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3 rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Plus size={18} />
+            )}
             {loading ? "Criando..." : "Criar Exercício"}
           </button>
         </form>
       </div>
     </div>
-  )
+  );
 }
-

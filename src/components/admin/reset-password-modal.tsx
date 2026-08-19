@@ -1,47 +1,51 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { X, Loader2, CheckCircle2, Key } from "lucide-react"
-import { resetStudentPassword } from "@/app/actions"
+import { useState } from "react";
+import { X, Loader2, CheckCircle2, Key } from "lucide-react";
+import { resetStudentPassword } from "@/app/actions";
 
 type ResetPasswordModalProps = {
-  studentId: string
-  studentName: string
-  onClose: () => void
-}
+  studentId: string;
+  studentName: string;
+  onClose: () => void;
+};
 
-export function ResetPasswordModal({ studentId, studentName, onClose }: ResetPasswordModalProps) {
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState(false)
+export function ResetPasswordModal({
+  studentId,
+  studentName,
+  onClose,
+}: ResetPasswordModalProps) {
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   async function handleSubmit() {
-    setError("")
+    setError("");
 
     if (password.length < 6) {
-      setError("Senha deve ter no minimo 6 caracteres.")
-      return
+      setError("Senha deve ter no minimo 6 caracteres.");
+      return;
     }
     if (password !== confirmPassword) {
-      setError("As senhas nao coincidem.")
-      return
+      setError("As senhas nao coincidem.");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
 
-    const result = await resetStudentPassword(studentId, password)
+    const result = await resetStudentPassword(studentId, password);
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao resetar senha.")
-      setLoading(false)
-      return
+      setError(result.error ?? "Erro ao resetar senha.");
+      setLoading(false);
+      return;
     }
 
-    setSuccess(true)
-    setLoading(false)
-    setTimeout(onClose, 2000)
+    setSuccess(true);
+    setLoading(false);
+    setTimeout(onClose, 2000);
   }
 
   return (
@@ -54,16 +58,14 @@ export function ResetPasswordModal({ studentId, studentName, onClose }: ResetPas
               Resetar Senha
             </h3>
           </div>
-          <button
-            onClick={onClose}
-            className="text-zinc-500 hover:text-white"
-          >
+          <button onClick={onClose} className="text-zinc-500 hover:text-white">
             <X size={18} />
           </button>
         </div>
 
         <p className="text-zinc-400 text-xs mb-4">
-          Definir nova senha para <strong className="text-white">{studentName}</strong>
+          Definir nova senha para{" "}
+          <strong className="text-white">{studentName}</strong>
         </p>
 
         {success ? (
@@ -118,7 +120,11 @@ export function ResetPasswordModal({ studentId, studentName, onClose }: ResetPas
                 disabled={loading}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3 rounded-xl text-xs flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {loading ? <Loader2 size={14} className="animate-spin" /> : <Key size={14} />}
+                {loading ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Key size={14} />
+                )}
                 {loading ? "Salvando..." : "Resetar"}
               </button>
             </div>
@@ -126,5 +132,5 @@ export function ResetPasswordModal({ studentId, studentName, onClose }: ResetPas
         )}
       </div>
     </div>
-  )
+  );
 }

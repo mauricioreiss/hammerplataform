@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { X, Loader2, ClipboardList } from "lucide-react"
-import { upsertAnamnesis } from "@/app/actions"
-import type { Anamnesis } from "@/lib/types"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { X, Loader2, ClipboardList } from "lucide-react";
+import { upsertAnamnesis } from "@/app/actions";
+import type { Anamnesis } from "@/lib/types";
 
 const PAR_Q_QUESTIONS = [
   "Algum médico já disse que você possui problema cardíaco?",
@@ -12,42 +12,48 @@ const PAR_Q_QUESTIONS = [
   "Possui algum problema ósseo, articular ou muscular que possa piorar com exercício?",
   "Faz uso contínuo de medicamentos para pressão arterial ou coração?",
   "Possui diabetes, hipertensão ou colesterol elevado?",
-]
+];
 
 type AnamneseModalProps = {
-  studentId: string
-  anamnesis: Anamnesis | null
-  onClose: () => void
-}
+  studentId: string;
+  anamnesis: Anamnesis | null;
+  onClose: () => void;
+};
 
-export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalProps) {
-  const router = useRouter()
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState("")
+export function AnamneseModal({
+  studentId,
+  anamnesis,
+  onClose,
+}: AnamneseModalProps) {
+  const router = useRouter();
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  const [birthDate, setBirthDate] = useState(anamnesis?.birth_date ?? "")
-  const [weight, setWeight] = useState(anamnesis?.weight?.toString() ?? "")
-  const [height, setHeight] = useState(anamnesis?.height?.toString() ?? "")
-  const [injuries, setInjuries] = useState(anamnesis?.injuries ?? "")
-  const [daysPerWeek, setDaysPerWeek] = useState(anamnesis?.days_per_week?.toString() ?? "")
+  const [birthDate, setBirthDate] = useState(anamnesis?.birth_date ?? "");
+  const [weight, setWeight] = useState(anamnesis?.weight?.toString() ?? "");
+  const [height, setHeight] = useState(anamnesis?.height?.toString() ?? "");
+  const [injuries, setInjuries] = useState(anamnesis?.injuries ?? "");
+  const [daysPerWeek, setDaysPerWeek] = useState(
+    anamnesis?.days_per_week?.toString() ?? "",
+  );
   const [parq, setParq] = useState<Record<number, boolean>>(() => {
-    if (!anamnesis?.par_q_data) return {}
-    const initial: Record<number, boolean> = {}
+    if (!anamnesis?.par_q_data) return {};
+    const initial: Record<number, boolean> = {};
     for (const [key, val] of Object.entries(anamnesis.par_q_data)) {
-      const idx = parseInt(key.replace("q", ""), 10)
-      if (!isNaN(idx)) initial[idx] = val
+      const idx = parseInt(key.replace("q", ""), 10);
+      if (!isNaN(idx)) initial[idx] = val;
     }
-    return initial
-  })
+    return initial;
+  });
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setSaving(true)
-    setError("")
+    e.preventDefault();
+    setSaving(true);
+    setError("");
 
-    const parqData: Record<string, boolean> = {}
+    const parqData: Record<string, boolean> = {};
     for (const [key, val] of Object.entries(parq)) {
-      parqData[`q${key}`] = val
+      parqData[`q${key}`] = val;
     }
 
     const payload = {
@@ -57,22 +63,25 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
       injuries: injuries.trim() || undefined,
       days_per_week: daysPerWeek ? Number(daysPerWeek) : undefined,
       par_q_data: Object.keys(parqData).length > 0 ? parqData : undefined,
-    }
+    };
 
-    const result = await upsertAnamnesis(studentId, payload)
+    const result = await upsertAnamnesis(studentId, payload);
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao salvar anamnese.")
-      setSaving(false)
-      return
+      setError(result.error ?? "Erro ao salvar anamnese.");
+      setSaving(false);
+      return;
     }
 
-    router.refresh()
-    onClose()
+    router.refresh();
+    onClose();
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
       <div
         className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -84,7 +93,10 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
               {anamnesis ? "Editar Anamnese" : "Preencher Anamnese"}
             </h3>
           </div>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+          <button
+            onClick={onClose}
+            className="text-zinc-500 hover:text-white transition-colors"
+          >
             <X size={18} />
           </button>
         </div>
@@ -147,7 +159,9 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
             >
               <option value="">Selecione</option>
               {[1, 2, 3, 4, 5, 6, 7].map((d) => (
-                <option key={d} value={d}>{d}x por semana</option>
+                <option key={d} value={d}>
+                  {d}x por semana
+                </option>
               ))}
             </select>
           </div>
@@ -179,10 +193,14 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
                   <input
                     type="checkbox"
                     checked={parq[i] ?? false}
-                    onChange={(e) => setParq({ ...parq, [i]: e.target.checked })}
+                    onChange={(e) =>
+                      setParq({ ...parq, [i]: e.target.checked })
+                    }
                     className="mt-0.5 accent-red-600 shrink-0"
                   />
-                  <span className="text-zinc-300 text-xs leading-relaxed">{q}</span>
+                  <span className="text-zinc-300 text-xs leading-relaxed">
+                    {q}
+                  </span>
                 </label>
               ))}
             </div>
@@ -205,5 +223,5 @@ export function AnamneseModal({ studentId, anamnesis, onClose }: AnamneseModalPr
         </form>
       </div>
     </div>
-  )
+  );
 }

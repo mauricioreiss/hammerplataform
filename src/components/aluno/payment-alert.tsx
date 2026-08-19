@@ -1,5 +1,5 @@
-import Link from "next/link"
-import { AlertTriangle } from "lucide-react"
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 
 export function PaymentAlert() {
   return (
@@ -21,5 +21,5 @@ export function PaymentAlert() {
         </div>
       </div>
     </Link>
-  )
+  );
 }

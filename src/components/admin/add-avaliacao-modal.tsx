@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Plus, X, Loader2, Upload, Camera } from "lucide-react"
-import { saveAvaliacao, uploadAvaliacaoPhoto } from "@/app/actions"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, X, Loader2, Upload, Camera } from "lucide-react";
+import { saveAvaliacao, uploadAvaliacaoPhoto } from "@/app/actions";
 
 type Props = {
-  studentId: string
-  onClose: () => void
-}
+  studentId: string;
+  onClose: () => void;
+};
 
 export function AddAvaliacaoModal({ studentId, onClose }: Props) {
-  const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   const [form, setForm] = useState({
     date: new Date().toISOString().split("T")[0],
@@ -23,62 +23,76 @@ export function AddAvaliacaoModal({ studentId, onClose }: Props) {
     bodyFat: "",
     leanMass: "",
     waist: "",
-  })
+  });
 
-  async function compressImage(file: File, maxWidth = 1080, quality = 0.8): Promise<File> {
+  async function compressImage(
+    file: File,
+    maxWidth = 1080,
+    quality = 0.8,
+  ): Promise<File> {
     return new Promise((resolve, reject) => {
-      const img = new window.Image()
+      const img = new window.Image();
       img.onload = () => {
-        const canvas = document.createElement("canvas")
-        let { width, height } = img
+        const canvas = document.createElement("canvas");
+        let { width, height } = img;
         if (width > maxWidth) {
-          height = Math.round((height * maxWidth) / width)
-          width = maxWidth
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
         }
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext("2d")
-        if (!ctx) { resolve(file); return }
-        ctx.drawImage(img, 0, 0, width, height)
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve(file);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
-            if (!blob) { resolve(file); return }
-            resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }))
+            if (!blob) {
+              resolve(file);
+              return;
+            }
+            resolve(
+              new File([blob], file.name.replace(/\.\w+$/, ".jpg"), {
+                type: "image/jpeg",
+              }),
+            );
           },
           "image/jpeg",
           quality,
-        )
-      }
-      img.onerror = () => resolve(file)
-      img.src = URL.createObjectURL(file)
-    })
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const raw = e.target.files?.[0]
-    if (!raw) return
-    const compressed = await compressImage(raw)
-    setPhotoFile(compressed)
-    setPhotoPreview(URL.createObjectURL(compressed))
+    const raw = e.target.files?.[0];
+    if (!raw) return;
+    const compressed = await compressImage(raw);
+    setPhotoFile(compressed);
+    setPhotoPreview(URL.createObjectURL(compressed));
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
-    let photoUrl: string | undefined
+    let photoUrl: string | undefined;
 
     if (photoFile) {
-      const fd = new FormData()
-      fd.append("file", photoFile)
-      const uploadResult = await uploadAvaliacaoPhoto(studentId, fd)
+      const fd = new FormData();
+      fd.append("file", photoFile);
+      const uploadResult = await uploadAvaliacaoPhoto(studentId, fd);
       if (!uploadResult.success) {
-        setError(uploadResult.error ?? "Erro no upload da foto.")
-        setLoading(false)
-        return
+        setError(uploadResult.error ?? "Erro no upload da foto.");
+        setLoading(false);
+        return;
       }
-      photoUrl = uploadResult.url
+      photoUrl = uploadResult.url;
     }
 
     const result = await saveAvaliacao({
@@ -89,17 +103,17 @@ export function AddAvaliacaoModal({ studentId, onClose }: Props) {
       leanMass: form.leanMass ? Number(form.leanMass) : undefined,
       waist: form.waist ? Number(form.waist) : undefined,
       photoUrl,
-    })
+    });
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao salvar.")
-      setLoading(false)
-      return
+      setError(result.error ?? "Erro ao salvar.");
+      setLoading(false);
+      return;
     }
 
-    setLoading(false)
-    router.refresh()
-    onClose()
+    setLoading(false);
+    router.refresh();
+    onClose();
   }
 
   return (
@@ -200,7 +214,10 @@ export function AddAvaliacaoModal({ studentId, onClose }: Props) {
                 />
                 <button
                   type="button"
-                  onClick={() => { setPhotoFile(null); setPhotoPreview(null) }}
+                  onClick={() => {
+                    setPhotoFile(null);
+                    setPhotoPreview(null);
+                  }}
                   className="absolute top-2 right-2 bg-black/70 text-white p-1 rounded-full"
                 >
                   <X size={14} />
@@ -209,7 +226,9 @@ export function AddAvaliacaoModal({ studentId, onClose }: Props) {
             ) : (
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl cursor-pointer transition-colors">
                 <Camera size={24} className="text-zinc-600 mb-2" />
-                <span className="text-zinc-500 text-xs font-bold">Clique para enviar foto</span>
+                <span className="text-zinc-500 text-xs font-bold">
+                  Clique para enviar foto
+                </span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -237,5 +256,5 @@ export function AddAvaliacaoModal({ studentId, onClose }: Props) {
         </form>
       </div>
     </div>
-  )
+  );
 }

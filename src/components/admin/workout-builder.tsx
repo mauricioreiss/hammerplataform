@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useRef, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Trash2,
@@ -19,8 +19,8 @@ import {
   MoreVertical,
   AlertTriangle,
   ExternalLink,
-} from "lucide-react"
-import type { Workout, Exercise } from "@/lib/types"
+} from "lucide-react";
+import type { Workout, Exercise } from "@/lib/types";
 import {
   createWorkoutWithExercises,
   updateWorkoutWithExercises,
@@ -32,28 +32,28 @@ import {
   draftWorkoutForUser,
   publishWorkout,
   getMuscleGroups,
-} from "@/app/actions"
+} from "@/app/actions";
 
 // --- Types ---
 
 type ExerciseDraft = {
-  key: number
-  name: string
-  muscleGroup: string
-  sets: string
-  reps: string
-  rest: string
-  note: string
-  illustrationUrl: string
-}
+  key: number;
+  name: string;
+  muscleGroup: string;
+  sets: string;
+  reps: string;
+  rest: string;
+  note: string;
+  illustrationUrl: string;
+};
 
 type WorkoutBuilderProps = {
-  studentId: string
-  workouts: Workout[]
-  libraryExercises: Exercise[]
-  reviewWorkoutId?: string | null
-  onReviewConsumed?: () => void
-}
+  studentId: string;
+  workouts: Workout[];
+  libraryExercises: Exercise[];
+  reviewWorkoutId?: string | null;
+  onReviewConsumed?: () => void;
+};
 
 // --- Main Component ---
 
@@ -64,41 +64,49 @@ export function WorkoutBuilder({
   reviewWorkoutId,
   onReviewConsumed,
 }: WorkoutBuilderProps) {
-  const [showModal, setShowModal] = useState(false)
-  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null)
+  const [showModal, setShowModal] = useState(false);
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
   const [expandedWorkout, setExpandedWorkout] = useState<string | null>(
     workouts[0]?.id ?? null,
-  )
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiError, setAiError] = useState<{ message: string; code?: string } | null>(null)
-  const router = useRouter()
+  );
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<{
+    message: string;
+    code?: string;
+  } | null>(null);
+  const router = useRouter();
 
   // Popup "Revisar Ficha" -> abre o editor da ficha rascunho indicada.
   useEffect(() => {
-    if (!reviewWorkoutId) return
-    const target = workouts.find((w) => w.id === reviewWorkoutId)
-    if (target) setEditingWorkout(target)
-    onReviewConsumed?.()
-  }, [reviewWorkoutId, workouts, onReviewConsumed])
+    if (!reviewWorkoutId) return;
+    const target = workouts.find((w) => w.id === reviewWorkoutId);
+    if (target) setEditingWorkout(target);
+    onReviewConsumed?.();
+  }, [reviewWorkoutId, workouts, onReviewConsumed]);
 
   async function handleGenerateAI() {
-    setAiLoading(true)
-    setAiError(null)
+    setAiLoading(true);
+    setAiError(null);
     try {
-      const result = await draftWorkoutForUser(studentId)
+      const result = await draftWorkoutForUser(studentId);
       if (!result.success) {
-        setAiError({ message: result.error ?? "Erro ao gerar treino com IA.", code: result.code })
-        return
+        setAiError({
+          message: result.error ?? "Erro ao gerar treino com IA.",
+          code: result.code,
+        });
+        return;
       }
-      router.refresh()
+      router.refresh();
     } catch {
-      setAiError({ message: "Erro de conexao ao gerar treino." })
+      setAiError({ message: "Erro de conexao ao gerar treino." });
     } finally {
-      setAiLoading(false)
+      setAiLoading(false);
     }
   }
 
-  const latestAiNote = workouts.find((w) => w.is_ai_draft && w.ai_notes)?.ai_notes
+  const latestAiNote = workouts.find(
+    (w) => w.is_ai_draft && w.ai_notes,
+  )?.ai_notes;
 
   return (
     <div className="space-y-4 animate-in fade-in">
@@ -120,7 +128,9 @@ export function WorkoutBuilder({
           ) : (
             <Sparkles size={18} className="text-purple-400" />
           )}
-          <span className="hidden sm:inline">{aiLoading ? "Pensando..." : "Gerar Treino com IA"}</span>
+          <span className="hidden sm:inline">
+            {aiLoading ? "Pensando..." : "Gerar Treino com IA"}
+          </span>
         </button>
       </div>
 
@@ -144,7 +154,10 @@ export function WorkoutBuilder({
         <WorkoutCreatorModal
           studentId={studentId}
           libraryExercises={libraryExercises}
-          onClose={() => { setShowModal(false); setEditingWorkout(null) }}
+          onClose={() => {
+            setShowModal(false);
+            setEditingWorkout(null);
+          }}
           editWorkout={editingWorkout ?? undefined}
         />
       )}
@@ -152,13 +165,27 @@ export function WorkoutBuilder({
       {/* AI generation error popup (ex: sem creditos na OpenAI) */}
       {aiError && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70" onClick={() => setAiError(null)} />
+          <div
+            className="absolute inset-0 bg-black/70"
+            onClick={() => setAiError(null)}
+          />
           <div className="relative bg-zinc-900 border border-zinc-800 rounded-2xl p-6 max-w-sm w-full animate-in fade-in zoom-in-95 duration-200">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${aiError.code === "no_credits" ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/30"}`}>
-              <AlertTriangle size={20} className={aiError.code === "no_credits" ? "text-yellow-500" : "text-red-500"} />
+            <div
+              className={`w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 ${aiError.code === "no_credits" ? "bg-yellow-500/10 border border-yellow-500/30" : "bg-red-500/10 border border-red-500/30"}`}
+            >
+              <AlertTriangle
+                size={20}
+                className={
+                  aiError.code === "no_credits"
+                    ? "text-yellow-500"
+                    : "text-red-500"
+                }
+              />
             </div>
             <h3 className="text-white font-black uppercase text-center text-sm mb-2">
-              {aiError.code === "no_credits" ? "Sem créditos na OpenAI" : "Erro ao gerar treino"}
+              {aiError.code === "no_credits"
+                ? "Sem créditos na OpenAI"
+                : "Erro ao gerar treino"}
             </h3>
             <p className="text-zinc-400 text-xs text-center leading-relaxed mb-6">
               {aiError.code === "no_credits"
@@ -207,13 +234,15 @@ export function WorkoutBuilder({
           libraryExercises={libraryExercises}
           expanded={expandedWorkout === workout.id}
           onToggle={() =>
-            setExpandedWorkout(expandedWorkout === workout.id ? null : workout.id)
+            setExpandedWorkout(
+              expandedWorkout === workout.id ? null : workout.id,
+            )
           }
           onEdit={() => setEditingWorkout(workout)}
         />
       ))}
     </div>
-  )
+  );
 }
 
 // --- Workout Creator Modal ---
@@ -224,15 +253,16 @@ function WorkoutCreatorModal({
   onClose,
   editWorkout,
 }: {
-  studentId: string
-  libraryExercises: Exercise[]
-  onClose: () => void
-  editWorkout?: Workout
+  studentId: string;
+  libraryExercises: Exercise[];
+  onClose: () => void;
+  editWorkout?: Workout;
 }) {
-  const router = useRouter()
-  const isEdit = !!editWorkout
+  const router = useRouter();
+  const isEdit = !!editWorkout;
   // Ficha rascunho gerada pela IA, aguardando aprovacao do admin.
-  const isAiDraftReview = !!editWorkout?.is_ai_draft && editWorkout?.status === "draft"
+  const isAiDraftReview =
+    !!editWorkout?.is_ai_draft && editWorkout?.status === "draft";
 
   const initialExercises: ExerciseDraft[] = editWorkout?.exercises?.length
     ? editWorkout.exercises.map((ex, i) => ({
@@ -245,113 +275,198 @@ function WorkoutCreatorModal({
         note: ex.note ?? "",
         illustrationUrl: ex.illustration_url ?? "",
       }))
-    : [makeEmptyExercise(1)]
+    : [makeEmptyExercise(1)];
 
-  const [title, setTitle] = useState(editWorkout?.title ?? "")
-  const [icon, setIcon] = useState(editWorkout?.icon ?? "")
-  const [exercises, setExercises] = useState<ExerciseDraft[]>(initialExercises)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-  const nextKey = useRef(initialExercises.length + 1)
+  const [title, setTitle] = useState(editWorkout?.title ?? "");
+  const [icon, setIcon] = useState(editWorkout?.icon ?? "");
+  const [exercises, setExercises] = useState<ExerciseDraft[]>(initialExercises);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const nextKey = useRef(initialExercises.length + 1);
 
   function addExercise() {
-    setExercises((prev) => [...prev, makeEmptyExercise(nextKey.current++)])
+    setExercises((prev) => [...prev, makeEmptyExercise(nextKey.current++)]);
   }
 
   function removeExercise(key: number) {
-    setExercises((prev) => prev.filter((ex) => ex.key !== key))
+    setExercises((prev) => prev.filter((ex) => ex.key !== key));
   }
 
-  function updateExercise(key: number, field: keyof ExerciseDraft, value: string) {
+  function updateExercise(
+    key: number,
+    field: keyof ExerciseDraft,
+    value: string,
+  ) {
     setExercises((prev) =>
       prev.map((ex) => (ex.key === key ? { ...ex, [field]: value } : ex)),
-    )
+    );
   }
 
   function selectLibraryExercise(key: number, libEx: Exercise) {
     setExercises((prev) =>
       prev.map((ex) =>
         ex.key === key
-          ? { ...ex, name: libEx.name, muscleGroup: libEx.muscle_group ?? "", illustrationUrl: libEx.illustration_url ?? "" }
+          ? {
+              ...ex,
+              name: libEx.name,
+              muscleGroup: libEx.muscle_group ?? "",
+              illustrationUrl: libEx.illustration_url ?? "",
+            }
           : ex,
       ),
-    )
+    );
   }
 
   async function handleSave() {
-    if (!title.trim()) { setError("Informe o titulo da ficha."); return }
-    const valid = exercises.filter((ex) => ex.name.trim())
-    if (valid.length === 0) { setError("Adicione pelo menos um exercicio."); return }
+    if (!title.trim()) {
+      setError("Informe o titulo da ficha.");
+      return;
+    }
+    const valid = exercises.filter((ex) => ex.name.trim());
+    if (valid.length === 0) {
+      setError("Adicione pelo menos um exercicio.");
+      return;
+    }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError("");
 
     const mapped = valid.map((ex) => ({
-      name: ex.name.trim(), muscleGroup: ex.muscleGroup,
-      sets: ex.sets || "3", reps: ex.reps || "12", rest: ex.rest || "60s",
-      note: ex.note || undefined, illustrationUrl: ex.illustrationUrl || undefined,
-    }))
+      name: ex.name.trim(),
+      muscleGroup: ex.muscleGroup,
+      sets: ex.sets || "3",
+      reps: ex.reps || "12",
+      rest: ex.rest || "60s",
+      note: ex.note || undefined,
+      illustrationUrl: ex.illustrationUrl || undefined,
+    }));
 
     const result = isEdit
-      ? await updateWorkoutWithExercises(editWorkout!.id, title, mapped, icon.trim() || undefined)
-      : await createWorkoutWithExercises(studentId, title, mapped, icon.trim() || undefined)
+      ? await updateWorkoutWithExercises(
+          editWorkout!.id,
+          title,
+          mapped,
+          icon.trim() || undefined,
+        )
+      : await createWorkoutWithExercises(
+          studentId,
+          title,
+          mapped,
+          icon.trim() || undefined,
+        );
 
-    if (!result.success) { setError(result.error ?? "Erro ao salvar ficha."); setLoading(false); return }
+    if (!result.success) {
+      setError(result.error ?? "Erro ao salvar ficha.");
+      setLoading(false);
+      return;
+    }
 
     // Aprovar rascunho da IA: publica a ficha (fica visivel para o aluno).
     if (isAiDraftReview) {
-      const pub = await publishWorkout(editWorkout!.id)
-      if (!pub.success) { setError(pub.error ?? "Erro ao publicar ficha."); setLoading(false); return }
+      const pub = await publishWorkout(editWorkout!.id);
+      if (!pub.success) {
+        setError(pub.error ?? "Erro ao publicar ficha.");
+        setLoading(false);
+        return;
+      }
     }
 
-    setLoading(false)
-    router.refresh()
-    onClose()
+    setLoading(false);
+    router.refresh();
+    onClose();
   }
 
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
       <div className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          {isAiDraftReview ? <Sparkles size={20} className="text-purple-400" /> : <Dumbbell size={20} className="text-red-500" />}
+          {isAiDraftReview ? (
+            <Sparkles size={20} className="text-purple-400" />
+          ) : (
+            <Dumbbell size={20} className="text-red-500" />
+          )}
           <h2 className="text-base font-black text-white uppercase tracking-tight">
-            {isAiDraftReview ? "Revisar Treino IA" : isEdit ? "Editar Ficha" : "Construtor de Treino"}
+            {isAiDraftReview
+              ? "Revisar Treino IA"
+              : isEdit
+                ? "Editar Ficha"
+                : "Construtor de Treino"}
           </h2>
         </div>
-        <button onClick={onClose} className="text-zinc-500 hover:text-white p-1"><X size={22} /></button>
+        <button
+          onClick={onClose}
+          className="text-zinc-500 hover:text-white p-1"
+        >
+          <X size={22} />
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-5">
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">Titulo da Ficha</label>
-            <input type="text" placeholder="Ex: Treino A - Peito e Triceps" value={title} onChange={(e) => setTitle(e.target.value)} autoFocus
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">
+              Titulo da Ficha
+            </label>
+            <input
+              type="text"
+              placeholder="Ex: Treino A - Peito e Triceps"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              autoFocus
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+            />
           </div>
           <div className="w-20">
-            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">Icone</label>
-            <input type="text" placeholder="🔥" value={icon} onChange={(e) => setIcon(e.target.value)} maxLength={4}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm text-white text-center placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-2">
+              Icone
+            </label>
+            <input
+              type="text"
+              placeholder="🔥"
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              maxLength={4}
+              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-3 text-sm text-white text-center placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+            />
           </div>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-3">
-            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Exercicios ({exercises.length})</label>
-            <button type="button" onClick={addExercise} className="text-red-500 text-[10px] font-bold uppercase flex items-center gap-1 hover:text-red-400">
+            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+              Exercicios ({exercises.length})
+            </label>
+            <button
+              type="button"
+              onClick={addExercise}
+              className="text-red-500 text-[10px] font-bold uppercase flex items-center gap-1 hover:text-red-400"
+            >
               <Plus size={12} /> Adicionar
             </button>
           </div>
           <div className="space-y-3">
             {exercises.map((ex, idx) => (
-              <ExerciseRow key={ex.key} index={idx + 1} draft={ex} libraryExercises={libraryExercises}
-                onUpdate={(field, value) => updateExercise(ex.key, field, value)}
-                onSelectLibrary={(libEx) => selectLibraryExercise(ex.key, libEx)}
-                onRemove={() => removeExercise(ex.key)} canRemove={exercises.length > 1} />
+              <ExerciseRow
+                key={ex.key}
+                index={idx + 1}
+                draft={ex}
+                libraryExercises={libraryExercises}
+                onUpdate={(field, value) =>
+                  updateExercise(ex.key, field, value)
+                }
+                onSelectLibrary={(libEx) =>
+                  selectLibraryExercise(ex.key, libEx)
+                }
+                onRemove={() => removeExercise(ex.key)}
+                canRemove={exercises.length > 1}
+              />
             ))}
           </div>
-          <button type="button" onClick={addExercise}
-            className="w-full mt-3 border-2 border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl py-3 text-zinc-500 hover:text-zinc-300 text-xs font-bold uppercase flex items-center justify-center gap-2 transition-colors">
+          <button
+            type="button"
+            onClick={addExercise}
+            className="w-full mt-3 border-2 border-dashed border-zinc-800 hover:border-zinc-600 rounded-xl py-3 text-zinc-500 hover:text-zinc-300 text-xs font-bold uppercase flex items-center justify-center gap-2 transition-colors"
+          >
             <Plus size={14} /> Adicionar Exercicio
           </button>
         </div>
@@ -364,31 +479,67 @@ function WorkoutCreatorModal({
       </div>
 
       <div className="bg-zinc-900 border-t border-zinc-800 px-4 md:px-6 py-4 flex gap-3 shrink-0">
-        <button onClick={onClose} disabled={loading} className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold uppercase py-3.5 rounded-xl text-xs">Cancelar</button>
-        <button onClick={handleSave} disabled={loading}
-          className="flex-[2] bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(220,38,38,0.25)]">
-          {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          {loading ? "Salvando..." : isAiDraftReview ? "Salvar e Aprovar Treino" : isEdit ? "Salvar Alteracoes" : "Salvar Ficha Completa"}
+        <button
+          onClick={onClose}
+          disabled={loading}
+          className="flex-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold uppercase py-3.5 rounded-xl text-xs"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={loading}
+          className="flex-[2] bg-red-600 hover:bg-red-700 text-white font-black uppercase py-3.5 rounded-xl text-xs flex items-center justify-center gap-2 disabled:opacity-50 shadow-[0_0_20px_rgba(220,38,38,0.25)]"
+        >
+          {loading ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <Save size={16} />
+          )}
+          {loading
+            ? "Salvando..."
+            : isAiDraftReview
+              ? "Salvar e Aprovar Treino"
+              : isEdit
+                ? "Salvar Alteracoes"
+                : "Salvar Ficha Completa"}
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // --- Exercise Row ---
 
-function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary, onRemove, canRemove }: {
-  index: number; draft: ExerciseDraft; libraryExercises: Exercise[]
-  onUpdate: (field: keyof ExerciseDraft, value: string) => void
-  onSelectLibrary: (ex: Exercise) => void; onRemove: () => void; canRemove: boolean
+function ExerciseRow({
+  index,
+  draft,
+  libraryExercises,
+  onUpdate,
+  onSelectLibrary,
+  onRemove,
+  canRemove,
+}: {
+  index: number;
+  draft: ExerciseDraft;
+  libraryExercises: Exercise[];
+  onUpdate: (field: keyof ExerciseDraft, value: string) => void;
+  onSelectLibrary: (ex: Exercise) => void;
+  onRemove: () => void;
+  canRemove: boolean;
 }) {
-  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const suggestions = draft.name.length >= 2
-    ? libraryExercises.filter((ex) =>
-        ex.name.toLowerCase().includes(draft.name.toLowerCase()) ||
-        (ex.muscle_group ?? "").toLowerCase().includes(draft.name.toLowerCase()))
-    : []
+  const suggestions =
+    draft.name.length >= 2
+      ? libraryExercises.filter(
+          (ex) =>
+            ex.name.toLowerCase().includes(draft.name.toLowerCase()) ||
+            (ex.muscle_group ?? "")
+              .toLowerCase()
+              .includes(draft.name.toLowerCase()),
+        )
+      : [];
 
   const muscleGroupsList = [
     "Peito",
@@ -401,36 +552,62 @@ function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary
     "Posterior",
     "Gluteos",
     "Abdomen",
-  ]
+  ];
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GripVertical size={14} className="text-zinc-700" />
-          <span className="text-zinc-500 text-[10px] font-bold uppercase">Exercicio {index}</span>
+          <span className="text-zinc-500 text-[10px] font-bold uppercase">
+            Exercicio {index}
+          </span>
         </div>
         {canRemove && (
-          <button type="button" onClick={onRemove} className="text-zinc-600 hover:text-red-500 p-1"><Trash2 size={14} /></button>
+          <button
+            type="button"
+            onClick={onRemove}
+            className="text-zinc-600 hover:text-red-500 p-1"
+          >
+            <Trash2 size={14} />
+          </button>
         )}
       </div>
 
       <div className="relative">
-        <input type="text" placeholder="Nome do exercicio (digite para buscar)" value={draft.name}
-          onChange={(e) => { onUpdate("name", e.target.value); setShowSuggestions(true) }}
+        <input
+          type="text"
+          placeholder="Nome do exercicio (digite para buscar)"
+          value={draft.name}
+          onChange={(e) => {
+            onUpdate("name", e.target.value);
+            setShowSuggestions(true);
+          }}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+        />
         {showSuggestions && suggestions.length > 0 && (
           <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-zinc-900 border border-zinc-700 rounded-lg shadow-xl max-h-40 overflow-y-auto">
             {suggestions.slice(0, 8).map((ex) => (
-              <button key={ex.id} type="button" onMouseDown={(e) => e.preventDefault()}
-                onClick={() => { onSelectLibrary(ex); setShowSuggestions(false) }}
-                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-zinc-800 border-b border-zinc-800 last:border-0">
+              <button
+                key={ex.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  onSelectLibrary(ex);
+                  setShowSuggestions(false);
+                }}
+                className="w-full text-left px-3 py-2 flex items-center gap-2 hover:bg-zinc-800 border-b border-zinc-800 last:border-0"
+              >
                 <Dumbbell size={12} className="text-red-500 shrink-0" />
                 <div className="min-w-0">
-                  <p className="text-white text-xs font-bold truncate">{ex.name}</p>
-                  <p className="text-zinc-500 text-[9px]">{ex.muscle_group ?? ""}</p>
+                  <p className="text-white text-xs font-bold truncate">
+                    {ex.name}
+                  </p>
+                  <p className="text-zinc-500 text-[9px]">
+                    {ex.muscle_group ?? ""}
+                  </p>
                 </div>
               </button>
             ))}
@@ -443,9 +620,13 @@ function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary
         onChange={(e) => onUpdate("muscleGroup", e.target.value)}
         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-xs text-zinc-400 focus:outline-none focus:border-red-600"
       >
-        <option value="" disabled>Grupo Muscular</option>
+        <option value="" disabled>
+          Grupo Muscular
+        </option>
         {muscleGroupsList.map((g) => (
-          <option key={g} value={g}>{g}</option>
+          <option key={g} value={g}>
+            {g}
+          </option>
         ))}
       </select>
 
@@ -456,116 +637,197 @@ function ExerciseRow({ index, draft, libraryExercises, onUpdate, onSelectLibrary
           { label: "Descanso", field: "rest" as const, ph: "60s" },
         ].map(({ label, field, ph }) => (
           <div key={field}>
-            <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">{label}</label>
-            <input type="text" value={draft[field]} onChange={(e) => onUpdate(field, e.target.value)} placeholder={ph}
-              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white text-center placeholder:text-zinc-700 focus:outline-none focus:border-red-600" />
+            <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">
+              {label}
+            </label>
+            <input
+              type="text"
+              value={draft[field]}
+              onChange={(e) => onUpdate(field, e.target.value)}
+              placeholder={ph}
+              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white text-center placeholder:text-zinc-700 focus:outline-none focus:border-red-600"
+            />
           </div>
         ))}
       </div>
 
-      <input type="text" placeholder="Observacao (opcional)" value={draft.note} onChange={(e) => onUpdate("note", e.target.value)}
-        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-600" />
+      <input
+        type="text"
+        placeholder="Observacao (opcional)"
+        value={draft.note}
+        onChange={(e) => onUpdate("note", e.target.value)}
+        className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-600"
+      />
     </div>
-  )
+  );
 }
 
 // --- Workout Card ---
 
-function WorkoutCard({ workout, libraryExercises, expanded, onToggle, onEdit }: {
-  workout: Workout; libraryExercises: Exercise[]; expanded: boolean; onToggle: () => void; onEdit: () => void
+function WorkoutCard({
+  workout,
+  libraryExercises,
+  expanded,
+  onToggle,
+  onEdit,
+}: {
+  workout: Workout;
+  libraryExercises: Exercise[];
+  expanded: boolean;
+  onToggle: () => void;
+  onEdit: () => void;
 }) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const [editingTitle, setEditingTitle] = useState(false)
-  const [titleDraft, setTitleDraft] = useState(workout.title)
-  const [showAddExercise, setShowAddExercise] = useState(false)
-  const [showMenu, setShowMenu] = useState(false)
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(workout.title);
+  const [showAddExercise, setShowAddExercise] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
-  const exercises = workout.exercises ?? []
-  const isPublished = workout.status === "published" || workout.status === "approved"
+  const exercises = workout.exercises ?? [];
+  const isPublished =
+    workout.status === "published" || workout.status === "approved";
 
   function handleStatusToggle() {
     startTransition(async () => {
-      await updateWorkoutStatus(workout.id, isPublished ? "draft" : "published")
-      router.refresh()
-    })
+      await updateWorkoutStatus(
+        workout.id,
+        isPublished ? "draft" : "published",
+      );
+      router.refresh();
+    });
   }
 
   function handleDelete() {
-    if (!confirm("Excluir esta ficha e todos seus exercicios?")) return
-    startTransition(async () => { await deleteWorkout(workout.id); router.refresh() })
+    if (!confirm("Excluir esta ficha e todos seus exercicios?")) return;
+    startTransition(async () => {
+      await deleteWorkout(workout.id);
+      router.refresh();
+    });
   }
 
   function handleRemoveExercise(id: string) {
-    startTransition(async () => { await removeExerciseFromWorkout(id); router.refresh() })
+    startTransition(async () => {
+      await removeExerciseFromWorkout(id);
+      router.refresh();
+    });
   }
 
   function handleSaveTitle() {
-    if (!titleDraft.trim()) return
-    startTransition(async () => { await updateWorkoutTitle(workout.id, titleDraft); setEditingTitle(false); router.refresh() })
+    if (!titleDraft.trim()) return;
+    startTransition(async () => {
+      await updateWorkoutTitle(workout.id, titleDraft);
+      setEditingTitle(false);
+      router.refresh();
+    });
   }
 
-  function handleAddExercise(ex: Exercise, sets: string, reps: string, rest: string, note: string) {
+  function handleAddExercise(
+    ex: Exercise,
+    sets: string,
+    reps: string,
+    rest: string,
+    note: string,
+  ) {
     startTransition(async () => {
       await addExerciseToWorkout(workout.id, {
-        name: ex.name, muscleGroup: ex.muscle_group ?? "", sets, reps, rest,
-        note: note || undefined, illustrationUrl: ex.illustration_url || undefined,
-      })
-      setShowAddExercise(false)
-      router.refresh()
-    })
+        name: ex.name,
+        muscleGroup: ex.muscle_group ?? "",
+        sets,
+        reps,
+        rest,
+        note: note || undefined,
+        illustrationUrl: ex.illustration_url || undefined,
+      });
+      setShowAddExercise(false);
+      router.refresh();
+    });
   }
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
       <div className="flex items-center">
-        <button onClick={onToggle} className="flex-1 px-4 py-3.5 flex items-center justify-between text-left min-w-0">
+        <button
+          onClick={onToggle}
+          className="flex-1 px-4 py-3.5 flex items-center justify-between text-left min-w-0"
+        >
           <div className="flex items-center gap-3 min-w-0">
-            <FileText size={18} className={isPublished ? "text-green-500" : "text-yellow-500"} />
+            <FileText
+              size={18}
+              className={isPublished ? "text-green-500" : "text-yellow-500"}
+            />
             <div className="min-w-0">
               <p className="text-white text-sm font-bold truncate">
                 {workout.icon && <span className="mr-1">{workout.icon}</span>}
                 {workout.title}
               </p>
               <div className="flex items-center gap-2 mt-0.5">
-                <span className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isPublished ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}>
+                <span
+                  className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase ${isPublished ? "bg-green-500/20 text-green-400" : "bg-yellow-500/20 text-yellow-400"}`}
+                >
                   {isPublished ? "Publicado" : "Rascunho"}
                 </span>
-                {workout.is_ai_draft && <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-400">IA</span>}
-                <span className="text-[10px] text-zinc-600">{exercises.length} exercicio{exercises.length !== 1 && "s"}</span>
+                {workout.is_ai_draft && (
+                  <span className="text-[9px] px-2 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-400">
+                    IA
+                  </span>
+                )}
+                <span className="text-[10px] text-zinc-600">
+                  {exercises.length} exercicio{exercises.length !== 1 && "s"}
+                </span>
               </div>
             </div>
           </div>
-          {expanded ? <ChevronUp size={16} className="text-zinc-500 shrink-0" /> : <ChevronDown size={16} className="text-zinc-500 shrink-0" />}
+          {expanded ? (
+            <ChevronUp size={16} className="text-zinc-500 shrink-0" />
+          ) : (
+            <ChevronDown size={16} className="text-zinc-500 shrink-0" />
+          )}
         </button>
 
         {/* Actions dropdown */}
         <div className="relative pr-3">
           <button
-            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu) }}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
             className="text-zinc-500 hover:text-white p-1.5 rounded-lg hover:bg-zinc-800 transition-colors"
           >
             <MoreVertical size={16} />
           </button>
           {showMenu && (
             <>
-              <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowMenu(false)}
+              />
               <div className="absolute right-0 top-10 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl overflow-hidden w-48 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                 <button
-                  onClick={() => { setShowMenu(false); onEdit() }}
+                  onClick={() => {
+                    setShowMenu(false);
+                    onEdit();
+                  }}
                   className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 >
                   <Pencil size={13} /> Editar Ficha
                 </button>
                 <button
-                  onClick={() => { setShowMenu(false); handleStatusToggle() }}
+                  onClick={() => {
+                    setShowMenu(false);
+                    handleStatusToggle();
+                  }}
                   className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-zinc-300 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                 >
-                  <CheckCircle2 size={13} /> {isPublished ? "Rascunho" : "Publicar"}
+                  <CheckCircle2 size={13} />{" "}
+                  {isPublished ? "Rascunho" : "Publicar"}
                 </button>
                 <div className="border-t border-zinc-800">
                   <button
-                    onClick={() => { setShowMenu(false); handleDelete() }}
+                    onClick={() => {
+                      setShowMenu(false);
+                      handleDelete();
+                    }}
                     className="w-full px-4 py-3 text-left text-xs font-bold uppercase text-red-500 hover:bg-zinc-800 flex items-center gap-2 transition-colors"
                   >
                     <Trash2 size={13} /> Excluir
@@ -582,111 +844,205 @@ function WorkoutCard({ workout, libraryExercises, expanded, onToggle, onEdit }: 
           {/* Edit title */}
           {editingTitle ? (
             <div className="flex gap-2">
-              <input type="text" value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} autoFocus
-                className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-600" />
-              <button onClick={handleSaveTitle} disabled={isPending} className="bg-red-600 text-white text-[10px] font-bold px-3 rounded-lg">Salvar</button>
-              <button onClick={() => { setEditingTitle(false); setTitleDraft(workout.title) }} className="text-zinc-500 text-[10px] font-bold px-2">X</button>
+              <input
+                type="text"
+                value={titleDraft}
+                onChange={(e) => setTitleDraft(e.target.value)}
+                autoFocus
+                className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-red-600"
+              />
+              <button
+                onClick={handleSaveTitle}
+                disabled={isPending}
+                className="bg-red-600 text-white text-[10px] font-bold px-3 rounded-lg"
+              >
+                Salvar
+              </button>
+              <button
+                onClick={() => {
+                  setEditingTitle(false);
+                  setTitleDraft(workout.title);
+                }}
+                className="text-zinc-500 text-[10px] font-bold px-2"
+              >
+                X
+              </button>
             </div>
           ) : null}
 
           {/* Action bar */}
           <div className="flex gap-2 flex-wrap">
-            <button onClick={() => setEditingTitle(true)} disabled={isPending}
-              className="bg-zinc-800 text-zinc-300 text-[10px] font-bold uppercase py-2.5 px-3 rounded-lg flex items-center gap-1.5 active:scale-[0.97]">
+            <button
+              onClick={() => setEditingTitle(true)}
+              disabled={isPending}
+              className="bg-zinc-800 text-zinc-300 text-[10px] font-bold uppercase py-2.5 px-3 rounded-lg flex items-center gap-1.5 active:scale-[0.97]"
+            >
               <Pencil size={12} /> Editar
             </button>
-            <button onClick={() => setShowAddExercise(!showAddExercise)} disabled={isPending}
-              className="bg-zinc-800 text-white text-[10px] font-bold uppercase py-2.5 px-3 rounded-lg flex items-center gap-1.5 active:scale-[0.97]">
+            <button
+              onClick={() => setShowAddExercise(!showAddExercise)}
+              disabled={isPending}
+              className="bg-zinc-800 text-white text-[10px] font-bold uppercase py-2.5 px-3 rounded-lg flex items-center gap-1.5 active:scale-[0.97]"
+            >
               <Plus size={12} /> Exercicio
             </button>
-            <button onClick={handleStatusToggle} disabled={isPending}
+            <button
+              onClick={handleStatusToggle}
+              disabled={isPending}
               className={`text-[10px] font-bold uppercase py-2.5 px-3 rounded-lg flex items-center gap-1.5 active:scale-[0.97] ${
-                isPublished ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30" : "bg-green-500/10 text-green-400 border border-green-500/30"}`}>
+                isPublished
+                  ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30"
+                  : "bg-green-500/10 text-green-400 border border-green-500/30"
+              }`}
+            >
               <CheckCircle2 size={12} /> {isPublished ? "Rascunho" : "Publicar"}
             </button>
-            <button onClick={handleDelete} disabled={isPending}
-              className="bg-zinc-800 text-red-500 text-[10px] font-bold uppercase px-3 py-2.5 rounded-lg flex items-center gap-1.5 active:scale-[0.97]">
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className="bg-zinc-800 text-red-500 text-[10px] font-bold uppercase px-3 py-2.5 rounded-lg flex items-center gap-1.5 active:scale-[0.97]"
+            >
               <Trash2 size={12} />
             </button>
           </div>
 
           {/* Inline add exercise */}
           {showAddExercise && (
-            <InlineAddExercise libraryExercises={libraryExercises} onAdd={handleAddExercise} onClose={() => setShowAddExercise(false)} />
+            <InlineAddExercise
+              libraryExercises={libraryExercises}
+              onAdd={handleAddExercise}
+              onClose={() => setShowAddExercise(false)}
+            />
           )}
 
           {/* Exercises list */}
           {exercises.length === 0 && !showAddExercise && (
-            <p className="text-zinc-600 text-[10px] text-center py-4 italic">Nenhum exercicio nesta ficha.</p>
+            <p className="text-zinc-600 text-[10px] text-center py-4 italic">
+              Nenhum exercicio nesta ficha.
+            </p>
           )}
 
           {exercises.map((ex, idx) => (
-            <div key={ex.id} className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex items-start gap-3">
+            <div
+              key={ex.id}
+              className="bg-zinc-950 border border-zinc-800 rounded-lg p-3 flex items-start gap-3"
+            >
               <div className="w-7 h-7 rounded-md bg-zinc-800 flex items-center justify-center shrink-0 mt-0.5">
-                <span className="text-zinc-500 text-[10px] font-bold">{idx + 1}</span>
+                <span className="text-zinc-500 text-[10px] font-bold">
+                  {idx + 1}
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-white text-xs font-bold truncate">{ex.name}</p>
-                <p className="text-zinc-500 text-[10px] mt-0.5">
-                  {ex.muscle_group ? `${ex.muscle_group} \u00B7 ` : ""}{ex.sets ?? "—"}x{ex.reps ?? "—"} \u00B7 {ex.rest ?? "—"} descanso
+                <p className="text-white text-xs font-bold truncate">
+                  {ex.name}
                 </p>
-                {ex.note && <p className="text-zinc-600 text-[10px] mt-1 italic">{ex.note}</p>}
+                <p className="text-zinc-500 text-[10px] mt-0.5">
+                  {ex.muscle_group ? `${ex.muscle_group} \u00B7 ` : ""}
+                  {ex.sets ?? "—"}x{ex.reps ?? "—"} \u00B7 {ex.rest ?? "—"}{" "}
+                  descanso
+                </p>
+                {ex.note && (
+                  <p className="text-zinc-600 text-[10px] mt-1 italic">
+                    {ex.note}
+                  </p>
+                )}
               </div>
-              <button onClick={() => handleRemoveExercise(ex.id)} disabled={isPending}
-                className="text-zinc-700 hover:text-red-500 shrink-0 mt-1 p-0.5"><Trash2 size={13} /></button>
+              <button
+                onClick={() => handleRemoveExercise(ex.id)}
+                disabled={isPending}
+                className="text-zinc-700 hover:text-red-500 shrink-0 mt-1 p-0.5"
+              >
+                <Trash2 size={13} />
+              </button>
             </div>
           ))}
 
-          {isPending && <div className="flex justify-center py-2"><Loader2 size={16} className="animate-spin text-zinc-500" /></div>}
+          {isPending && (
+            <div className="flex justify-center py-2">
+              <Loader2 size={16} className="animate-spin text-zinc-500" />
+            </div>
+          )}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // --- Inline Add Exercise (for editing existing workout) ---
 
-function InlineAddExercise({ libraryExercises, onAdd, onClose }: {
-  libraryExercises: Exercise[]
-  onAdd: (ex: Exercise, sets: string, reps: string, rest: string, note: string) => void
-  onClose: () => void
+function InlineAddExercise({
+  libraryExercises,
+  onAdd,
+  onClose,
+}: {
+  libraryExercises: Exercise[];
+  onAdd: (
+    ex: Exercise,
+    sets: string,
+    reps: string,
+    rest: string,
+    note: string,
+  ) => void;
+  onClose: () => void;
 }) {
-  const [search, setSearch] = useState("")
-  const [selected, setSelected] = useState<Exercise | null>(null)
-  const [sets, setSets] = useState("3")
-  const [reps, setReps] = useState("12")
-  const [rest, setRest] = useState("60s")
-  const [note, setNote] = useState("")
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Exercise | null>(null);
+  const [sets, setSets] = useState("3");
+  const [reps, setReps] = useState("12");
+  const [rest, setRest] = useState("60s");
+  const [note, setNote] = useState("");
 
-  const filtered = search.length >= 2
-    ? libraryExercises.filter((ex) =>
-        ex.name.toLowerCase().includes(search.toLowerCase()) ||
-        (ex.muscle_group ?? "").toLowerCase().includes(search.toLowerCase()))
-    : libraryExercises
+  const filtered =
+    search.length >= 2
+      ? libraryExercises.filter(
+          (ex) =>
+            ex.name.toLowerCase().includes(search.toLowerCase()) ||
+            (ex.muscle_group ?? "")
+              .toLowerCase()
+              .includes(search.toLowerCase()),
+        )
+      : libraryExercises;
 
   if (!selected) {
     return (
       <div className="bg-zinc-950 border border-zinc-700 rounded-xl p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-white text-[10px] font-bold uppercase">Selecionar Exercicio</p>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={14} /></button>
+          <p className="text-white text-[10px] font-bold uppercase">
+            Selecionar Exercicio
+          </p>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+            <X size={14} />
+          </button>
         </div>
-        <input type="text" placeholder="Buscar..." value={search} onChange={(e) => setSearch(e.target.value)} autoFocus
-          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600" />
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          autoFocus
+          className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
+        />
         <div className="max-h-40 overflow-y-auto space-y-1">
           {filtered.slice(0, 10).map((ex) => (
-            <button key={ex.id} onClick={() => setSelected(ex)}
-              className="w-full text-left bg-zinc-900 hover:bg-zinc-800 rounded-lg px-3 py-2 flex items-center gap-2">
+            <button
+              key={ex.id}
+              onClick={() => setSelected(ex)}
+              className="w-full text-left bg-zinc-900 hover:bg-zinc-800 rounded-lg px-3 py-2 flex items-center gap-2"
+            >
               <Dumbbell size={12} className="text-red-500 shrink-0" />
               <div className="min-w-0">
-                <p className="text-white text-xs font-bold truncate">{ex.name}</p>
-                <p className="text-zinc-500 text-[9px]">{ex.muscle_group ?? ""}</p>
+                <p className="text-white text-xs font-bold truncate">
+                  {ex.name}
+                </p>
+                <p className="text-zinc-500 text-[9px]">
+                  {ex.muscle_group ?? ""}
+                </p>
               </div>
             </button>
           ))}
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -696,40 +1052,84 @@ function InlineAddExercise({ libraryExercises, onAdd, onClose }: {
           <Dumbbell size={14} className="text-red-500" />
           <p className="text-white text-xs font-bold">{selected.name}</p>
         </div>
-        <button onClick={() => setSelected(null)} className="text-zinc-500 text-[10px] uppercase font-bold">Trocar</button>
+        <button
+          onClick={() => setSelected(null)}
+          className="text-zinc-500 text-[10px] uppercase font-bold"
+        >
+          Trocar
+        </button>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <div>
-          <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">Series</label>
-          <input type="text" value={sets} onChange={(e) => setSets(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white text-center focus:outline-none focus:border-red-600" />
+          <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">
+            Series
+          </label>
+          <input
+            type="text"
+            value={sets}
+            onChange={(e) => setSets(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white text-center focus:outline-none focus:border-red-600"
+          />
         </div>
         <div>
-          <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">Reps</label>
-          <input type="text" value={reps} onChange={(e) => setReps(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white text-center focus:outline-none focus:border-red-600" />
+          <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">
+            Reps
+          </label>
+          <input
+            type="text"
+            value={reps}
+            onChange={(e) => setReps(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white text-center focus:outline-none focus:border-red-600"
+          />
         </div>
         <div>
-          <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">Descanso</label>
-          <input type="text" value={rest} onChange={(e) => setRest(e.target.value)}
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white text-center focus:outline-none focus:border-red-600" />
+          <label className="text-zinc-600 text-[9px] font-bold uppercase block mb-1">
+            Descanso
+          </label>
+          <input
+            type="text"
+            value={rest}
+            onChange={(e) => setRest(e.target.value)}
+            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white text-center focus:outline-none focus:border-red-600"
+          />
         </div>
       </div>
-      <input type="text" placeholder="Observacao (opcional)" value={note} onChange={(e) => setNote(e.target.value)}
-        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-600" />
+      <input
+        type="text"
+        placeholder="Observacao (opcional)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-2 text-xs text-white placeholder:text-zinc-700 focus:outline-none focus:border-red-600"
+      />
       <div className="flex gap-2">
-        <button onClick={onClose} className="flex-1 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase py-2 rounded-lg">Cancelar</button>
-        <button onClick={() => onAdd(selected, sets, reps, rest, note)}
-          className="flex-1 bg-red-600 text-white text-[10px] font-bold uppercase py-2 rounded-lg flex items-center justify-center gap-1">
+        <button
+          onClick={onClose}
+          className="flex-1 bg-zinc-800 text-zinc-400 text-[10px] font-bold uppercase py-2 rounded-lg"
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={() => onAdd(selected, sets, reps, rest, note)}
+          className="flex-1 bg-red-600 text-white text-[10px] font-bold uppercase py-2 rounded-lg flex items-center justify-center gap-1"
+        >
           <Plus size={12} /> Adicionar
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // --- Helpers ---
 
 function makeEmptyExercise(key: number): ExerciseDraft {
-  return { key, name: "", muscleGroup: "", sets: "", reps: "", rest: "", note: "", illustrationUrl: "" }
+  return {
+    key,
+    name: "",
+    muscleGroup: "",
+    sets: "",
+    reps: "",
+    rest: "",
+    note: "",
+    illustrationUrl: "",
+  };
 }

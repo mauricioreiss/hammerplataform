@@ -1,22 +1,26 @@
-import { redirect } from "next/navigation"
-import { AdminHeader } from "@/components/admin/admin-header"
-import { AdminBottomNav } from "@/components/admin/admin-bottom-nav"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
-import { getCurrentUser, getAuthEmail, getUnreadNotificationCount } from "@/app/actions"
+import { redirect } from "next/navigation";
+import { AdminHeader } from "@/components/admin/admin-header";
+import { AdminBottomNav } from "@/components/admin/admin-bottom-nav";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
+import {
+  getCurrentUser,
+  getAuthEmail,
+  getUnreadNotificationCount,
+} from "@/app/actions";
 
 export default async function AdminLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   const [user, email, unreadCount] = await Promise.all([
     getCurrentUser(),
     getAuthEmail(),
     getUnreadNotificationCount(),
-  ])
+  ]);
 
   if (user?.role === "student") {
-    redirect("/aluno")
+    redirect("/aluno");
   }
 
   const initials = user
@@ -26,7 +30,7 @@ export default async function AdminLayout({
         .slice(0, 2)
         .join("")
         .toUpperCase()
-    : "AD"
+    : "AD";
 
   return (
     <div className="min-h-screen bg-black flex selection:bg-red-600 selection:text-white">
@@ -41,12 +45,10 @@ export default async function AdminLayout({
           unreadCount={unreadCount}
         />
         <main className="flex-1 overflow-y-auto bg-black relative">
-          <div className="w-full max-w-7xl mx-auto">
-            {children}
-          </div>
+          <div className="w-full max-w-7xl mx-auto">{children}</div>
         </main>
         <AdminBottomNav />
       </div>
     </div>
-  )
+  );
 }

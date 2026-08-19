@@ -1,13 +1,13 @@
-import { Calendar } from "lucide-react"
-import type { Evaluation } from "@/lib/types"
+import { Calendar } from "lucide-react";
+import type { Evaluation } from "@/lib/types";
 
 type AvaliacaoCardProps = {
-  avaliacao: Evaluation
-  isLatest: boolean
-}
+  avaliacao: Evaluation;
+  isLatest: boolean;
+};
 
 export function AvaliacaoCard({ avaliacao, isLatest }: AvaliacaoCardProps) {
-  const dateLabel = new Date(avaliacao.date).toLocaleDateString("pt-BR")
+  const dateLabel = new Date(avaliacao.date).toLocaleDateString("pt-BR");
 
   return (
     <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl relative overflow-hidden">
@@ -64,5 +64,5 @@ export function AvaliacaoCard({ avaliacao, isLatest }: AvaliacaoCardProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -25,7 +25,10 @@ export default function ConfiguracoesLoading() {
         <div className="h-5 w-28 bg-zinc-800 rounded mb-4" />
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between">
+            <div
+              key={i}
+              className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl flex items-center justify-between"
+            >
               <div>
                 <div className="h-3.5 w-24 bg-zinc-800 rounded mb-2" />
                 <div className="h-2.5 w-32 bg-zinc-800 rounded" />
@@ -36,5 +39,5 @@ export default function ConfiguracoesLoading() {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -26,5 +26,5 @@ export default function AssinaturaLoading() {
       {/* Button skeleton */}
       <div className="h-14 bg-zinc-800 rounded-xl" />
     </div>
-  )
+  );
 }

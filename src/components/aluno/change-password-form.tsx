@@ -1,48 +1,51 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Lock, Eye, EyeOff } from "lucide-react"
-import { updateInitialPassword } from "@/app/actions"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Lock, Eye, EyeOff } from "lucide-react";
+import { updateInitialPassword } from "@/app/actions";
 
 export function ChangePasswordForm() {
-  const router = useRouter()
-  const [password, setPassword] = useState("")
-  const [confirm, setConfirm] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError("")
+    e.preventDefault();
+    setError("");
 
     if (password.length < 6) {
-      setError("A senha deve ter no minimo 6 caracteres.")
-      return
+      setError("A senha deve ter no minimo 6 caracteres.");
+      return;
     }
 
     if (password !== confirm) {
-      setError("As senhas nao coincidem.")
-      return
+      setError("As senhas nao coincidem.");
+      return;
     }
 
-    setLoading(true)
-    const result = await updateInitialPassword(password)
-    setLoading(false)
+    setLoading(true);
+    const result = await updateInitialPassword(password);
+    setLoading(false);
 
     if (result.success) {
-      router.push("/aluno")
+      router.push("/aluno");
     } else {
-      setError(result.error ?? "Erro ao atualizar senha.")
+      setError(result.error ?? "Erro ao atualizar senha.");
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-zinc-400 mb-2">
+        <label
+          htmlFor="password"
+          className="block text-sm font-medium text-zinc-400 mb-2"
+        >
           Nova Senha
         </label>
         <div className="relative">
@@ -62,13 +65,20 @@ export function ChangePasswordForm() {
             onClick={() => setShowPassword(!showPassword)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
           >
-            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showPassword ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>
 
       <div>
-        <label htmlFor="confirm" className="block text-sm font-medium text-zinc-400 mb-2">
+        <label
+          htmlFor="confirm"
+          className="block text-sm font-medium text-zinc-400 mb-2"
+        >
           Confirmar Nova Senha
         </label>
         <div className="relative">
@@ -88,14 +98,16 @@ export function ChangePasswordForm() {
             onClick={() => setShowConfirm(!showConfirm)}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
           >
-            {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            {showConfirm ? (
+              <EyeOff className="h-4 w-4" />
+            ) : (
+              <Eye className="h-4 w-4" />
+            )}
           </button>
         </div>
       </div>
 
-      {error && (
-        <p className="text-red-500 text-sm">{error}</p>
-      )}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
 
       <button
         type="submit"
@@ -105,5 +117,5 @@ export function ChangePasswordForm() {
         {loading ? "Atualizando..." : "Atualizar Senha"}
       </button>
     </form>
-  )
+  );
 }

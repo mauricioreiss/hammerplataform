@@ -1,12 +1,12 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Dumbbell, ChevronRight, ImageOff } from "lucide-react"
-import { getExercises } from "./actions"
-import { AddExerciseModal } from "@/components/admin/add-exercise-modal"
-import { SeedExercisesButton } from "@/components/admin/seed-exercises-button"
+import Link from "next/link";
+import Image from "next/image";
+import { Dumbbell, ChevronRight, ImageOff } from "lucide-react";
+import { getExercises } from "./actions";
+import { AddExerciseModal } from "@/components/admin/add-exercise-modal";
+import { SeedExercisesButton } from "@/components/admin/seed-exercises-button";
 
 export default async function ExerciciosPage() {
-  const exercises = await getExercises()
+  const exercises = await getExercises();
 
   return (
     <div className="p-4 md:p-6 space-y-6 animate-in fade-in pb-24">
@@ -75,5 +75,5 @@ export default async function ExerciciosPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }

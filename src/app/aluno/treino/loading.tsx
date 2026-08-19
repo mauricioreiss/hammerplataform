@@ -13,12 +13,15 @@ export default function TreinoLoading() {
       {/* Exercise list skeleton */}
       <div className="space-y-3">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl">
+          <div
+            key={i}
+            className="bg-zinc-900 border border-zinc-800 p-4 rounded-xl"
+          >
             <div className="h-4 w-40 bg-zinc-800 rounded mb-2" />
             <div className="h-3 w-24 bg-zinc-800 rounded" />
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }

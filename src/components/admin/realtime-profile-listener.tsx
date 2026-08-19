@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 type Props = {
-  userId: string
-}
+  userId: string;
+};
 
 export function RealtimeProfileListener({ userId }: Props) {
-  const router = useRouter()
+  const router = useRouter();
 
   useEffect(() => {
-    const supabase = createClient()
+    const supabase = createClient();
 
     const channel = supabase
       .channel(`admin-profile-${userId}`)
@@ -25,7 +25,7 @@ export function RealtimeProfileListener({ userId }: Props) {
           filter: `id=eq.${userId}`,
         },
         () => {
-          router.refresh()
+          router.refresh();
         },
       )
       .on(
@@ -37,7 +37,7 @@ export function RealtimeProfileListener({ userId }: Props) {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          router.refresh()
+          router.refresh();
         },
       )
       .on(
@@ -49,15 +49,15 @@ export function RealtimeProfileListener({ userId }: Props) {
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          router.refresh()
+          router.refresh();
         },
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [router, userId])
+      supabase.removeChannel(channel);
+    };
+  }, [router, userId]);
 
-  return null
+  return null;
 }

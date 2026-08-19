@@ -1,93 +1,97 @@
-"use client"
+"use client";
 
-import { useState, useRef } from "react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { Camera, Loader2, Save, CheckCircle2, Trash2 } from "lucide-react"
-import { updateAdminProfile, uploadAvatarPhoto, removeAvatarPhoto } from "@/app/actions"
-import type { UserProfile } from "@/lib/types"
+import { useState, useRef } from "react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { Camera, Loader2, Save, CheckCircle2, Trash2 } from "lucide-react";
+import {
+  updateAdminProfile,
+  uploadAvatarPhoto,
+  removeAvatarPhoto,
+} from "@/app/actions";
+import type { UserProfile } from "@/lib/types";
 
 type AdminSettingsFormProps = {
-  user: UserProfile
-}
+  user: UserProfile;
+};
 
 export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
-  const router = useRouter()
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [fullName, setFullName] = useState(user.full_name)
-  const [pixKey, setPixKey] = useState(user.pix_key ?? "")
-  const [currentAvatar, setCurrentAvatar] = useState(user.avatar_url)
-  const [uploading, setUploading] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
-  const [error, setError] = useState("")
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fullName, setFullName] = useState(user.full_name);
+  const [pixKey, setPixKey] = useState(user.pix_key ?? "");
+  const [currentAvatar, setCurrentAvatar] = useState(user.avatar_url);
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setUploading(true)
-    setError("")
+    setUploading(true);
+    setError("");
 
     try {
-      const fd = new FormData()
-      fd.append("file", file)
+      const fd = new FormData();
+      fd.append("file", file);
 
-      const result = await uploadAvatarPhoto(fd)
+      const result = await uploadAvatarPhoto(fd);
       if (!result.success) {
-        setError(result.error ?? "Erro ao enviar foto.")
+        setError(result.error ?? "Erro ao enviar foto.");
       } else if (result.url) {
-        setCurrentAvatar(result.url)
-        router.refresh()
+        setCurrentAvatar(result.url);
+        router.refresh();
       }
     } catch {
-      setError("Erro ao enviar foto.")
+      setError("Erro ao enviar foto.");
     }
 
-    setUploading(false)
-    if (fileInputRef.current) fileInputRef.current.value = ""
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   async function handleRemovePhoto() {
-    setUploading(true)
-    setError("")
+    setUploading(true);
+    setError("");
 
-    const result = await removeAvatarPhoto()
+    const result = await removeAvatarPhoto();
     if (result.success) {
-      setCurrentAvatar(null)
-      router.refresh()
+      setCurrentAvatar(null);
+      router.refresh();
     } else {
-      setError(result.error ?? "Erro ao remover foto.")
+      setError(result.error ?? "Erro ao remover foto.");
     }
 
-    setUploading(false)
+    setUploading(false);
   }
 
   async function handleSave() {
     if (!fullName.trim()) {
-      setError("Nome e obrigatorio.")
-      return
+      setError("Nome e obrigatorio.");
+      return;
     }
 
-    setSaving(true)
-    setError("")
-    setSaved(false)
+    setSaving(true);
+    setError("");
+    setSaved(false);
 
     const result = await updateAdminProfile({
       fullName: fullName.trim(),
       avatarUrl: currentAvatar ?? undefined,
       pixKey: pixKey.trim(),
-    })
+    });
 
     if (!result.success) {
-      setError(result.error ?? "Erro ao salvar.")
+      setError(result.error ?? "Erro ao salvar.");
     } else {
-      setSaved(true)
-      router.refresh()
-      setTimeout(() => setSaved(false), 3000)
+      setSaved(true);
+      router.refresh();
+      setTimeout(() => setSaved(false), 3000);
     }
 
-    setSaving(false)
+    setSaving(false);
   }
 
   const initials = fullName
@@ -95,7 +99,7 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 
   return (
     <div className="max-w-lg space-y-6">
@@ -205,5 +209,5 @@ export function AdminSettingsForm({ user }: AdminSettingsFormProps) {
         {saving ? "Salvando..." : saved ? "Salvo!" : "Salvar Configuracoes"}
       </button>
     </div>
-  )
+  );
 }

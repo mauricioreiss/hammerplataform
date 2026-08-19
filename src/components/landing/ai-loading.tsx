@@ -1,21 +1,21 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { BrainCircuit } from "lucide-react"
+import { useState, useEffect, useRef } from "react";
+import { BrainCircuit } from "lucide-react";
 
 type AILoadingProps = {
-  objetivo: string
-  onComplete: () => void
-}
+  objetivo: string;
+  onComplete: () => void;
+};
 
 export function AILoading({ objetivo, onComplete }: AILoadingProps) {
-  const [progress, setProgress] = useState(0)
-  const [text, setText] = useState("Iniciando análise...")
-  const onCompleteRef = useRef(onComplete)
+  const [progress, setProgress] = useState(0);
+  const [text, setText] = useState("Iniciando análise...");
+  const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
-    onCompleteRef.current = onComplete
-  }, [onComplete])
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
 
   useEffect(() => {
     const texts = [
@@ -25,22 +25,22 @@ export function AILoading({ objetivo, onComplete }: AILoadingProps) {
       `Estruturando periodização para ${objetivo || "seu objetivo"}...`,
       "Finalizando rascunho de hipertrofia...",
       "Plano pronto para revisão do Treinador!",
-    ]
+    ];
 
-    let step = 0
+    let step = 0;
     const interval = setInterval(() => {
-      step++
-      setProgress((step / texts.length) * 100)
+      step++;
+      setProgress((step / texts.length) * 100);
       if (step < texts.length) {
-        setText(texts[step])
+        setText(texts[step]);
       } else {
-        clearInterval(interval)
-        setTimeout(() => onCompleteRef.current(), 800)
+        clearInterval(interval);
+        setTimeout(() => onCompleteRef.current(), 800);
       }
-    }, 1200)
+    }, 1200);
 
-    return () => clearInterval(interval)
-  }, [objetivo])
+    return () => clearInterval(interval);
+  }, [objetivo]);
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center p-4 animate-in fade-in">
@@ -68,5 +68,5 @@ export function AILoading({ objetivo, onComplete }: AILoadingProps) {
         {text}
       </p>
     </div>
-  )
+  );
 }

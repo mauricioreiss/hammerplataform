@@ -1,10 +1,10 @@
-import { DollarSign } from "lucide-react"
+import { DollarSign } from "lucide-react";
 
 type KpiCardProps = {
-  mrr: string
-  active: number
-  newToday: number
-}
+  mrr: string;
+  active: number;
+  newToday: number;
+};
 
 export function KpiCard({ mrr, active, newToday }: KpiCardProps) {
   return (
@@ -30,5 +30,5 @@ export function KpiCard({ mrr, active, newToday }: KpiCardProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

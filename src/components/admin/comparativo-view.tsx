@@ -1,34 +1,47 @@
-import Image from "next/image"
+import Image from "next/image";
 import {
   ChevronRight,
   Scale,
   TrendingDown,
   TrendingUp,
   Share2,
-} from "lucide-react"
-import type { Evaluation } from "@/lib/types"
+} from "lucide-react";
+import type { Evaluation } from "@/lib/types";
 
 type ComparativoViewProps = {
-  before: Evaluation
-  after: Evaluation
-}
+  before: Evaluation;
+  after: Evaluation;
+};
 
 function formatMonth(dateStr: string): string {
-  const MONTHS = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
-  const d = new Date(dateStr)
-  return `${MONTHS[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`
+  const MONTHS = [
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+  ];
+  const d = new Date(dateStr);
+  return `${MONTHS[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
 }
 
 type MetricRowProps = {
-  label: string
-  oldValue: string
-  newValue: string
-  diff: string
-  improved: boolean
-  direction: "down" | "up"
-  showStrikethrough: boolean
-  isLast?: boolean
-}
+  label: string;
+  oldValue: string;
+  newValue: string;
+  diff: string;
+  improved: boolean;
+  direction: "down" | "up";
+  showStrikethrough: boolean;
+  isLast?: boolean;
+};
 
 function MetricRow({
   label,
@@ -40,10 +53,10 @@ function MetricRow({
   showStrikethrough,
   isLast,
 }: MetricRowProps) {
-  const TrendIcon = direction === "down" ? TrendingDown : TrendingUp
+  const TrendIcon = direction === "down" ? TrendingDown : TrendingUp;
   const badgeColor = improved
     ? "bg-green-500/20 text-green-500 border-green-500/30"
-    : "bg-red-500/20 text-red-500 border-red-500/30"
+    : "bg-red-500/20 text-red-500 border-red-500/30";
 
   return (
     <div
@@ -68,14 +81,14 @@ function MetricRow({
         </span>
       </div>
     </div>
-  )
+  );
 }
 
 export function ComparativoView({ before, after }: ComparativoViewProps) {
-  const pesoDiff = (before.weight ?? 0) - (after.weight ?? 0)
-  const bfDiff = (before.body_fat ?? 0) - (after.body_fat ?? 0)
-  const magraDiff = (after.lean_mass ?? 0) - (before.lean_mass ?? 0)
-  const cinturaDiff = (before.waist ?? 0) - (after.waist ?? 0)
+  const pesoDiff = (before.weight ?? 0) - (after.weight ?? 0);
+  const bfDiff = (before.body_fat ?? 0) - (after.body_fat ?? 0);
+  const magraDiff = (after.lean_mass ?? 0) - (before.lean_mass ?? 0);
+  const cinturaDiff = (before.waist ?? 0) - (after.waist ?? 0);
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-8 duration-300">
@@ -192,5 +205,5 @@ export function ComparativoView({ before, after }: ComparativoViewProps) {
         <Share2 size={18} /> Compartilhar no WhatsApp
       </button>
     </div>
-  )
+  );
 }

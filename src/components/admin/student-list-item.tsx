@@ -1,11 +1,11 @@
-import Image from "next/image"
-import Link from "next/link"
-import { ChevronRight, Clock } from "lucide-react"
-import type { UserProfile } from "@/lib/types"
+import Image from "next/image";
+import Link from "next/link";
+import { ChevronRight, Clock } from "lucide-react";
+import type { UserProfile } from "@/lib/types";
 
 type StudentListItemProps = {
-  student: UserProfile
-}
+  student: UserProfile;
+};
 
 export function StudentListItem({ student }: StudentListItemProps) {
   const initials = student.full_name
@@ -13,7 +13,7 @@ export function StudentListItem({ student }: StudentListItemProps) {
     .map((w) => w[0])
     .slice(0, 2)
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 
   return (
     <Link
@@ -50,5 +50,5 @@ export function StudentListItem({ student }: StudentListItemProps) {
       </div>
       <ChevronRight size={20} className="text-zinc-600" />
     </Link>
-  )
+  );
 }
