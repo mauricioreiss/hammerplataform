@@ -77,8 +77,8 @@ export function RestTimerModal({
 
   // Remaining ratio: 1.0 at start → 0.0 at end.
   const remainingRatio = totalSeconds > 0 ? timeLeft / totalSeconds : 0
-  // Ring drains: full at start, empty at end.
-  const strokeDashoffset = circumference * (1 - remainingRatio)
+  // Ring drains: full at start, empty at end. Negative offset makes the gap follow the needle.
+  const strokeDashoffset = -circumference * (1 - remainingRatio)
 
   // Hand angle: elapsed ratio drives 0→360 clockwise.
   const elapsedRatio = 1 - remainingRatio
@@ -130,7 +130,7 @@ export function RestTimerModal({
               }`}
               strokeWidth={strokeWidth}
               strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - remainingRatio)}
+              strokeDashoffset={strokeDashoffset}
               strokeLinecap="round"
               fill="transparent"
               transform={`rotate(-90 ${cx} ${cy})`}
