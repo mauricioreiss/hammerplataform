@@ -615,8 +615,8 @@ export function StudentProfile({ student, avaliacoes, workouts, libraryExercises
             <h3 className="text-white font-black uppercase text-sm mb-3">
               ✨ Novo Treino Gerado por IA
             </h3>
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 mb-5 max-h-60 overflow-y-auto">
-              <p className="text-zinc-300 text-xs leading-relaxed whitespace-pre-line">
+            <div className="bg-zinc-800 border border-zinc-700 rounded-xl p-5 mb-5 max-h-60 overflow-y-auto">
+              <p className="text-white text-sm font-medium leading-relaxed whitespace-pre-line">
                 {aiDraft.ai_notes}
               </p>
             </div>
