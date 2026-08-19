@@ -6,6 +6,7 @@ import Link from "next/link"
 import { LogOut, Settings } from "lucide-react"
 import { logout } from "@/app/auth/actions"
 import { NotificationPanel } from "@/components/notification-panel"
+import { PushManager } from "@/components/push-manager"
 
 type AdminHeaderProps = {
   initials: string
@@ -29,7 +30,8 @@ export function AdminHeader({ initials, avatarUrl, adminName, adminEmail, unread
             Ola, <span className="text-white">{adminName}</span>
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <PushManager />
           <NotificationPanel unreadCount={unreadCount} />
 
           <div className="relative">
