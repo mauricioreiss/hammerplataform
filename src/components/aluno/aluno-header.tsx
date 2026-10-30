@@ -6,16 +6,9 @@ import { LogOut, Camera, Loader2, X } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 import { updateAvatarUrl } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
+import { avatarExtensionFor } from "@/lib/avatar-url";
 import { NotificationPanel } from "@/components/notification-panel";
 import { PushManager } from "@/components/push-manager";
-
-// The avatars storage policy only accepts "<user id>.<lowercase extension>".
-const AVATAR_EXTENSION_BY_TYPE: Record<string, string> = {
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/gif": "gif",
-  "image/webp": "webp",
-};
 
 type AlunoHeaderProps = {
   initials: string;
@@ -42,7 +35,7 @@ export function AlunoHeader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const extension = AVATAR_EXTENSION_BY_TYPE[file.type];
+    const extension = avatarExtensionFor(file.type);
     if (!extension) return;
 
     if (file.size > 5 * 1024 * 1024) return;
