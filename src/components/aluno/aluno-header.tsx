@@ -9,6 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 import { NotificationPanel } from "@/components/notification-panel";
 import { PushManager } from "@/components/push-manager";
 
+// The avatars storage policy only accepts "<user id>.<lowercase extension>".
+const AVATAR_EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+};
+
 type AlunoHeaderProps = {
   initials: string;
   avatarUrl: string | null;
@@ -34,8 +42,8 @@ export function AlunoHeader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"];
-    if (!allowed.includes(file.type)) return;
+    const extension = AVATAR_EXTENSION_BY_TYPE[file.type];
+    if (!extension) return;
 
     if (file.size > 5 * 1024 * 1024) return;
 
@@ -43,8 +51,7 @@ export function AlunoHeader({
 
     try {
       const supabase = createClient();
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${userId}.${ext}`;
+      const path = `${userId}.${extension}`;
 
       const { error: upErr } = await supabase.storage
         .from("avatars")
