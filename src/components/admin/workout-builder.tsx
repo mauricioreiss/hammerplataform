@@ -403,8 +403,9 @@ function WorkoutCreatorModal({
                   ? "Editar Ficha"
                   : "Construtor de Treino"}
             </h2>
-            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest truncate">
-              {studentName} - {ageLabel}
+            <p className="flex gap-1 text-zinc-500 text-[10px] font-bold uppercase tracking-widest">
+              <span className="truncate">{studentName}</span>
+              <span className="shrink-0">- {ageLabel}</span>
             </p>
           </div>
         </div>

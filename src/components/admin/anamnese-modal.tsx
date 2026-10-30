@@ -54,6 +54,8 @@ export function AnamneseModal({
     return initial;
   });
 
+  const isBirthDateError = Object.values(BIRTH_DATE_MESSAGES).includes(error);
+
   function handleBirthDateInvalid(
     event: React.SyntheticEvent<HTMLInputElement>,
   ) {
@@ -145,6 +147,8 @@ export function AnamneseModal({
               onChange={(e) => setBirthDate(e.target.value)}
               onInvalid={handleBirthDateInvalid}
               max={latestBirthDate}
+              aria-invalid={isBirthDateError}
+              aria-describedby={isBirthDateError ? "anamnesis-error" : undefined}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
             />
           </div>
@@ -242,6 +246,7 @@ export function AnamneseModal({
 
           {error && (
             <div
+              id="anamnesis-error"
               role="alert"
               className="bg-red-500/10 border border-red-500/30 rounded-lg p-3"
             >

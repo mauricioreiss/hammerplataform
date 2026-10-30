@@ -279,7 +279,7 @@ export function StudentProfile({
               <h2 className="text-xl font-black text-white uppercase">
                 {student.full_name}
               </h2>
-              <div className="flex gap-2 mt-1">
+              <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
                 <span
                   className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border ${statusColor}`}
                 >
