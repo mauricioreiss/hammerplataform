@@ -128,7 +128,6 @@ Objetivo Principal: ${objective}
 Biblioteca de exercicios disponivel (priorize estes):
 ${input.libraryExercises.join(", ") || "Sem biblioteca cadastrada."}`;
 
-  console.log("--- ENVIANDO PARA IA ---", userPrompt);
 
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",

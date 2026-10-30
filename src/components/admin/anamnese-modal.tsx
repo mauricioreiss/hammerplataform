@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X, Loader2, ClipboardList } from "lucide-react";
 import { upsertAnamnesis } from "@/app/actions";
+import { BIRTH_DATE_MESSAGES, validateBirthDate } from "@/core/domain/age/age";
+import {
+  formatCalendarDateIso,
+  todayInBrasilia,
+} from "@/core/domain/age/calendar-date";
 import type { Anamnesis } from "@/lib/types";
 
 const PAR_Q_QUESTIONS = [
@@ -30,6 +35,9 @@ export function AnamneseModal({
   const [error, setError] = useState("");
 
   const [birthDate, setBirthDate] = useState(anamnesis?.birth_date ?? "");
+  const [latestBirthDate] = useState(() =>
+    formatCalendarDateIso(todayInBrasilia()),
+  );
   const [weight, setWeight] = useState(anamnesis?.weight?.toString() ?? "");
   const [height, setHeight] = useState(anamnesis?.height?.toString() ?? "");
   const [injuries, setInjuries] = useState(anamnesis?.injuries ?? "");
@@ -46,10 +54,33 @@ export function AnamneseModal({
     return initial;
   });
 
+  const isBirthDateError = Object.values(BIRTH_DATE_MESSAGES).includes(error);
+
+  function handleBirthDateInvalid(
+    event: React.SyntheticEvent<HTMLInputElement>,
+  ) {
+    // Replaces the browser bubble so a typed future or nonexistent date shows the domain message.
+    event.preventDefault();
+    const reason = event.currentTarget.validity.badInput ? "invalid" : "future";
+    setError(BIRTH_DATE_MESSAGES[reason]);
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setSaving(true);
     setError("");
+
+    if (birthDate) {
+      const birthDateValidation = validateBirthDate(
+        birthDate,
+        todayInBrasilia(),
+      );
+      if (!birthDateValidation.ok) {
+        setError(BIRTH_DATE_MESSAGES[birthDateValidation.reason]);
+        return;
+      }
+    }
+
+    setSaving(true);
 
     const parqData: Record<string, boolean> = {};
     for (const [key, val] of Object.entries(parq)) {
@@ -103,14 +134,21 @@ export function AnamneseModal({
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-1.5">
+            <label
+              htmlFor="anamnesis-birth-date"
+              className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest block mb-1.5"
+            >
               Data de Nascimento
             </label>
             <input
+              id="anamnesis-birth-date"
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
-              max={new Date().toISOString().split("T")[0]}
+              onInvalid={handleBirthDateInvalid}
+              max={latestBirthDate}
+              aria-invalid={isBirthDateError}
+              aria-describedby={isBirthDateError ? "anamnesis-error" : undefined}
               className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-red-600"
             />
           </div>
@@ -207,7 +245,11 @@ export function AnamneseModal({
           </div>
 
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+            <div
+              id="anamnesis-error"
+              role="alert"
+              className="bg-red-500/10 border border-red-500/30 rounded-lg p-3"
+            >
               <p className="text-red-400 text-xs font-bold">{error}</p>
             </div>
           )}

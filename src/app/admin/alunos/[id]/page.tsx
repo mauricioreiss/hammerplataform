@@ -10,6 +10,8 @@ import {
 } from "@/app/actions";
 import { StudentProfile } from "@/components/admin/student-profile";
 import { RealtimeProfileListener } from "@/components/admin/realtime-profile-listener";
+import { describeStudentAge } from "@/core/domain/age/age";
+import { todayInBrasilia } from "@/core/domain/age/calendar-date";
 
 export default async function StudentPage({
   params,
@@ -37,6 +39,12 @@ export default async function StudentPage({
     getAnamneseByUserId(student.id),
   ]);
 
+  const today = todayInBrasilia();
+  const { ageLabel, birthDateLabel } = describeStudentAge(
+    anamnesis?.birth_date,
+    today,
+  );
+
   return (
     <>
       <RealtimeProfileListener userId={student.id} />
@@ -48,6 +56,7 @@ export default async function StudentPage({
         quickStatus={quickStatus}
         recentSessions={recentSessions}
         anamnesis={anamnesis}
+        studentAge={{ ageLabel, birthDateLabel }}
       />
     </>
   );

@@ -93,6 +93,20 @@ function relativeDay(dateStr: string): string {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
 }
 
+type StudentAgeView = { ageLabel: string; birthDateLabel: string | null };
+
+function StudentAgeField({ studentAge }: { studentAge: StudentAgeView }) {
+  return (
+    <div>
+      <p className="text-zinc-600 text-[9px] font-bold uppercase">Idade</p>
+      <p className="text-white text-sm font-bold">
+        {studentAge.ageLabel}
+        {studentAge.birthDateLabel && ` - ${studentAge.birthDateLabel}`}
+      </p>
+    </div>
+  );
+}
+
 type StudentProfileProps = {
   student: UserProfile;
   avaliacoes: Evaluation[];
@@ -101,6 +115,7 @@ type StudentProfileProps = {
   quickStatus: QuickStatus;
   recentSessions: RecentSession[];
   anamnesis: Anamnesis | null;
+  studentAge: StudentAgeView;
 };
 
 export function StudentProfile({
@@ -111,6 +126,7 @@ export function StudentProfile({
   quickStatus,
   recentSessions,
   anamnesis,
+  studentAge,
 }: StudentProfileProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"treinos" | "avaliacoes">(
@@ -263,11 +279,14 @@ export function StudentProfile({
               <h2 className="text-xl font-black text-white uppercase">
                 {student.full_name}
               </h2>
-              <div className="flex gap-2 mt-1">
+              <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1">
                 <span
                   className={`text-[9px] px-2 py-0.5 rounded font-bold uppercase border ${statusColor}`}
                 >
                   {statusLabel}
+                </span>
+                <span className="text-[9px] text-zinc-400 font-bold uppercase pt-0.5">
+                  {studentAge.ageLabel}
                 </span>
                 <span className="text-[9px] text-zinc-400 font-bold uppercase pt-0.5">
                   Desde {since}
@@ -439,6 +458,7 @@ export function StudentProfile({
           </div>
           {anamnesis ? (
             <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <StudentAgeField studentAge={studentAge} />
               <div>
                 <p className="text-zinc-600 text-[9px] font-bold uppercase">
                   Objetivo
@@ -508,9 +528,12 @@ export function StudentProfile({
                 )}
             </div>
           ) : (
-            <p className="text-zinc-500 text-xs">
-              Nenhuma anamnese inicial registrada.
-            </p>
+            <div className="space-y-3">
+              <p className="text-zinc-500 text-xs">
+                Nenhuma anamnese inicial registrada.
+              </p>
+              <StudentAgeField studentAge={studentAge} />
+            </div>
           )}
         </div>
       </div>
@@ -737,6 +760,8 @@ export function StudentProfile({
             libraryExercises={libraryExercises}
             reviewWorkoutId={reviewWorkoutId}
             onReviewConsumed={() => setReviewWorkoutId(null)}
+            studentName={student.full_name}
+            ageLabel={studentAge.ageLabel}
           />
         )}
       </div>
