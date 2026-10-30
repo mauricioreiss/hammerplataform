@@ -150,7 +150,10 @@ const PAR_Q_LABELS = [
   "Diabetes, hipertensão ou colesterol elevado",
 ];
 
-function buildPrompt(anamnese: AnamneseRow): string {
+// The prompt never receives the birth date: age stays out of what is sent to OpenAI.
+type PromptAnamnesis = Omit<AnamneseRow, "birth_date">;
+
+function buildPrompt(anamnese: PromptAnamnesis): string {
   const parqFormatted = anamnese.par_q_data
     ? Object.entries(anamnese.par_q_data)
         .map(([key, value]) => {
@@ -204,7 +207,7 @@ export async function analyzeAnamnese(id: string): Promise<AnalysisResult> {
       return { success: false, error: "Anamnese não encontrada" };
     }
 
-    const prompt = buildPrompt(data as AnamneseRow);
+    const prompt = buildPrompt(data as PromptAnamnesis);
 
     const analysis = await generateCompletion(prompt);
 
