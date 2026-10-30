@@ -229,7 +229,7 @@ Mensagens (texto exato, pt-BR):
 
 ### `upsertAnamnesis(userId, formData)` e `saveAnamnese(formData)` (admin)
 
-- Entrada: `birth_date?: string` continua opcional. Ausente ou vazia -> grava `null` (apaga a data).
+- Entrada: `birth_date?: string` continua opcional. Ausente (`undefined`) -> grava `null` (apaga a data); o cliente converte o campo vazio em `undefined`, e `""` enviado direto é recusado como inválido.
 - Validação: `anamneseSchema.birth_date = birthDateSchema().optional()`; sem idade mínima. Falha devolve `{ success: false, error }` com a mensagem do motivo, sem gravar.
 - Saída: inalterada. `saveAnamnese` não tem chamador hoje, mas é export público de `"use server"`; por usar o mesmo schema, segue a mesma regra sem código extra (RF-009 "qualquer caminho").
 
