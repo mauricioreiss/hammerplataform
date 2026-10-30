@@ -15,6 +15,7 @@ import type {
   Notification,
 } from "@/lib/types";
 import { generateWorkoutDraft } from "@/lib/openai";
+import { avatarExtensionFor, isOwnAvatarPublicUrl } from "@/lib/avatar-url";
 import {
   BIRTH_DATE_MESSAGES,
   FUNNEL_MINIMUM_AGE_YEARS,
@@ -843,7 +844,7 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
 
   const { data: student } = await admin
     .from("users")
-    .select("full_name, objective")
+    .select("objective")
     .eq("id", userId)
     .single();
 
@@ -864,7 +865,6 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
     .order("name");
 
   const { aiNotes, workouts } = await generateWorkoutDraft({
-    studentName: student.full_name,
     objective: student.objective,
     weight: anamnese?.weight ?? null,
     height: anamnese?.height ?? null,
@@ -1629,10 +1629,17 @@ export async function updateAvatarUrl(
     const user = await getAuthUser();
     if (!user) return { success: false, error: "Nao autenticado." };
 
+    const isOwnAvatar = isOwnAvatarPublicUrl({
+      url,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+      userId: user.id,
+    });
+    if (!isOwnAvatar) return { success: false, error: "Foto de perfil invalida." };
+
     const admin = createAdminClient();
     const { error } = await admin
       .from("users")
-      .update({ avatar_url: url || null })
+      .update({ avatar_url: url })
       .eq("id", user.id);
 
     if (error) return { success: false, error: error.message };
@@ -1682,8 +1689,8 @@ export async function uploadAvatarPhoto(
     if (!file || file.size === 0)
       return { success: false, error: "Nenhum arquivo enviado." };
 
-    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"];
-    if (!allowed.includes(file.type))
+    const extension = avatarExtensionFor(file.type);
+    if (!extension)
       return {
         success: false,
         error: "Formato invalido. Use PNG, JPG, GIF ou WEBP.",
@@ -1692,8 +1699,7 @@ export async function uploadAvatarPhoto(
       return { success: false, error: "Maximo 5MB." };
 
     const admin = createAdminClient();
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const path = `${user.id}.${ext}`;
+    const path = `${user.id}.${extension}`;
     const buf = await file.arrayBuffer();
 
     let { error: upErr } = await admin.storage

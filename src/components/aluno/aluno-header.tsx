@@ -6,6 +6,7 @@ import { LogOut, Camera, Loader2, X } from "lucide-react";
 import { logout } from "@/app/auth/actions";
 import { updateAvatarUrl } from "@/app/actions";
 import { createClient } from "@/lib/supabase/client";
+import { avatarExtensionFor } from "@/lib/avatar-url";
 import { NotificationPanel } from "@/components/notification-panel";
 import { PushManager } from "@/components/push-manager";
 
@@ -34,8 +35,8 @@ export function AlunoHeader({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const allowed = ["image/png", "image/jpeg", "image/gif", "image/webp"];
-    if (!allowed.includes(file.type)) return;
+    const extension = avatarExtensionFor(file.type);
+    if (!extension) return;
 
     if (file.size > 5 * 1024 * 1024) return;
 
@@ -43,8 +44,7 @@ export function AlunoHeader({
 
     try {
       const supabase = createClient();
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const path = `${userId}.${ext}`;
+      const path = `${userId}.${extension}`;
 
       const { error: upErr } = await supabase.storage
         .from("avatars")
