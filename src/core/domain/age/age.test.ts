@@ -134,6 +134,13 @@ describe("validateBirthDate", () => {
     });
   });
 
+  it("recusa ano de dois dígitos digitado com zeros à esquerda como mais de 120 anos", () => {
+    expect(validateBirthDate("0050-01-01", today)).toEqual({
+      ok: false,
+      reason: "too_old",
+    });
+  });
+
   it("recusa quem completa 18 anos amanhã quando a idade mínima é 18", () => {
     expect(validateBirthDate("2008-10-18", today, { minimumAge: 18 })).toEqual({
       ok: false,

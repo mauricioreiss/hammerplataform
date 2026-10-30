@@ -15,9 +15,8 @@ export type BirthDateValidation =
   | { ok: true; birthDate: CalendarDate; age: number }
   | { ok: false; reason: BirthDateRejection };
 
-export const BIRTH_DATE_MESSAGES: Record<
-  BirthDateRejection | "missing",
-  string
+export const BIRTH_DATE_MESSAGES: Readonly<
+  Record<BirthDateRejection | "missing", string>
 > = {
   missing: "Data de nascimento é obrigatória.",
   invalid: "Data de nascimento inválida.",
@@ -28,17 +27,17 @@ export const BIRTH_DATE_MESSAGES: Record<
 
 export const AGE_NOT_INFORMED_LABEL = "Idade não informada";
 
-type StudentAge = {
+type StudentAge = Readonly<{
   age: number | null;
   ageLabel: string;
   birthDateLabel: string | null;
-};
+}>;
 
-const AGE_NOT_INFORMED: StudentAge = {
+const AGE_NOT_INFORMED: StudentAge = Object.freeze({
   age: null,
   ageLabel: AGE_NOT_INFORMED_LABEL,
   birthDateLabel: null,
-};
+});
 
 export function calculateAgeInYears(
   birthDate: CalendarDate,

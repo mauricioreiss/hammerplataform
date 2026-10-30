@@ -51,9 +51,10 @@ function padTwoDigits(value: number): string {
   return String(value).padStart(2, "0");
 }
 
-// Date.UTC rolls invalid days over (Feb 31 -> Mar 3), so reading it back exposes days that do not exist.
+// setUTCFullYear rolls invalid days over (Feb 31 -> Mar 3) and, unlike Date.UTC, keeps years 0-99 literal.
 function existsInCalendar(date: CalendarDate): boolean {
-  const utcDate = new Date(Date.UTC(date.year, date.month - 1, date.day));
+  const utcDate = new Date(0);
+  utcDate.setUTCFullYear(date.year, date.month - 1, date.day);
   return (
     utcDate.getUTCFullYear() === date.year &&
     utcDate.getUTCMonth() === date.month - 1 &&
