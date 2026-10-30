@@ -15,10 +15,37 @@ import type {
   Notification,
 } from "@/lib/types";
 import { generateWorkoutDraft } from "@/lib/openai";
+import {
+  BIRTH_DATE_MESSAGES,
+  FUNNEL_MINIMUM_AGE_YEARS,
+  describeStudentAge,
+  validateBirthDate,
+} from "@/core/domain/age/age";
+import { todayInBrasilia } from "@/core/domain/age/calendar-date";
 
 // --- Validation ---
 
 const uuidSchema = z.string().uuid();
+
+function birthDateSchema(rules?: { minimumAge?: number }) {
+  return z.iso
+    .date({
+      error: (issue) =>
+        issue.input === undefined
+          ? BIRTH_DATE_MESSAGES.missing
+          : BIRTH_DATE_MESSAGES.invalid,
+      abort: true,
+    })
+    .superRefine((value, ctx) => {
+      const validation = validateBirthDate(value, todayInBrasilia(), rules);
+      if (!validation.ok) {
+        ctx.addIssue({
+          code: "custom",
+          message: BIRTH_DATE_MESSAGES[validation.reason],
+        });
+      }
+    });
+}
 
 const anamneseSchema = z.object({
   user_id: z.string().uuid().optional(),
@@ -27,10 +54,7 @@ const anamneseSchema = z.object({
   injuries: z.string().max(2000).trim().optional(),
   days_per_week: z.number().int().min(1).max(7).optional(),
   par_q_data: z.record(z.string(), z.boolean()).optional(),
-  birth_date: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data invalida")
-    .optional(),
+  birth_date: birthDateSchema().optional(),
 });
 
 // --- Auth ---
@@ -472,12 +496,6 @@ export async function getAnamneseByUserId(userId: string) {
       .limit(1)
       .maybeSingle();
 
-    console.log("--- DEBUG ANAMNESE FETCH ---", {
-      idBuscado: parsed.data,
-      data,
-      error: error ?? null,
-    });
-
     if (error) {
       console.error("[getAnamneseByUserId] query error:", error);
       return null;
@@ -532,12 +550,6 @@ export async function upsertAnamnesis(
       par_q_data: parsed.data.par_q_data ?? null,
       birth_date: parsed.data.birth_date ?? null,
     };
-
-    console.log("--- DEBUG ANAMNESE UPSERT ---", {
-      userId: parsedId.data,
-      existingId: existing?.id ?? null,
-      payload,
-    });
 
     if (existing) {
       const { error } = await admin
@@ -822,18 +834,6 @@ function formatParQ(parq: Record<string, boolean> | null): string {
   return PARQ_LABELS.filter((_, i) => parq[`q${i}`]).join("; ");
 }
 
-// Calcula idade a partir de uma data de nascimento (YYYY-MM-DD).
-function calcAge(birthDate: string | null): number | null {
-  if (!birthDate) return null;
-  const b = new Date(birthDate);
-  if (isNaN(b.getTime())) return null;
-  const now = new Date();
-  let age = now.getFullYear() - b.getFullYear();
-  const m = now.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
-  return age >= 0 && age < 120 ? age : null;
-}
-
 // Copiloto de Treino (core): gera a divisao com IA e persiste como rascunho
 // (is_ai_draft + status 'draft' + ai_notes). Server-only, sem auth guard —
 // chamado pelo cadastro da LP (background) e pela action admin abaixo.
@@ -870,7 +870,7 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
     height: anamnese?.height ?? null,
     injuries: anamnese?.injuries ?? null,
     daysPerWeek: anamnese?.days_per_week ?? 3,
-    age: calcAge(anamnese?.birth_date ?? null),
+    age: describeStudentAge(anamnese?.birth_date, todayInBrasilia()).age,
     parQ: formatParQ(anamnese?.par_q_data ?? null),
     libraryExercises: (libraryExercises ?? []).map(
       (e) => `${e.name} (${e.muscle_group ?? "Geral"})`,
@@ -2038,6 +2038,7 @@ const registerSchema = z.object({
   injuries: z.string().max(2000).trim().optional(),
   days_per_week: z.number().int().min(1).max(7).optional(),
   par_q_data: z.record(z.string(), z.boolean()).optional(),
+  birth_date: birthDateSchema({ minimumAge: FUNNEL_MINIMUM_AGE_YEARS }),
 });
 
 export async function registerFromLanding(
@@ -2061,6 +2062,7 @@ export async function registerFromLanding(
       injuries,
       days_per_week,
       par_q_data,
+      birth_date,
     } = parsed.data;
     const admin = createAdminClient();
 
@@ -2128,6 +2130,7 @@ export async function registerFromLanding(
       injuries: injuries ?? null,
       days_per_week: days_per_week ?? null,
       par_q_data: hasParq ? par_q_data : null,
+      birth_date,
     });
 
     if (anamError) {
