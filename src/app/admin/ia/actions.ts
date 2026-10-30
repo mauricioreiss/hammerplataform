@@ -15,6 +15,7 @@ export type AnamneseRow = {
   injuries: string | null;
   days_per_week: number | null;
   par_q_data: Record<string, boolean> | null;
+  birth_date: string | null;
   created_at: string;
   ai_analysis?: string | null;
 };
@@ -65,7 +66,7 @@ export async function getAnamneses(): Promise<AnamneseWithUser[]> {
     const { data, error } = await supabase
       .from("anamnesis")
       .select(
-        "id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at, ai_analysis",
+        "id, user_id, weight, height, injuries, days_per_week, par_q_data, birth_date, created_at, ai_analysis",
       )
       .order("created_at", { ascending: false });
 
@@ -114,7 +115,7 @@ export async function getAnamneseById(
     const { data, error } = await supabase
       .from("anamnesis")
       .select(
-        "id, user_id, weight, height, injuries, days_per_week, par_q_data, created_at, ai_analysis",
+        "id, user_id, weight, height, injuries, days_per_week, par_q_data, birth_date, created_at, ai_analysis",
       )
       .eq("id", parsed.data)
       .single();

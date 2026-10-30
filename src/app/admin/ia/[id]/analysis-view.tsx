@@ -13,6 +13,7 @@ import { analyzeAnamnese, type AnamneseWithUser } from "../actions";
 
 type AnalysisViewProps = {
   anamnese: AnamneseWithUser;
+  ageLabel: string;
 };
 
 const PAR_Q_LABELS = [
@@ -23,7 +24,7 @@ const PAR_Q_LABELS = [
   "Diabetes/hipertensão/colesterol",
 ];
 
-export function AnalysisView({ anamnese }: AnalysisViewProps) {
+export function AnalysisView({ anamnese, ageLabel }: AnalysisViewProps) {
   const [analysis, setAnalysis] = useState<string | null>(
     anamnese.ai_analysis ?? null,
   );
@@ -72,6 +73,12 @@ export function AnalysisView({ anamnese }: AnalysisViewProps) {
             Dados do Aluno
           </h3>
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] text-zinc-500 uppercase font-bold">
+                Idade
+              </p>
+              <p className="text-white font-bold">{ageLabel}</p>
+            </div>
             <div>
               <p className="text-[10px] text-zinc-500 uppercase font-bold">
                 Peso
