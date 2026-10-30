@@ -2135,15 +2135,6 @@ export async function registerFromLanding(
 
     if (anamError) {
       console.error("registerFromLanding anamnesis insert error:", anamError);
-      // Log full payload for debugging
-      console.error("anamnesis payload was:", {
-        user_id: userId,
-        weight,
-        height,
-        injuries,
-        days_per_week,
-        par_q_data: hasParq ? par_q_data : null,
-      });
       return {
         success: false,
         error: `Falha ao salvar anamnese: ${anamError.message}`,
