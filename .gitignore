@@ -52,3 +52,6 @@ nul
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local-only architecture notes
+/docs/CODEBASE_MAP.md
