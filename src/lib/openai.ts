@@ -46,7 +46,6 @@ export type WorkoutDraftResult = {
 };
 
 export type WorkoutDraftInput = {
-  studentName: string;
   objective: string | null;
   weight: number | null;
   height: number | null;
@@ -116,7 +115,6 @@ REGRAS:
 
   const userPrompt = `Por favor, monte o treino para o seguinte perfil:
 
-Aluno: ${input.studentName}
 Idade do Aluno: ${input.age ?? "nao informada"} anos
 Peso: ${input.weight ?? "nao informado"} kg
 Altura: ${input.height ?? "nao informada"} cm

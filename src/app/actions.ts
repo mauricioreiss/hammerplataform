@@ -843,7 +843,7 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
 
   const { data: student } = await admin
     .from("users")
-    .select("full_name, objective")
+    .select("objective")
     .eq("id", userId)
     .single();
 
@@ -864,7 +864,6 @@ async function createAiWorkoutDraft(userId: string): Promise<void> {
     .order("name");
 
   const { aiNotes, workouts } = await generateWorkoutDraft({
-    studentName: student.full_name,
     objective: student.objective,
     weight: anamnese?.weight ?? null,
     height: anamnese?.height ?? null,
