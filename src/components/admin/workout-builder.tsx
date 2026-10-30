@@ -53,6 +53,8 @@ type WorkoutBuilderProps = {
   libraryExercises: Exercise[];
   reviewWorkoutId?: string | null;
   onReviewConsumed?: () => void;
+  studentName: string;
+  ageLabel: string;
 };
 
 // --- Main Component ---
@@ -63,6 +65,8 @@ export function WorkoutBuilder({
   libraryExercises,
   reviewWorkoutId,
   onReviewConsumed,
+  studentName,
+  ageLabel,
 }: WorkoutBuilderProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
@@ -153,6 +157,8 @@ export function WorkoutBuilder({
       {(showModal || editingWorkout) && (
         <WorkoutCreatorModal
           studentId={studentId}
+          studentName={studentName}
+          ageLabel={ageLabel}
           libraryExercises={libraryExercises}
           onClose={() => {
             setShowModal(false);
@@ -249,11 +255,15 @@ export function WorkoutBuilder({
 
 function WorkoutCreatorModal({
   studentId,
+  studentName,
+  ageLabel,
   libraryExercises,
   onClose,
   editWorkout,
 }: {
   studentId: string;
+  studentName: string;
+  ageLabel: string;
   libraryExercises: Exercise[];
   onClose: () => void;
   editWorkout?: Workout;
@@ -379,19 +389,24 @@ function WorkoutCreatorModal({
   return (
     <div className="fixed inset-0 bg-black/90 z-50 flex flex-col">
       <div className="bg-zinc-900 border-b border-zinc-800 px-4 md:px-6 py-4 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           {isAiDraftReview ? (
-            <Sparkles size={20} className="text-purple-400" />
+            <Sparkles size={20} className="text-purple-400 shrink-0" />
           ) : (
-            <Dumbbell size={20} className="text-red-500" />
+            <Dumbbell size={20} className="text-red-500 shrink-0" />
           )}
-          <h2 className="text-base font-black text-white uppercase tracking-tight">
-            {isAiDraftReview
-              ? "Revisar Treino IA"
-              : isEdit
-                ? "Editar Ficha"
-                : "Construtor de Treino"}
-          </h2>
+          <div className="min-w-0">
+            <h2 className="text-base font-black text-white uppercase tracking-tight">
+              {isAiDraftReview
+                ? "Revisar Treino IA"
+                : isEdit
+                  ? "Editar Ficha"
+                  : "Construtor de Treino"}
+            </h2>
+            <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest truncate">
+              {studentName} - {ageLabel}
+            </p>
+          </div>
         </div>
         <button
           onClick={onClose}
