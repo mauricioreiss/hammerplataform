@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { registerFromLanding } from "@/app/actions";
+import {
+  BIRTH_DATE_MESSAGES,
+  FUNNEL_MINIMUM_AGE_YEARS,
+  validateBirthDate,
+} from "@/core/domain/age/age";
+import { todayInBrasilia } from "@/core/domain/age/calendar-date";
 import { createClient } from "@/lib/supabase/client";
 import type { Plan } from "@/lib/types";
 
@@ -43,16 +49,34 @@ const CYCLE_LABELS: Record<string, string> = {
   anual: "Anual",
 };
 
+const BIRTH_DATE_ERROR_ID = "birth-date-error";
+
+// A partially typed or impossible date (e.g. 31/02) leaves the input value empty; badInput tells it apart from a blank field.
+function findBirthDateError(
+  birthDate: string,
+  hasUnreadableInput: boolean,
+): string {
+  if (hasUnreadableInput) return BIRTH_DATE_MESSAGES.invalid;
+  if (!birthDate) return BIRTH_DATE_MESSAGES.missing;
+
+  const validation = validateBirthDate(birthDate, todayInBrasilia(), {
+    minimumAge: FUNNEL_MINIMUM_AGE_YEARS,
+  });
+  return validation.ok ? "" : BIRTH_DATE_MESSAGES[validation.reason];
+}
+
 export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
   const router = useRouter();
+  const birthDateInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [birthDateError, setBirthDateError] = useState("");
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
     senha: "",
-    idade: "",
+    dataNascimento: "",
     sexo: "",
     peso: "",
     altura: "",
@@ -79,6 +103,23 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
     }));
   }
 
+  function handleBirthDateChange(value: string) {
+    update("dataNascimento", value);
+    setBirthDateError("");
+  }
+
+  function handleNextStep() {
+    if (step === 1) {
+      const message = findBirthDateError(
+        formData.dataNascimento,
+        birthDateInputRef.current?.validity.badInput ?? false,
+      );
+      setBirthDateError(message);
+      if (message) return;
+    }
+    setStep((current) => current + 1);
+  }
+
   async function handleComplete() {
     setSaving(true);
     setError("");
@@ -101,6 +142,7 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
         ? Number(formData.diasTreino)
         : undefined,
       par_q_data: parqData,
+      birth_date: formData.dataNascimento,
     });
 
     if (!result.success) {
@@ -181,23 +223,43 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
                 onChange={(e) => update("senha", e.target.value)}
                 className={INPUT_CLASS}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <label
+                  htmlFor="birth-date"
+                  className="col-start-1 row-start-1 text-zinc-400 text-[10px] font-bold uppercase"
+                >
+                  Data de nascimento
+                </label>
                 <input
-                  type="number"
-                  placeholder="Idade"
-                  value={formData.idade}
-                  onChange={(e) => update("idade", e.target.value)}
-                  className={INPUT_CLASS}
+                  ref={birthDateInputRef}
+                  id="birth-date"
+                  type="date"
+                  value={formData.dataNascimento}
+                  onChange={(e) => handleBirthDateChange(e.target.value)}
+                  aria-invalid={birthDateError !== ""}
+                  aria-describedby={
+                    birthDateError ? BIRTH_DATE_ERROR_ID : undefined
+                  }
+                  className={`${INPUT_CLASS} col-start-1 row-start-2`}
                 />
                 <select
                   value={formData.sexo}
                   onChange={(e) => update("sexo", e.target.value)}
-                  className={SELECT_CLASS}
+                  className={`${SELECT_CLASS} col-start-2 row-start-2`}
                 >
                   <option value="">Sexo</option>
                   <option value="M">Masculino</option>
                   <option value="F">Feminino</option>
                 </select>
+                {birthDateError && (
+                  <p
+                    id={BIRTH_DATE_ERROR_ID}
+                    role="alert"
+                    className="col-span-2 text-red-500 text-xs font-bold"
+                  >
+                    {birthDateError}
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <input
@@ -437,11 +499,7 @@ export function FunnelForm({ plans, onBack, onComplete }: FunnelFormProps) {
 
           {/* Navigation button */}
           <button
-            onClick={
-              step === TOTAL_STEPS
-                ? handleComplete
-                : () => setStep((s) => s + 1)
-            }
+            onClick={step === TOTAL_STEPS ? handleComplete : handleNextStep}
             disabled={
               (step === TOTAL_STEPS &&
                 (!formData.termo || !formData.planoId)) ||
